@@ -9,6 +9,7 @@
 
 namespace omnimapper 
 {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT>
   ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber) :
     mapper_ (mapper),
@@ -18,10 +19,13 @@ namespace omnimapper
     first_ (true),
     downsample_ (true),
     leaf_size_ (0.05f),
+    score_threshold_ (1.0f),
     debug_ (true),
     overwrite_timestamps_ (true),
     icp_max_correspondence_distance_ (3.5),
     previous_sym_ (gtsam::Symbol ('x', 0)),
+    previous2_sym_ (gtsam::Symbol ('x', 0)),
+    previous3_sym_ (gtsam::Symbol ('x', 0)),
     use_gicp_ (true),
     paused_ (false)
   {
@@ -32,10 +36,12 @@ namespace omnimapper
     first_ = true;
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> ICPPoseMeasurementPlugin<PointT>::~ICPPoseMeasurementPlugin ()
   {
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void 
   ICPPoseMeasurementPlugin<PointT>::cloudCallback (const CloudConstPtr& cloud)
   {
@@ -76,6 +82,7 @@ namespace omnimapper
   }
   */
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void
   ICPPoseMeasurementPlugin<PointT>::spin ()
   {
@@ -93,7 +100,7 @@ namespace omnimapper
     // Do nothing if there isn't a new cloud
     if (!have_new_cloud_)
     {
-      printf ("ICPPoseMeasurementPlugin: no new cloud!\n");
+      //printf ("ICPPoseMeasurementPlugin: no new cloud!\n");
       return false;
     }
     
@@ -119,15 +126,11 @@ namespace omnimapper
             return (false);
           }
         }
-        
-
       }
       
-
       current_cloud = current_cloud_;
     }
     printf ("current cloud points: %d\n", current_cloud->points.size ());
-    
     
     // Downsample, if needed
     CloudPtr current_cloud_filtered (new Cloud ());
@@ -178,64 +181,36 @@ namespace omnimapper
       return (false);
     }
     
-    // Register the clouds
-    // TODO: we should look up the initial guess from the mapper
-    CloudPtr aligned_cloud (new Cloud ());
-    Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
-    double icp_score = 0.0;
-    printf ("At: %d size: %d\n", previous_sym_.index (), clouds_.size ());
-    // Debug
-    if (current_sym == previous_sym_)
-      assert (false);
+    // Add constraints
+    printf ("ICP SYMS: prev3: x%d, prev2: x%d  prev: x%d, curr: x%d\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
-    bool icp_converged = registerClouds (clouds_.at (current_sym), clouds_.at (previous_sym_), aligned_cloud, cloud_tform, icp_score);
-    printf ("Done with registration\n");
-
-    if (icp_converged)// && icp_score >= 0.01)
+    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, false);
+    // Try previous too
+    if (clouds_.size () >= 3)
     {
-      // Add a between factor from the previous pose to this pose
-      gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
-                                  gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
-      // The transform is the inverse of what we need
-      //cloud_tform = cloud_tform.inverse ().eval ();
-      relative_pose = relative_pose.inverse ();
-
-      // TODO: make these params
-      double trans_noise = 1.0 * icp_score;
-      double rot_noise = 1.0 * icp_score;
-      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
-      //gtsam::BetweenFactor<gtsam::Pose3> between (previous_sym, current_sym, relative_pose, noise);
-      //mapper_->new_factors.add (between);
-      omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (previous_sym_, current_sym, relative_pose, noise));
-      mapper_->addFactor (between);
-      
-      // If init, initialize the pose at our result
-      // if (init)
-      // {
-      //   // Look up the most recent location for new_pose
-      //   gtsam::Pose3 new_pose = mapper_->getPose (previous_sym).compose (relative_pose);
-      //   mapper_->addNewValue (current_sym, new_pose);
-      // }
-    } 
-    else 
-    {
-      // Else put identity
-      cloud_tform = Eigen::Matrix4f::Identity ();
-      gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
-                                  gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
-      double trans_noise = 1.0;
-      double rot_noise = 1.0;
-      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
-      omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (previous_sym_, current_sym, relative_pose, noise));
-      mapper_->addFactor (between);
+      //boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+      //prev2_icp_thread.join ();
+      //printf ("PREV 2 COMPLETE!\n");
     }
-    
-    
+    if (clouds_.size () >= 4)
+    {
+      boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+      //prev3_icp_thread.join ();
+      //printf ("PREV 3 COMPLETE!\n");
+    }
+
+    if (clouds_.size () > 20)
+      boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
+
+    // Wait for latest one to complete, at least
+    latest_icp_thread.join ();    
       
     // Note that we're done
     {
       boost::mutex::scoped_lock (current_cloud_mutex_);
       have_new_cloud_ = false;
+      previous3_sym_ = previous2_sym_;
+      previous2_sym_ = previous_sym_;
       previous_sym_ = current_sym;
     }
 
@@ -244,6 +219,66 @@ namespace omnimapper
     return (true);
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> bool
+  ICPPoseMeasurementPlugin<PointT>::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool direct)
+  {
+    // Look up clouds
+    CloudConstPtr cloud1 = clouds_.at (sym1);
+    CloudConstPtr cloud2 = clouds_.at (sym2);
+    
+    // Look up initial guess, if applicable
+    boost::optional<gtsam::Pose3> cloud1_pose = mapper_->getPose (sym1);
+    boost::optional<gtsam::Pose3> cloud2_pose = mapper_->getPose (sym2);
+    
+    // If we have an initial guess
+    Eigen::Matrix4f cloud_tform;
+    if ((cloud1_pose) && (cloud2_pose))
+    {
+      cloud1_pose->print ("Pose1\n\n\n");
+      cloud2_pose->print ("Pose2\n\n\n");
+      gtsam::Pose3 initial_guess = cloud1_pose->transform_to (*cloud2_pose);
+      initial_guess.print ("\n\nInitial guess\n\n");
+      cloud_tform = initial_guess.matrix ().cast<float>();
+    }
+    else
+    {
+      cloud_tform = Eigen::Matrix4f::Identity ();
+    }
+
+    CloudPtr aligned_cloud (new Cloud ());
+    //Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
+    double icp_score = 0.0;
+    
+    bool icp_converged = registerClouds (cloud1, cloud2, aligned_cloud, cloud_tform, icp_score);
+    
+    if (icp_converged  && icp_score < score_threshold_)
+    {
+      gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
+                                  gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+      relative_pose = relative_pose.inverse ();
+
+      // TODO: make these params
+      double trans_noise = 1.0;// * icp_score;
+      double rot_noise = 1.0;// * icp_score;
+      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+      
+      omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+      printf ("ADDED FACTOR BETWEEN x%d and x%d\n", sym1.index (), sym2.index ());
+      //if (direct)
+      //  mapper_->addFactorDirect (between);
+      //else
+        mapper_->addFactor (between);
+      return (true);
+    }
+    else
+    {
+      printf ("ICP did not converge!\n");
+      return (false);
+    }
+  }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::registerClouds (CloudConstPtr& cloud1, CloudConstPtr& cloud2, CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform, double& score)
   {
@@ -277,7 +312,6 @@ namespace omnimapper
       tform = icp.getFinalTransformation ();
       score = icp.getFitnessScore ();
     }
-    
 
     std::cout << "has converged score: " << score << std::endl;
     printf ("tform:\n%lf %lf %lf %lf\n",tform (0,0), tform (0,1), tform (0,2), tform (0,3));
@@ -292,6 +326,64 @@ namespace omnimapper
     return true;
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> bool
+  ICPPoseMeasurementPlugin<PointT>::tryLoopClosure (gtsam::Symbol sym)
+  {
+    double loop_closure_dist_thresh_ = 5.0;
+    int pose_index_thresh_ = 20;
+
+    // Get the latest solution from the mapper
+    gtsam::Values solution = mapper_->getSolution ();
+    
+    // Look up the current pose
+    while (!solution.exists<gtsam::Pose3> (sym))
+    {
+      boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+      solution = mapper_->getSolution ();
+    }
+    gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
+    
+    // Find the closest pose
+    gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = solution.filter<gtsam::Pose3>();
+    double min_dist = std::numeric_limits<double>::max ();
+    gtsam::Symbol closest_sym;
+    BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+    {
+      gtsam::Symbol test_sym (key_value.key);
+      int sym_dist = sym.index () - test_sym.index ();
+      printf ("sym: %d test: %d\n",sym.index (), test_sym.index ());
+      if (sym_dist > pose_index_thresh_)
+      {
+        printf ("(%d) > %d\n",(sym.index () - test_sym.index ()), pose_index_thresh_);
+        gtsam::Pose3 test_pose (key_value.value);
+        double test_dist = current_pose.range (test_pose);
+        
+        if (test_dist < min_dist)
+        {
+          printf ("setting min dist to %lf\n",test_dist);
+          min_dist = test_dist;
+          closest_sym = key_value.key;
+        }
+      }
+    }
+    
+    // If we found something, try to add a link
+    if (min_dist < loop_closure_dist_thresh_)
+    {
+      addConstraint (sym, closest_sym);
+      printf ("ADDED LOOP CLOSURE BETWEEN %d and %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+              sym.index (), closest_sym.index ());
+      return (true);
+    }
+    else
+    {
+      return (false);
+    }
+  }
+  
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::ready ()
   {
@@ -299,6 +391,7 @@ namespace omnimapper
     return (have_new_cloud_);
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void
   ICPPoseMeasurementPlugin<PointT>::pause (bool pause)
   { 
@@ -313,6 +406,7 @@ namespace omnimapper
     }
   }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudConstPtr
   ICPPoseMeasurementPlugin<PointT>::getCloudPtr (gtsam::Symbol sym)
   {

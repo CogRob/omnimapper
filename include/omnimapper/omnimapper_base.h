@@ -79,7 +79,8 @@ namespace omnimapper
       typedef boost::shared_ptr<gtsam::NonlinearFactor> NonlinearFactorPtr;
       typedef boost::shared_ptr<omnimapper::PosePlugin> PosePluginPtr;
       typedef boost::shared_ptr<omnimapper::OutputPlugin> OutputPluginPtr;
-      typedef boost::posix_time::ptime Time;      
+      typedef boost::posix_time::ptime Time;
+      //typedef boost::posix_time::duration Duration;
 
     protected:
       // An ISAM2 instance
@@ -90,8 +91,16 @@ namespace omnimapper
       gtsam::Values new_values;
       // The most recent solution after optimization
       gtsam::Values current_solution;
+      // The most recent graph
+      gtsam::NonlinearFactorGraph current_graph;
       // The symbol corresponding to the most recently added pose
       gtsam::Symbol current_pose_symbol;
+      // The length of time in seconds to wait prior to committing new poses
+      double commit_window;
+      // Timestamp of the previous commit
+      Time latest_commit_time;
+      // Time offset duration
+      //Duration time_offset;
 
       // The pose chain itself
       std::list<omnimapper::PoseChainNode> chain;
@@ -216,13 +225,21 @@ namespace omnimapper
       bool
       addFactor (gtsam::NonlinearFactor::shared_ptr& new_factor);
 
+      /** \brief Adds a factor to the factor graph bypassing the pose chain. */
+      bool
+      addFactorDirect (gtsam::NonlinearFactor::shared_ptr& new_factor);
+
       /** \brief Adds an initial value to the values. */
       bool
       addNewValue (gtsam::Symbol& new_symbol, gtsam::Value& new_value);
 
       /** \brief Looks up a pose by symbol. */
-      gtsam::Pose3
+      boost::optional<gtsam::Pose3>
       getPose (gtsam::Symbol& pose_sym);
+
+      /** \brief Prints latest solution. */
+      void
+      printSolution ();
 
       /** \brief Set whether or not to output verbose debugging information. */
       void

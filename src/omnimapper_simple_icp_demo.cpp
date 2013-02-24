@@ -28,7 +28,7 @@ main (int argc, char** argv)
   printf ("Found %d PCDs.\n", pcd_files.size ());
 
   // Create a PCD Grabber
-  pcl::PCDGrabber<PointT> grabber (pcd_files, 0.5, false);
+  pcl::PCDGrabber<PointT> grabber (pcd_files, 1.0, false);
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;

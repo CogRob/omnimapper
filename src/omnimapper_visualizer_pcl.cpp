@@ -55,6 +55,7 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
         viewer_.addPointCloud (map_cloud, frame_name);  
       viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, 0.05, frame_name);
     }
+    
   }
   
   {
@@ -94,6 +95,10 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback (const pcl::visual
         break;
       case ' ':
         icp_plugin_->pause (false);
+        break;
+      case 'o':
+        mapper_->printSolution ();
+        exit (1);
         break;
     }
     

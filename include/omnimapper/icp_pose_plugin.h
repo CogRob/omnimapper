@@ -29,12 +29,15 @@ namespace omnimapper
       void spin ();
       bool spinOnce ();
       bool registerClouds (CloudConstPtr& cloud1, CloudConstPtr& cloud2, CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform, double& score);
+      bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool direct=false);
+      bool tryLoopClosure (gtsam::Symbol sym);
       void cloudCallback (const CloudConstPtr& cloud);
       bool ready ();
       CloudConstPtr getCloudPtr (gtsam::Symbol sym);
       void setMaxCorrespondenceDistance (float max_correspondence_distance) { icp_max_correspondence_distance_ = max_correspondence_distance; }
       void setShouldDownsample (bool should_downsample) { downsample_ = should_downsample; }
       void setLeafSize (float leaf_size) { leaf_size_ = leaf_size; }
+      void setScoreThreshold (float score_threshold) { score_threshold_ = score_threshold; }
       void setUseGICP (bool use_gicp) { use_gicp_ = use_gicp; }
       void pause (bool pause);
       
@@ -50,9 +53,12 @@ namespace omnimapper
       bool first_;
       bool downsample_;
       float leaf_size_;
+      float score_threshold_;
       bool debug_;
       bool overwrite_timestamps_;
       gtsam::Symbol previous_sym_;
+      gtsam::Symbol previous2_sym_;
+      gtsam::Symbol previous3_sym_;
       float icp_max_correspondence_distance_;
       bool use_gicp_;
       bool paused_;

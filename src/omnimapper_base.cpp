@@ -8,6 +8,8 @@ omnimapper::OmniMapperBase::OmniMapperBase ()
   //initializePose ();
   largest_pose_index = 0;
   latest_committed_node = chain.begin ();
+  latest_commit_time = boost::posix_time::microsec_clock::local_time();
+  commit_window = 1.0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +66,13 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
     return;
   }
   
+  // Check that enough time has elapsed
+  if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
+  {
+    printf ("OmniMapper: commitNext -- not time to commit yet!\n");
+    return;
+  }
+
   if (debug_)
     printf ("OmniMapper: Commiting...\n");
   // TODO: verify that this won't break our chain by inspecting pose information
@@ -98,6 +107,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
         gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol).compose (relative_pose);
         new_values.insert (to_commit->symbol, new_pose_value);
         initialized = true;
+        break;
       }
     }
     
@@ -116,7 +126,17 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   to_commit->status = omnimapper::PoseChainNode::COMMITTED;
   to_commit->factors.clear ();
   latest_committed_node++;
+  latest_commit_time = boost::posix_time::microsec_clock::local_time();
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool
+omnimapper::OmniMapperBase::addFactorDirect (gtsam::NonlinearFactor::shared_ptr& new_factor)
+{
+  boost::mutex::scoped_lock (omnimapper_mutex_);
+  new_factors.push_back (new_factor);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
@@ -207,6 +227,15 @@ omnimapper::OmniMapperBase::getSolution ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
+omnimapper::OmniMapperBase::printSolution ()
+{
+  boost::mutex::scoped_lock (omnimapper_mutex_);
+  current_solution.print ("Current OmniMapper Solution: \n");
+  current_graph.print ("Current OmniMapper Graph: \n");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
 omnimapper::OmniMapperBase::optimize ()
 {
   printf ("OmniMapper: optimizing with:\n");
@@ -214,7 +243,7 @@ omnimapper::OmniMapperBase::optimize ()
   new_values.print ("New Values: ");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
-  //prev_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
+  current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
 }
@@ -257,10 +286,14 @@ omnimapper::OmniMapperBase::addNewValue (gtsam::Symbol& new_symbol, gtsam::Value
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-gtsam::Pose3
+boost::optional<gtsam::Pose3>
 omnimapper::OmniMapperBase::getPose (gtsam::Symbol& pose_sym)
 {
-  return (current_solution.at<gtsam::Pose3> (pose_sym));
+  boost::mutex::scoped_lock (omnimapper_mutex_);
+  if (current_solution.exists<gtsam::Pose3>(pose_sym))
+    return (current_solution.at<gtsam::Pose3> (pose_sym));
+  else
+    return (boost::none);
 }
 
 //------------------//------------------//------------------//------------------//------------------//------------------
@@ -329,6 +362,7 @@ omnimapper::OmniMapperBase::spinOnce ()
   // If time to commit
   //std::list<omnimapper::PoseChainNode>::iterator next_node = latest_committed_node;
   //next_node++;
+  //if (boost::posix_time::microsec_clock::local_time() - latest_commit_time > boost::posix_time::seconds (commit_window))
   commitNextPoseNode ();
   if (new_factors.size () > 0)
   {
