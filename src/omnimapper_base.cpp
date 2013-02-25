@@ -46,7 +46,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
     printf ("chain size: %d\n", chain.size ());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin (); itr != chain.end (); itr++)
     {
-      printf ("node: %c %d %uld\n", itr->symbol.chr (), itr->symbol.index (), itr->time);
+      printf ("node: %c %d %u %d\n", itr->symbol.chr (), itr->symbol.index (), itr->time, itr->factors.size ());
     }
   }
   
@@ -170,7 +170,18 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
   }
   
   symbol_lookup[keys[latest_pose_idx]]->symbol.print ("OmniMapper: Added factor to pose: ");
-  symbol_lookup[keys[latest_pose_idx]]->factors.push_back (new_factor);
+
+  // If that pose has been committed already, we can add this directly for the next optimization run.
+  if (symbol_lookup[keys[latest_pose_idx]]->status == omnimapper::PoseChainNode::COMMITTED)
+  {
+    new_factors.push_back (new_factor);
+  }
+  else
+  {
+    // If it hasn't yet been commited, we should add this to the pending factors, causing pose factors to add constraints for this timestamp
+    symbol_lookup[keys[latest_pose_idx]]->factors.push_back (new_factor);
+  }
+  
   return true;
 }
 
@@ -222,6 +233,7 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
 gtsam::Values 
 omnimapper::OmniMapperBase::getSolution ()
 {
+  boost::mutex::scoped_lock (omnimapper_mutex_);
   return (current_solution);
 }
 
@@ -366,12 +378,18 @@ omnimapper::OmniMapperBase::spinOnce ()
   commitNextPoseNode ();
   if (new_factors.size () > 0)
   {
+    printf ("OMB: optimizing\n");
     optimize ();
     updateOutputPlugins ();
     // Print latest
     gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
     printf ("OMB Latest Pose: %lf %lf %lf\n", new_pose_value.x (), new_pose_value.y (), new_pose_value.z ());
+  } 
+  else 
+  {
+    printf ("OMB: No new factors to optimize\n");
   }
+  
 }
 
 void
