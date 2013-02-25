@@ -29,7 +29,7 @@ namespace omnimapper
       void spin ();
       bool spinOnce ();
       bool registerClouds (CloudConstPtr& cloud1, CloudConstPtr& cloud2, CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform, double& score);
-      bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool direct=false);
+      bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, double icp_score_thresh);
       bool tryLoopClosure (gtsam::Symbol sym);
       void cloudCallback (const CloudConstPtr& cloud);
       bool ready ();

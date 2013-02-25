@@ -19,7 +19,7 @@ namespace omnimapper
     first_ (true),
     downsample_ (true),
     leaf_size_ (0.05f),
-    score_threshold_ (1.0f),
+    score_threshold_ (0.5),
     debug_ (true),
     overwrite_timestamps_ (true),
     icp_max_correspondence_distance_ (3.5),
@@ -184,7 +184,7 @@ namespace omnimapper
     // Add constraints
     printf ("ICP SYMS: prev3: x%d, prev2: x%d  prev: x%d, curr: x%d\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
-    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, false);
+    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, 100.0);
     // Try previous too
     if (clouds_.size () >= 3)
     {
@@ -194,13 +194,13 @@ namespace omnimapper
     }
     if (clouds_.size () >= 4)
     {
-      boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+      //boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
       //prev3_icp_thread.join ();
       //printf ("PREV 3 COMPLETE!\n");
     }
 
-    if (clouds_.size () > 20)
-      boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
+    //if (clouds_.size () > 20)
+    //  boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
 
     // Wait for latest one to complete, at least
     latest_icp_thread.join ();    
@@ -221,7 +221,7 @@ namespace omnimapper
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> bool
-  ICPPoseMeasurementPlugin<PointT>::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool direct)
+  ICPPoseMeasurementPlugin<PointT>::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, double icp_score_threshold)
   {
     // Look up clouds
     CloudConstPtr cloud1 = clouds_.at (sym1);
@@ -252,15 +252,15 @@ namespace omnimapper
     
     bool icp_converged = registerClouds (cloud1, cloud2, aligned_cloud, cloud_tform, icp_score);
     
-    if (icp_converged  && icp_score < score_threshold_)
+    if (icp_converged  && icp_score < icp_score_threshold)
     {
       gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
                                   gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
       relative_pose = relative_pose.inverse ();
 
       // TODO: make these params
-      double trans_noise = 1.0;// * icp_score;
-      double rot_noise = 1.0;// * icp_score;
+      double trans_noise = 1.0 * icp_score;
+      double rot_noise = 1.0 * icp_score;
       gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
@@ -371,7 +371,7 @@ namespace omnimapper
     // If we found something, try to add a link
     if (min_dist < loop_closure_dist_thresh_)
     {
-      addConstraint (sym, closest_sym);
+      addConstraint (sym, closest_sym, score_threshold_);
       printf ("ADDED LOOP CLOSURE BETWEEN %d and %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
               sym.index (), closest_sym.index ());
       return (true);
