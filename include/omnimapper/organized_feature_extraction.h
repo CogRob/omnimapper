@@ -7,7 +7,10 @@
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/features/organized_edge_detection.h>
+#include <pcl/segmentation/euclidean_cluster_comparator.h>
 #include <pcl/common/time.h>
+#include <iostream>
+#include <fstream>
 
 
 
@@ -45,6 +48,9 @@ class OrganizedFeatureExtraction
   typedef pcl::PointCloud<pcl::Normal> NormalCloud;
   typedef typename NormalCloud::Ptr NormalCloudPtr;
   typedef typename NormalCloud::ConstPtr NormalCloudConstPtr;
+  typedef pcl::PointCloud<pcl::Label> LabelCloud;
+  typedef typename LabelCloud::Ptr LabelCloudPtr;
+  typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
 
   protected:
     // PCL Grabber
@@ -60,22 +66,29 @@ class OrganizedFeatureExtraction
     CloudConstPtr stage2_cloud_;
     NormalCloudConstPtr stage2_normals_;
     std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > stage3_regions_;
+    LabelCloudPtr stage3_labels_;
     CloudPtr stage3_occluding_cloud_;
+    LabelCloudPtr stage4_labels_;
     boost::mutex cloud_mutex;
 
     // Most recently processed cloud
     CloudConstPtr vis_cloud_;
+    LabelCloudConstPtr vis_labels_;
     CloudConstPtr vis_occluding_cloud_;
     NormalCloudConstPtr vis_normals_;
     std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > vis_regions_;    
     boost::mutex vis_mutex;
     bool updated_data_;
-    
+    bool updated_cloud_;
+
     // Normal Estimation
     pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
 
     // Plane Segmentation
     pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
+
+    // Objects
+    typename pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>::Ptr euclidean_cluster_comparator_;
 
     // Edge Detection
     pcl::OrganizedEdgeFromRGBNormals<PointT, pcl::Normal, pcl::Label> oed;
@@ -86,24 +99,39 @@ class OrganizedFeatureExtraction
     // Edge Callbacks
     boost::function<void(const CloudConstPtr&)> occluding_edge_callback_;
 
+    // Label Callback
+    boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_cloud_callback_;
+
+    // RegionCloud Callback
+    boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> region_cloud_callback_;    
+
     // Threads
     boost::thread vis_thread;
     boost::thread process_thread;
 
     // Flags
     bool debug_;
+    bool timing_;
+
+    // Output
+    std::ofstream ne_times_file_;
+    std::ofstream mps_times_file_;
 
   public:
     OrganizedFeatureExtraction (pcl::Grabber& grabber);
     
     void cloudCallback (const CloudConstPtr& cloud);
+    void cloudCallbackProcess (const CloudConstPtr& cloud);
     void processFrame ();
     void computeNormals ();
     void computePlanes ();
+    void computeClusters ();
     void computeEdges ();
     void spin ();
     void setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
     void setOccludingEdgeCallback (boost::function<void (const CloudConstPtr&)>& fn);
+    void setLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
+    void setRegionCloudCallback (boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
     
 };
 

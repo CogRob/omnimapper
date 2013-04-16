@@ -39,6 +39,8 @@ namespace omnimapper
       void setLeafSize (float leaf_size) { leaf_size_ = leaf_size; }
       void setScoreThreshold (float score_threshold) { score_threshold_ = score_threshold; }
       void setUseGICP (bool use_gicp) { use_gicp_ = use_gicp; }
+      void setAddMultipleLinks (bool multi_link) { add_multiple_links_ = multi_link; }
+      void setAddLoopClosures (bool loop_close) { add_loop_closures_ = loop_close; }
       void pause (bool pause);
       
 
@@ -61,6 +63,9 @@ namespace omnimapper
       gtsam::Symbol previous3_sym_;
       float icp_max_correspondence_distance_;
       bool use_gicp_;
+      bool add_identity_on_failure_;
+      bool add_multiple_links_;
+      bool add_loop_closures_;
       bool paused_;
   };
 }

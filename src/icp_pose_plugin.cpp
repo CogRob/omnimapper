@@ -27,6 +27,9 @@ namespace omnimapper
     previous2_sym_ (gtsam::Symbol ('x', 0)),
     previous3_sym_ (gtsam::Symbol ('x', 0)),
     use_gicp_ (true),
+    add_identity_on_failure_ (false),
+    add_multiple_links_ (false),
+    add_loop_closures_ (false),
     paused_ (false)
   {
     have_new_cloud_ = false;
@@ -184,24 +187,30 @@ namespace omnimapper
     // Add constraints
     printf ("ICP SYMS: prev3: x%d, prev2: x%d  prev: x%d, curr: x%d\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
-    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, 100.0);
+    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, score_threshold_);
     // Try previous too
-    if (clouds_.size () >= 3)
+    if (add_multiple_links_)
     {
-      //boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
-      //prev2_icp_thread.join ();
-      //printf ("PREV 2 COMPLETE!\n");
-    }
-    if (clouds_.size () >= 4)
-    {
-      //boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
-      //prev3_icp_thread.join ();
-      //printf ("PREV 3 COMPLETE!\n");
+      if (clouds_.size () >= 3)
+      {
+        // boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+        // prev2_icp_thread.join ();
+        //printf ("PREV 2 COMPLETE!\n");
+      }
+      if (clouds_.size () >= 4)
+      {
+        // boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
+        // prev3_icp_thread.join ();
+        //printf ("PREV 3 COMPLETE!\n");
+      }
     }
 
-    //if (clouds_.size () > 20)
-    //  boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
-
+    if (add_loop_closures_)
+    {
+      if (clouds_.size () > 20)
+        boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
+    }
+    
     // Wait for latest one to complete, at least
     latest_icp_thread.join ();    
       
@@ -259,8 +268,8 @@ namespace omnimapper
       relative_pose = relative_pose.inverse ();
 
       // TODO: make these params
-      double trans_noise = 1.0 * icp_score;
-      double rot_noise = 1.0 * icp_score;
+      double trans_noise = 1.0;// * icp_score;
+      double rot_noise = 1.0;// * icp_score;
       gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
@@ -274,6 +283,19 @@ namespace omnimapper
     else
     {
       printf ("ICP did not converge!\n");
+      // Always add a pose
+      if (add_identity_on_failure_)
+      {
+        Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
+        gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
+                                    gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+        double trans_noise = 1.0;
+        double rot_noise = 1.0;
+        gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+        omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+        mapper_->addFactor (between);
+      }
+
       return (false);
     }
   }
@@ -330,7 +352,7 @@ namespace omnimapper
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::tryLoopClosure (gtsam::Symbol sym)
   {
-    double loop_closure_dist_thresh_ = 5.0;
+    double loop_closure_dist_thresh_ = 0.10;//5.0;
     int pose_index_thresh_ = 20;
 
     // Get the latest solution from the mapper

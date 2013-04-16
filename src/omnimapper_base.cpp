@@ -1,9 +1,9 @@
 #include <omnimapper/omnimapper_base.h>
 
-omnimapper::OmniMapperBase::OmniMapperBase ()
+omnimapper::OmniMapperBase::OmniMapperBase () 
+  : initialized_ (false)
 {
   debug_ = true;
-  initialized_ = false;
   // TODO: make it optional to set an arbitrary initial pose
   //initializePose ();
   largest_pose_index = 0;
@@ -16,6 +16,15 @@ omnimapper::OmniMapperBase::OmniMapperBase ()
 void
 omnimapper::OmniMapperBase::initializePose (Time& t)
 {
+  //boost::mutex::scoped_lock (omnimapper_mutex_);
+
+  if (initialized_)
+  {
+    printf ("OmniMapperBase: ERROR!  CALLED INITIALIZE WHEN ALREADY INITIALIZED!\n");
+    return;
+  }
+  
+
   // TODO: make this a default param, but changeable
   gtsam::Symbol init_symbol ('x', 0);
   current_pose_symbol = init_symbol;
@@ -30,6 +39,14 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   
   symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(init_symbol, new_itr));
   time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
+  //optimize ();
+
+  gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
+  current_solution = isam2.calculateEstimate ();
+  //current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
+  new_factors = gtsam::NonlinearFactorGraph ();
+  new_values.clear ();
+  
   initialized_ = true;
   latest_committed_node = new_itr;
   printf ("OmnimapperBase: Initialized!\n");
@@ -174,12 +191,16 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
   // If that pose has been committed already, we can add this directly for the next optimization run.
   if (symbol_lookup[keys[latest_pose_idx]]->status == omnimapper::PoseChainNode::COMMITTED)
   {
+    printf ("About to push back new factor directly\n");
     new_factors.push_back (new_factor);
+    printf ("New factor pushed back direclty\n");
   }
   else
   {
     // If it hasn't yet been commited, we should add this to the pending factors, causing pose factors to add constraints for this timestamp
+    printf ("Adding this to the pending factors\n");
     symbol_lookup[keys[latest_pose_idx]]->factors.push_back (new_factor);
+    printf ("Added to the pending factors!\n");
   }
   
   return true;
@@ -193,8 +214,11 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
   // If we haven't initialized yet, we do so on the first symbol request
   if (!initialized_)
   {
+    if (debug_)
+      printf ("got symbol prior to initializing!\n");
     initializePose (t);
-    optimize ();
+    if (debug_)
+      printf ("done initializing!\n");
   }
 
   if (time_lookup.count (t) > 0)
@@ -250,12 +274,15 @@ omnimapper::OmniMapperBase::printSolution ()
 void
 omnimapper::OmniMapperBase::optimize ()
 {
+  boost::mutex::scoped_lock (omnimapper_mutex_);
+  current_solution.print ("Current Solution: ");
+  
   printf ("OmniMapper: optimizing with:\n");
   new_factors.print ("New Factors: ");
   new_values.print ("New Values: ");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
-  current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
+  //current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
 }
@@ -363,13 +390,16 @@ omnimapper::OmniMapperBase::spin ()
   while (true)
   {
     spinOnce ();
-    boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
   }
 }
 
 void
 omnimapper::OmniMapperBase::spinOnce ()
 {
+  boost::mutex::scoped_lock (omnimapper_mutex);
+  if (!initialized_)
+    return;
   printf ("OMB: spinning...\n");
   // If time to commit
   //std::list<omnimapper::PoseChainNode>::iterator next_node = latest_committed_node;

@@ -32,12 +32,16 @@ main (int argc, char** argv)
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;
-  omb.setDebug (false);
+  omb.setDebug (true);
+
+  // Start the OmniMapper thread
+  boost::thread omb_thread (&omnimapper::OmniMapperBase::spin, &omb);
 
   // Create an ICP pose measurement plugin
   omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, grabber);
   icp_plugin.setUseGICP (true);
   icp_plugin.setMaxCorrespondenceDistance (3.5);
+  icp_plugin.setScoreThreshold (1000.0);
 
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
@@ -51,9 +55,6 @@ main (int argc, char** argv)
 
   // Start the ICP thread
   boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin);
-
-  // Start the OmniMapper thread
-  boost::thread omb_thread (&omnimapper::OmniMapperBase::spin, &omb);
   
   //while (grabber.isRunning ()) 
   while (true)

@@ -21,11 +21,28 @@ main (int argc, char** argv)
   // Set up an openni grabber
   pcl::OpenNIGrabber grabber ("#1");
   // Give a fake to the ICP plugin..  TODO: Fix this!
+  std::vector<std::string> empty_pcd_files;
+  pcl::PCDGrabber<PointT> fake_grabber (empty_pcd_files, 0.5, false);
+
+  // Load files, if a directory is provided
   std::vector<std::string> pcd_files;
-  pcl::PCDGrabber<PointT> fake_grabber (pcd_files, 0.5, false);
+  boost::filesystem::directory_iterator end_itr;
+  
+  for (boost::filesystem::directory_iterator itr (argv[1]); itr != end_itr; ++itr)
+  {
+    if (itr->path ().extension () == ".pcd")
+    {
+      pcd_files.push_back (itr->path ().string ());
+    }
+  }
+  sort (pcd_files.begin (), pcd_files.end ());
+  printf ("Found %d PCDs.\n", pcd_files.size ());
+
+  // Create a PCD Grabber
+  pcl::PCDGrabber<PointT> file_grabber (pcd_files, 1.0, false);
 
   // Set up a Feature Extraction
-  omnimapper::OrganizedFeatureExtraction<PointT> ofe (grabber);
+  omnimapper::OrganizedFeatureExtraction<PointT> ofe (file_grabber);
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;
