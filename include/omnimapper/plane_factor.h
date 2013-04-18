@@ -10,15 +10,17 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/geometry/Pose3.h>
-//#include <mapping/sam_config.h>
+#include <gtsam/nonlinear/Symbol.h>
+//#include <gtsam/nonlinear/Key.h>
+//#include <omnimapper/omni_config.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/linear/SharedGaussian.h>
-//#include <pcl/transforms.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/geometry/Pose3.h>
+#include <omnimapper/plane.h>
+//#include <gtsam/linear/SharedGaussian.h>
+//#include <pcl_ros/transforms.h>
 //#include <gtpointcloud/pointcloud_helpers.h>
 
-#include <mapping/plane.h>
 
 namespace gtsam {
 
@@ -26,19 +28,15 @@ namespace gtsam {
 /**
  * A planar feature.
  */
-class PlaneFactor : public NoiseModelFactor
-//class PlaneFactor : public NonlinearFactor<OmniConfig>
+
+  class PlaneFactor : public NoiseModelFactor2<Pose3, Plane>
 {
  private:
 
-    //typedef NoiseModelFactor<SAMConfig> ConvenientFactor;
-  //typedef NonlinearFactor<OmniConfig> ConvenientFactor;
+  typedef NoiseModelFactor2<Pose3, Plane> Base;
  protected:
-    //PoseKey poseSymbol_;
-    //PlaneKey landmarkSymbol_;
-    Key poseSymbol_;
-    Key landmarkSymbol_;
-    
+  Symbol poseSymbol_;
+  Symbol landmarkSymbol_;
   Vector measured_;
  public:
 
@@ -53,22 +51,18 @@ class PlaneFactor : public NoiseModelFactor
    * @param K the constant calibration
    */
   PlaneFactor() {}
-    //PlaneFactor(const Vector& z, const SharedGaussian& noiseModel, 
-	  //     const PoseKey& poseNumber, 
-	  //     const PlaneKey& landmarkNumber):
-    PlaneFactor(const Vector& z, const SharedGaussian& noiseModel, 
-                const Key& poseNumber, 
-                const Key& landmarkNumber):
-      NoiseModelFactor(noiseModel, poseNumber, landmarkNumber),
-      poseSymbol_(poseNumber),
-      landmarkSymbol_(landmarkNumber),
-      measured_(z) {
-      //keys_.push_back(poseSymbol_);
-      //      keys_.push_back(landmarkSymbol_);
+  PlaneFactor(const Vector& z, const SharedGaussian& noiseModel, 
+	       const Symbol& pose, 
+	       const Symbol& landmark):
+  Base(noiseModel, 
+       pose, landmark),
+    poseSymbol_(pose),
+    landmarkSymbol_(landmark),
+    measured_(z) {
   }
-  Key getPoseSymbol() const { return poseSymbol_;}
-  Key getLandmarkSymbol() const{ return landmarkSymbol_;}
-  void setLandmarkSymbol(const Key& newLandmarkSymbol) {
+  Symbol getPoseSymbol() const { return poseSymbol_;}
+  Symbol getLandmarkSymbol() const{ return landmarkSymbol_;}
+  void setLandmarkSymbol(const Symbol& newLandmarkSymbol) {
     landmarkSymbol_ = newLandmarkSymbol;
   }
   /**
@@ -77,44 +71,32 @@ class PlaneFactor : public NoiseModelFactor
    */
   void print(const std::string& s="PlaneFactor") const;
   
-  /**
-   * predict the measurement
-   */
-  //Vector predict(const OmniConfig&) const;
-  //Vector predict(const SAMConfig&) const;
-    Vector predict (const gtsam::Values&) const;
-    
+  virtual Vector evaluateError(const Pose3& pose, const Plane& plane, 
+			       boost::optional<Matrix&> H1 = boost::none,
+			       boost::optional<Matrix&> H2 = boost::none)const;
+  private:
+    /** Serialization function */
 
-  /**
-   * calculate the error of the factor
-   */
-  //Vector error_vector(const OmniConfig& config) const;
-  //Vector error_vector(const SAMConfig& config) const;
-    Vector error_vector(const gtsam::Values& config) const;
-  //Vector unwhitenedError(const OmniConfig& config, 
-  //			 boost::optional<std::vector<Matrix>&> mats= boost::none) const; 
-//  Vector unwhitenedError(const SAMConfig& config, 
-//  			 boost::optional<std::vector<Matrix>&> mats= boost::none) const; 
+    friend class boost::serialization::access;
 
-    Vector unwhitenedError(const gtsam::Values& config, 
-                           boost::optional<std::vector<Matrix>&> mats= boost::none) const; 
-    
-  /**
-   * linerarization
-   */
+    template<class Archive>
+      void serialize(Archive & ar, const unsigned int version)
+      {
+	printf("Seralizing a plane factor!\n");
+	ar & boost::serialization::make_nvp("PlaneFactor",
+					    boost::serialization::base_object<Base>(*this));
+	printf("A\n");
+	ar & boost::serialization::make_nvp("PoseKey", 
+					    poseSymbol_);
+	printf("B\n");
+	ar & boost::serialization::make_nvp("PlaneKey", 
+					    landmarkSymbol_);
+	printf("C\n");
+	ar & boost::serialization::make_nvp("measured",
+					    measured_);
+	printf("Done\n");
+      }
 
-  ///Plane stuff
-
-  // h: the predicted measurement 
-  //Vector Geth(const OmniConfig& config)const;
-  //Vector Geth(const SAMConfig& config)const;
-  Vector Geth(const gtsam::Values& config)const;
-    
-
-  //GaussianFactor::shared_ptr linearize(const OmniConfig&config, const Ordering& ordering) const;
-  //GaussianFactor::shared_ptr linearize(const SAMConfig&config, const Ordering& ordering) const;
-    GaussianFactor::shared_ptr linearize(const gtsam::Values&config, const Ordering& ordering) const;
-  IndexFactor::shared_ptr symbolic(const Ordering& ordering) const; 
  };
 
 }
