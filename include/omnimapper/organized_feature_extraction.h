@@ -1,3 +1,5 @@
+#pragma once
+
 // Boost
 #include <boost/thread/thread.hpp>
 // PCL
@@ -51,6 +53,7 @@ class OrganizedFeatureExtraction
   typedef pcl::PointCloud<pcl::Label> LabelCloud;
   typedef typename LabelCloud::Ptr LabelCloudPtr;
   typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
+  typedef boost::posix_time::ptime Time;
 
   protected:
     // PCL Grabber
@@ -96,6 +99,9 @@ class OrganizedFeatureExtraction
     // Planar Region Callback
     boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> planar_region_callback_;
 
+    // Planar Region Stamped Callback
+    boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)> planar_region_stamped_callback_;
+
     // Edge Callbacks
     boost::function<void(const CloudConstPtr&)> occluding_edge_callback_;
 
@@ -129,6 +135,7 @@ class OrganizedFeatureExtraction
     void computeEdges ();
     void spin ();
     void setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
+    void setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)>& fn);
     void setOccludingEdgeCallback (boost::function<void (const CloudConstPtr&)>& fn);
     void setLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
     void setRegionCloudCallback (boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);

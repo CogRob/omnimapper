@@ -217,6 +217,14 @@ namespace omnimapper
           {
             occluding_edge_callback_ (stage3_occluding_cloud_);
           }
+
+          if (planar_region_stamped_callback_)
+          {
+            Time timestamp = stage2_cloud_->header.stamp.toBoost ();
+            if (stage2_cloud_->points.size () > 200)
+              planar_region_stamped_callback_ (stage3_regions_, timestamp);
+            
+          }
           
 
           // Store result
@@ -391,8 +399,16 @@ namespace omnimapper
             {
               if (cloud->points.size () > 200)
                 planar_region_callback_ (regions);
-
             }
+
+            if (planar_region_stamped_callback_)
+            {
+              Time timestamp = cloud->header.stamp.toBoost ();
+              if (cloud->points.size () > 200)
+                planar_region_stamped_callback_ (regions, timestamp);
+              
+            }
+            
             
             
 
@@ -431,6 +447,13 @@ namespace omnimapper
     OrganizedFeatureExtraction<PointT>::setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn)
     {
       planar_region_callback_ = fn;
+    }
+
+    template <typename PointT> void
+    OrganizedFeatureExtraction<PointT>::setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)>& fn)
+    {
+      planar_region_stamped_callback_ = fn;
+      printf ("planar region stamped callback set!\n");
     }
 
     template <typename PointT> void

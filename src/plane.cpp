@@ -22,7 +22,8 @@ using namespace std;
 namespace gtsam {
   
   /* ************************************************************************* */
-  Plane::Plane(): 
+  template <typename PointT>
+  Plane<PointT>::Plane(): 
     a_(0), b_(0),c_(0),d_(0)
   {
     //printf("Warning: Using default constructor in plane.  This might indicate a bug\n");
@@ -84,7 +85,8 @@ namespace gtsam {
 //     concave_ = concave;
 
 //   }
-  PointT MakePoint(float x, float y, float z) {
+  template <typename PointT>
+  PointT Plane<PointT>::MakePoint(float x, float y, float z) {
     PointT pt;
     pt.x = x;
     pt.y = y;
@@ -150,7 +152,8 @@ namespace gtsam {
   //   d_ = range;
   // }
 
-  Plane::Plane(double a, double b, 
+  template <typename PointT>
+  Plane<PointT>::Plane(double a, double b, 
 	       double c, double d, 
 	       const pcl::PointCloud<PointT>& hull, 
 	       const pcl::PointCloud<PointT>& inliers, 
@@ -164,7 +167,8 @@ namespace gtsam {
   {
   }
 
-  Plane::Plane(const gtsam::Pose3& pose, const Plane& plane_info, const bool& concave)  
+  template <typename PointT>
+  Plane<PointT>::Plane(const gtsam::Pose3& pose, const Plane& plane_info, const bool& concave)  
   {
     Eigen::Affine3f pose2map = pose3ToTransform(pose);
     pcl::PointCloud<PointT> meas_hull = plane_info.hull();
@@ -194,7 +198,8 @@ namespace gtsam {
 
   }
 
-  Plane::Plane(double a, double b,
+  template <typename PointT>
+  Plane<PointT>::Plane(double a, double b,
 	       double c, double d,
 	       const pcl::PointCloud<PointT>& hull,
 	       const pcl::PointCloud<PointT>& inliers,
@@ -209,7 +214,8 @@ namespace gtsam {
     concave_ = false;
   }
 
-  Plane::Plane(double a, double b,
+  template <typename PointT>
+  Plane<PointT>::Plane(double a, double b,
 	       double c, double d,
 	       const pcl::PointCloud<PointT>& hull,
 	       const pcl::PointCloud<PointT>& inliers,
@@ -234,22 +240,24 @@ namespace gtsam {
   // {
   // }
 
-  void Plane::print(const string& s) const {
+  template <typename PointT>
+  void Plane<PointT>::print(const string& s) const {
     cout << s << "(" << a_ << ", " << b_ << ", "<< c_<< ", "<< d_<< ")" << endl;
   }
 
   
 
   /* ************************************************************************* */
-  bool Plane::equals(const Plane& q, double tol) const {
+  template <typename PointT>
+  bool Plane<PointT>::equals(const Plane& q, double tol) const {
     return (fabs(a_ - q.a()) < tol && 
 	    fabs(b_ - q.b()) < tol &&
 	    fabs(c_ - q.c()) < tol &&
 	    fabs(d_ - q.d()) < tol);
   }
  
- 
-  Plane Plane::retract(const Vector& d) const{
+  template <typename PointT>
+  Plane<PointT> Plane<PointT>::retract(const Vector& d) const{
     if (d.size() == 0) {
       return *this;
     }
@@ -278,14 +286,14 @@ namespace gtsam {
     return new_p;
   }
     
-
-  Vector Plane::localCoordinates(const Plane& p2) const{
+  template <typename PointT>
+  Vector Plane<PointT>::localCoordinates(const Plane& p2) const{
     assert(false);
     return gtsam::zero(3);
   }
 
-
-  Vector Plane::GetXo(const gtsam::Pose3& xr) const {
+  template <typename PointT>
+  Vector Plane<PointT>::GetXo(const gtsam::Pose3& xr) const {
      
     Eigen::Vector4f pred;
     gtsam::Point3 normal_in(a_, b_, c_);
@@ -302,7 +310,8 @@ namespace gtsam {
 			  pred[3]);
   }
 
-  gtsam::Matrix Plane::GetDh1(const gtsam::Pose3& xr) const{
+  template <typename PointT>
+  gtsam::Matrix Plane<PointT>::GetDh1(const gtsam::Pose3& xr) const{
     Matrix Dh1 = gtsam::zeros(4,6);
     Matrix H1;
     gtsam::Point3 normal_in(a_, b_, c_);
@@ -321,7 +330,9 @@ namespace gtsam {
     
     return Dh1;
   }
-  gtsam::Matrix Plane::GetDh2(const gtsam::Pose3& xr) const{
+
+  template <typename PointT>
+  gtsam::Matrix Plane<PointT>::GetDh2(const gtsam::Pose3& xr) const{
     Matrix Dh2 = gtsam::zeros(4,4);
     Matrix H1;
     Matrix H2;
@@ -343,7 +354,8 @@ namespace gtsam {
     return Dh2;
   }
 
-  gtsam::Vector Plane::Geth(const Vector& xo, const Vector& measured) const{
+  template <typename PointT>
+  gtsam::Vector Plane<PointT>::Geth(const Vector& xo, const Vector& measured) const{
     //printf("geth: xo: %lf %lf %lf %lf\n",xo(0),xo(1),xo(2),xo(3));
     //printf("geth: ms: %lf %lf %lf %lf\n",measured(0),measured(1),measured(2),measured(3));
     Vector h = gtsam::zero(4);
@@ -353,7 +365,9 @@ namespace gtsam {
     h[3] = xo(3) - measured(3);
     return h;
   }
-  gtsam::Vector Plane::GetXf()const {
+
+  template <typename PointT>
+  gtsam::Vector Plane<PointT>::GetXf()const {
     return gtsam::Vector_(4,a_,b_,c_,d_);
   }
 
@@ -470,7 +484,8 @@ namespace gtsam {
   //   return h;
   // }
 
-  gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
+  template <typename PointT>
+  gtsam::Vector Plane<PointT>::GetLinearState(const gtsam::Pose3& xr,
 				      const Plane& measured,
 				      boost::optional<Matrix&> dhbydxr,
 				      boost::optional<Matrix&> dhbydxf) const{
@@ -492,7 +507,8 @@ namespace gtsam {
     return h;
   }
 
-  void Plane::Retract(const Pose3& pose, const gtsam::Plane& plane){
+  template <typename PointT>
+  void Plane<PointT>::Retract(const Pose3& pose, const gtsam::Plane<PointT>& plane){
     //take just this hull one hull and project it back onto the model
     pcl::ModelCoefficients map_model;
     map_model.values.push_back(a_);
@@ -642,7 +658,8 @@ namespace gtsam {
   //   hull_ = merged_hull;
   // }
 
-  void Plane::Extend(const Pose3& pose, const gtsam::Plane& plane){
+  template <typename PointT>
+  void Plane<PointT>::Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane){
     //Make a model coefficients from our map normal
     pcl::ModelCoefficients map_model;
     map_model.values.push_back(a_);
@@ -766,6 +783,8 @@ namespace gtsam {
       hull_ = map_hull_on_map;
 
   }
-
   /* ************************************************************************* */
 } // namespace gtsam
+
+template class gtsam::Plane<pcl::PointXYZ>;
+template class gtsam::Plane<pcl::PointXYZRGBA>;

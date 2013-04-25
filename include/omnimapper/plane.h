@@ -27,7 +27,7 @@
 #include <pcl/geometry/polygon_operations.h>
 #include <pcl/filters/project_inliers.h>
 
-typedef pcl::PointXYZRGBA PointT;
+//typedef pcl::PointXYZRGBA PointT;
 
 namespace boost{
   namespace serialization {
@@ -40,14 +40,14 @@ namespace boost{
   }
 }
 namespace gtsam {
-  PointT MakePoint(float x, float y, float z);
 
   /**
    * A 2D point
    * Derived from testable so has standard print and equals, and assert_equals works
    * Functional, so no set functions: once created, a point is constant.
    */
-  class Plane: public DerivedValue<Plane> {
+  template <typename PointT>
+  class Plane: public DerivedValue<Plane<PointT> > {
   private:
     //double theta_, phi_,rho_;
     std_msgs::Header header_;
@@ -95,6 +95,9 @@ namespace gtsam {
 	  const pcl::PointCloud<PointT>& hull,
 	  const pcl::PointCloud<PointT>& inliers,
 	  const std_msgs::Header header);
+      
+      PointT MakePoint(float x, float y, float z);
+
 
     /** print with optional string */
     virtual void print(const std::string& s = "") const;
@@ -115,8 +118,8 @@ namespace gtsam {
     Plane retract(const Vector& d) const;
     Vector localCoordinates(const Plane& p2) const;
     Vector GetXo(const gtsam::Pose3& xr) const;
-    void Extend(const Pose3& pose, const gtsam::Plane& plane);    
-    void Retract(const Pose3& pose, const gtsam::Plane& plane);
+      void Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane);    
+      void Retract(const Pose3& pose, const gtsam::Plane<PointT>& plane);
     void populateCloud();
     gtsam::Vector GetXf()const;
     // gtsam::Vector GetLinearState(const gtsam::Pose3& xr,
@@ -130,7 +133,7 @@ namespace gtsam {
 		// 	  boost::optional<Matrix&> xhbydxf)const;
 
     Vector GetLinearState(const gtsam::Pose3& xr,
-    			  const Plane& measured,
+                          const Plane<PointT>& measured,
     			  boost::optional<Matrix&> dhbydxr,
     			  boost::optional<Matrix&> xhbydxf)const;
 
@@ -144,7 +147,7 @@ namespace gtsam {
       return v;
     }
     /** operators */
-    inline bool   operator ==(const Plane& q) const {return a_==q.a_ && b_==q.b_ && c_==q.c_ && d_==q.d_;}
+      inline bool   operator ==(const Plane<PointT>& q) const {return a_==q.a_ && b_==q.b_ && c_==q.c_ && d_==q.d_;}
 
   private:
     /** Serialization function */
@@ -171,8 +174,8 @@ namespace gtsam {
   };
 
   /** print using member print function, currently used by LieConfig */
-  inline void print(const Plane& obj, const std::string& str = "") { 
-    obj.print(str); 
-  }
+  // inline void print(const Plane<PointT>& obj, const std::string& str = "") { 
+  //   obj.print(str); 
+  // }
 }
 

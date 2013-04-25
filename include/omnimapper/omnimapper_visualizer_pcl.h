@@ -1,3 +1,4 @@
+
 /*
  * Software License Agreement (BSD License)
  *
@@ -38,6 +39,7 @@
 
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/icp_pose_plugin.h>
+#include <omnimapper/plane.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
 namespace omnimapper

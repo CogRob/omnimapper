@@ -11,7 +11,8 @@ using namespace std;
 
 namespace gtsam{
   
-  void PlaneFactor::print(const std::string& s) const {
+  template <typename PointT>
+  void PlaneFactor<PointT>::print(const std::string& s) const {
     std::cout <<s <<": Plane factor(" 
 	      << (std::string) poseSymbol_ << ","
 	      << (std::string) landmarkSymbol_ <<")\n";
@@ -19,8 +20,8 @@ namespace gtsam{
     this->noiseModel_->print("  noise model");
   }
 
-  Vector PlaneFactor::
-  evaluateError(const Pose3& pose, const Plane& plane, 
+  template <typename PointT> Vector
+  PlaneFactor<PointT>::evaluateError(const Pose3& pose, const Plane<PointT>& plane, 
 		boost::optional<Matrix&> H1,
 		boost::optional<Matrix&> H2) const{
 
@@ -83,3 +84,6 @@ namespace gtsam{
   }
   */    
 }
+
+template class gtsam::PlaneFactor<pcl::PointXYZ>;
+template class gtsam::PlaneFactor<pcl::PointXYZRGBA>;

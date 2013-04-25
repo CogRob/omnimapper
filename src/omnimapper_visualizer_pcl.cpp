@@ -97,9 +97,18 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
       //  viewer_.addPointCloud (map_cloud, frame_name);  
       //viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, 0.05, frame_name);
     }
-    
+
   }
   
+
+  // Draw planar Landmarks
+  gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+  printf ("Visualizing %d planes!\n", plane_filtered.size ());
+  BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+  {
+      
+  }
+
   {
     boost::mutex::scoped_lock (vis_mutex_);
     

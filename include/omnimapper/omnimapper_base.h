@@ -64,6 +64,7 @@
 
 namespace omnimapper
 {
+  typedef boost::posix_time::ptime Time;
   /** \brief OmniMapperBase is the base class for the OmniMapper system.  It contains a GTSAM-based factor graph and optimizer,
    * as well as a variety of helper functions for various SLAM tasks.  In particular, it handles adding poses to the graph,
    * which might come from a variety of sources such as robot odometry, frame-to-frame ICP, IMU data, or any/all of the above.  
@@ -79,7 +80,7 @@ namespace omnimapper
       typedef boost::shared_ptr<gtsam::NonlinearFactor> NonlinearFactorPtr;
       typedef boost::shared_ptr<omnimapper::PosePlugin> PosePluginPtr;
       typedef boost::shared_ptr<omnimapper::OutputPlugin> OutputPluginPtr;
-      typedef boost::posix_time::ptime Time;
+      //typedef boost::posix_time::ptime Time;
       //typedef boost::posix_time::duration Duration;
 
     protected:
@@ -171,6 +172,10 @@ namespace omnimapper
       /** \brief Returns the most recent solution */
       gtsam::Values 
       getSolution ();
+
+      /** \brief Returns the most recent solution augmented with any pending uncommitted values */
+      gtsam::Values
+      getSolutionAndUncommitted ();
 
       /** \brief Optimizes the graph.  This will update the SLAM problem with the newly added factors, and optimize. */
       void

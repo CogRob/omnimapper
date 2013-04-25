@@ -20,6 +20,7 @@
 //#include <gtsam/linear/SharedGaussian.h>
 //#include <pcl_ros/transforms.h>
 //#include <gtpointcloud/pointcloud_helpers.h>
+#include <pcl/point_types.h>
 
 
 namespace gtsam {
@@ -28,12 +29,12 @@ namespace gtsam {
 /**
  * A planar feature.
  */
-
-  class PlaneFactor : public NoiseModelFactor2<Pose3, Plane>
+  template <typename PointT>
+  class PlaneFactor : public NoiseModelFactor2<Pose3, Plane<PointT> >
 {
  private:
 
-  typedef NoiseModelFactor2<Pose3, Plane> Base;
+  typedef NoiseModelFactor2<Pose3, Plane<PointT> > Base;
  protected:
   Symbol poseSymbol_;
   Symbol landmarkSymbol_;
@@ -71,7 +72,7 @@ namespace gtsam {
    */
   void print(const std::string& s="PlaneFactor") const;
   
-  virtual Vector evaluateError(const Pose3& pose, const Plane& plane, 
+  virtual Vector evaluateError(const Pose3& pose, const Plane<PointT>& plane, 
 			       boost::optional<Matrix&> H1 = boost::none,
 			       boost::optional<Matrix&> H2 = boost::none)const;
   private:
