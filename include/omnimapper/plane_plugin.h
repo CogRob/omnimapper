@@ -37,6 +37,7 @@ namespace omnimapper
       
     protected:
       OmniMapperBase* mapper_;
+      int max_plane_id_;
       double angular_threshold_;
       double range_threshold_;
       bool overwrite_timestamps_;

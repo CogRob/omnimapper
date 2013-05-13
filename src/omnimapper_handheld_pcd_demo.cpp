@@ -43,7 +43,7 @@ main (int argc, char** argv)
   printf ("Found %d PCDs.\n", pcd_files.size ());
 
   // Create a PCD Grabber
-  pcl::PCDGrabber<PointT> file_grabber (pcd_files, 15.0, false);
+  pcl::PCDGrabber<PointT> file_grabber (pcd_files, 1.0, false);//15.0, false);
 
   // Set up a Feature Extraction
   omnimapper::OrganizedFeatureExtraction<PointT> ofe (file_grabber);
@@ -87,7 +87,7 @@ main (int argc, char** argv)
   vis_pcl.setICPPlugin (icp_ptr);
   
   // Start the ICP thread
-  //boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin);
+  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin);
 
   // Start the Feature Extraction Thread
   boost::thread ofe_thread (&omnimapper::OrganizedFeatureExtraction<PointT>::spin, &ofe);

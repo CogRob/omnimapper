@@ -2,6 +2,8 @@
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/omnimapper_visualizer_pcl.h>
 #include <omnimapper/organized_feature_extraction.h>
+#include <omnimapper/plane_plugin.h>
+#include <omnimapper/no_motion_pose_plugin.h>
 //#include <omnimapper2_ros/rviz_output_plugin.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -42,10 +44,16 @@ main (int argc, char** argv)
   pcl::PCDGrabber<PointT> file_grabber (pcd_files, 1.0, false);
 
   // Set up a Feature Extraction
-  omnimapper::OrganizedFeatureExtraction<PointT> ofe (file_grabber);
+  omnimapper::OrganizedFeatureExtraction<PointT> ofe (grabber);
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;
+
+  // Create a no motion pose plugin, to add a weak prior of no movement
+  // Also serves to keep the pose chain connected in the case that ICP fails
+  omnimapper::NoMotionPosePlugin no_motion_plugin (&omb);
+  boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr (&no_motion_plugin);
+  omb.addPosePlugin (no_motion_ptr);
 
   // Create an ICP pose measurement plugin
   omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, fake_grabber);
@@ -53,7 +61,12 @@ main (int argc, char** argv)
   icp_plugin.setShouldDownsample (false);
   icp_plugin.setUseGICP (false);
   boost::function<void (const CloudConstPtr&)> icp_cloud_cb = boost::bind (&omnimapper::ICPPoseMeasurementPlugin<PointT>::cloudCallback, &icp_plugin, _1);
-  ofe.setOccludingEdgeCallback (icp_cloud_cb);
+  //ofe.setOccludingEdgeCallback (icp_cloud_cb);
+
+  // Create a plane plugin
+  omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin (&omb);
+  boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin, _1, _2);
+  ofe.setPlanarRegionStampedCallback (plane_cb);
 
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
@@ -66,7 +79,7 @@ main (int argc, char** argv)
   vis_pcl.setICPPlugin (icp_ptr);
   
   // Start the ICP thread
-  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin);
+  //boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin);
 
   // Start the Feature Extraction Thread
   boost::thread ofe_thread (&omnimapper::OrganizedFeatureExtraction<PointT>::spin, &ofe);
@@ -78,8 +91,9 @@ main (int argc, char** argv)
   while (true)
   {
     vis_pcl.spinOnce ();
+    boost::this_thread::sleep (boost::posix_time::milliseconds (5));
   }
-  icp_thread.join ();
+  //icp_thread.join ();
   ofe_thread.join ();
   omb_thread.join ();
 

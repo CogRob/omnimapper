@@ -61,6 +61,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/thread/locks.hpp>
 
 namespace omnimapper
 {
@@ -145,8 +146,8 @@ namespace omnimapper
       //bool
       //addRelativePoseMeasurement (Time t1, Time t2, const gtsam::Pose3& measured, const gtsam::SharedNoiseModel& model);
 
-      /** \brief Commits a pose in the pose chain to the SLAM problem. */
-      void
+      /** \brief Commits a pose in the pose chain to the SLAM problem.  Returns true if updated, false otherwise. */
+      bool
       commitNextPoseNode ();
 
       /** \brief Adds an initial pose x_0 to the mapper. TODO: user specificed initial pose */
@@ -241,6 +242,10 @@ namespace omnimapper
       /** \brief Looks up a pose by symbol. */
       boost::optional<gtsam::Pose3>
       getPose (gtsam::Symbol& pose_sym);
+
+      /** \brief Predicts a pose that has not yet been committed / optimized. */
+      boost::optional<gtsam::Pose3>
+      predictPose (gtsam::Symbol& pose_sym);
 
       /** \brief Prints latest solution. */
       void

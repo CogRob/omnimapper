@@ -67,3 +67,6 @@ ${PCL_LIBRARIES} pcl_geometry /opt/ros/groovy/lib/librostime.so)
 
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)
+
+add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+target_link_libraries(omnimapper_plane_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)

@@ -82,6 +82,10 @@ namespace omnimapper
       bool new_slam_data_;
       // Flag for drawing ICP clouds
       bool draw_icp_clouds_;
+      // Flag for drawing planar boundaries
+      bool draw_planar_boundaries_;
+      // Flag for drawing planar normals
+      bool draw_planar_normals_;
       // ICP Plugin Ref
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
 

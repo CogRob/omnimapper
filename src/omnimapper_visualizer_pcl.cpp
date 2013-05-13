@@ -45,7 +45,9 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::OmniMapperVisualizerPCL (omnimapper
     viewer_ ("OmniMapperVisualizerPCL"),
     pose_cloud_ (new pcl::PointCloud<pcl::PointXYZ> ()),
     new_slam_data_ (false),
-    draw_icp_clouds_ (false)
+    draw_icp_clouds_ (false),
+    draw_planar_boundaries_ (true),
+    draw_planar_normals_ (true)
 {
   // Set up the viewer
   viewer_.setBackgroundColor (0, 0, 0);
@@ -67,6 +69,9 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
   
   // Draw the cloud
   CloudPtr aggregate_cloud (new Cloud ());
+
+  // Draw the planes
+  CloudPtr plane_boundary_cloud (new Cloud ());
 
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
@@ -102,19 +107,42 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
   
 
   // Draw planar Landmarks
-  gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
-  printf ("Visualizing %d planes!\n", plane_filtered.size ());
-  BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+  if (draw_planar_normals_)
   {
+    boost::lock_guard<boost::mutex> lock (vis_mutex_);
+
+    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+    printf ("Visualizing %d planes!\n", plane_filtered.size ());
+    int plane_num = 0;
+    BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+    {
+      // Get the hull, put it in the map frame
+      Cloud lm_cloud = key_value.value.hull ();
+      (*plane_boundary_cloud) += lm_cloud;
       
+      // Draw the normal vector
+      Eigen::Vector4f centroid;
+      pcl::compute3DCentroid (lm_cloud, centroid);
+      pcl::PointXYZ pt1 = pcl::PointXYZ (centroid[0], centroid[1], centroid[2]);
+      pcl::PointXYZ pt2 = pcl::PointXYZ ((centroid[0] + key_value.value.a ()),
+                                         (centroid[1] + key_value.value.b ()),
+                                         (centroid[2] + key_value.value.c ()));
+      char normal_name[2048];
+      sprintf (normal_name, "plane_%d_normal", plane_num);
+      viewer_.removeShape (normal_name);
+      viewer_.addArrow (pt2, pt1, 1.0, 0.0, 0.0, false, normal_name);
+      ++plane_num;
+    }
   }
+  
 
   {
-    boost::mutex::scoped_lock (vis_mutex_);
+    //boost::mutex::scoped_lock (vis_mutex_);
+    boost::lock_guard<boost::mutex> lock (vis_mutex_);
     
     if (debug_)
       printf ("Visualizer updating with %d poses\n", poses_cloud->points.size ());
-
+    
     if (poses_cloud->points.size () > 0)
     {
       pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color (poses_cloud, 0, 255, 0);
@@ -128,6 +156,14 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
       if (!viewer_.updatePointCloud (aggregate_cloud, "map_cloud"))
         viewer_.addPointCloud (aggregate_cloud, "map_cloud");
       viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, 0.1, "map_cloud");
+    }
+
+    if (draw_planar_boundaries_)
+    {
+      if (!viewer_.updatePointCloud (plane_boundary_cloud, "plane_cloud"))
+        viewer_.addPointCloud (plane_boundary_cloud, "plane_cloud");
+      viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "plane_cloud");   
+      //viewer_.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY, 0.1, "plane_cloud");
     }
 
     //pose_cloud_ = poses_cloud;
@@ -167,7 +203,12 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback (const pcl::visual
 template <typename PointT> void
 omnimapper::OmniMapperVisualizerPCL<PointT>::spinOnce ()
 {
-  viewer_.spinOnce (); 
+  //boost::lock_guard<boost::mutex> lock (vis_mutex_);
+  if (vis_mutex_.try_lock ())
+  {
+    viewer_.spinOnce (); 
+    vis_mutex_.unlock ();
+  }
 }
 
 template <typename PointT> void
@@ -182,7 +223,7 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::spinThread ()
   while (!viewer_.wasStopped ())
   {
     viewer_.spinOnce (100);
-
+    
     if (vis_mutex_.try_lock ())
     {
       if (new_slam_data_)
@@ -202,6 +243,8 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::spinThread ()
         printf ("Vis spin thread: Couldn't get lock!\n");
     }
     
+    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+ 
   }
   
 }
