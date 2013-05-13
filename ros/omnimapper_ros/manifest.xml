@@ -1,0 +1,16 @@
+<package>
+  <description brief="omnimapper_ros">
+
+     omnimapper_ros
+
+  </description>
+  <author>Alexander J Trevor</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/omnimapper_ros</url>
+  <depend package="roscpp"/>
+  <depend package="tf"/>
+
+</package>
+
+
