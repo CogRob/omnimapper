@@ -25,16 +25,16 @@ omnimapper
 
     // Add the factor
     try{
-      tf_listener_.waitForTransform("/odom", "/base_link",
+      tf_listener_.waitForTransform("/odom", "/camera_depth_optical_frame",
                                     rt1, ros::Duration(5.0));
       
-      tf_listener_.lookupTransform("/odom" , "/base_link",
+      tf_listener_.lookupTransform("/odom" , "/camera_depth_optical_frame",
                                    rt1, tf1);
 
-      tf_listener_.waitForTransform("/odom", "/base_link",
+      tf_listener_.waitForTransform("/odom", "/camera_depth_optical_frame",
                                     rt2, ros::Duration(5.0));
       
-      tf_listener_.lookupTransform("/odom" , "/base_link",
+      tf_listener_.lookupTransform("/odom" , "/camera_depth_optical_frame",
                                    rt2, tf2);
     } catch(tf::TransformException ex) {
       ROS_INFO("OMNImapper reports :: Transform from %s to %s not yet available.  Exception: %s", "/odom", "/base_link",ex.what());
@@ -42,11 +42,13 @@ omnimapper
 
     gtsam::Pose3 pose1 = tf2pose3 (tf1);
     gtsam::Pose3 pose2 = tf2pose3 (tf2);
-    gtsam::Pose3 relative_pose = pose2.between (pose2);
+    gtsam::Pose3 relative_pose = pose2.between (pose1);
 
     printf ("TFPosePlugin: Adding factor between %d and %d\n", sym1.index (), sym2.index ());
-    double trans_noise = 100.0;
-    double rot_noise = 100.0;
+    printf ("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x (), relative_pose.y (), relative_pose.z ());
+    
+    double trans_noise = 1.0;
+    double rot_noise = 1.0;
     gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
     //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));

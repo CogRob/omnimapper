@@ -9,6 +9,10 @@
 #include <boost/filesystem.hpp>
 
 typedef pcl::PointXYZ PointT;
+typedef typename pcl::PointCloud<PointT> Cloud;
+typedef typename Cloud::Ptr CloudPtr;
+typedef typename Cloud::ConstPtr CloudConstPtr;
+
 
 int
 main (int argc, char** argv)
@@ -38,10 +42,14 @@ main (int argc, char** argv)
   boost::thread omb_thread (&omnimapper::OmniMapperBase::spin, &omb);
 
   // Create an ICP pose measurement plugin
-  omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, grabber);
+  //omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, grabber);
+  omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin (&omb);
   icp_plugin.setUseGICP (true);
   icp_plugin.setMaxCorrespondenceDistance (3.5);
   icp_plugin.setScoreThreshold (1000.0);
+  boost::function<void (const CloudConstPtr&)> f = boost::bind (&omnimapper::ICPPoseMeasurementPlugin<PointT>::cloudCallback, &icp_plugin, _1);
+  boost::signals2::connection c = grabber.registerCallback (f);
+  grabber.start ();
 
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);

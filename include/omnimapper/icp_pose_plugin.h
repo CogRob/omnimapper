@@ -23,7 +23,8 @@ namespace omnimapper
 
     public:
 
-      ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber); 
+      ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper);
+      //ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber); 
       ~ICPPoseMeasurementPlugin ();
       //bool addInitialPose ();
       void spin ();
@@ -42,13 +43,16 @@ namespace omnimapper
       void setAddMultipleLinks (bool multi_link) { add_multiple_links_ = multi_link; }
       void setAddLoopClosures (bool loop_close) { add_loop_closures_ = loop_close; }
       void pause (bool pause);
-      
+      void setOverwriteTimestamps (bool overwrite_timestamps) { overwrite_timestamps_ = overwrite_timestamps; }
+      void setTransNoise (double trans_noise) { trans_noise_ = trans_noise; }
+      void setRotNoise (double rot_noise) { rot_noise_ = rot_noise; }
+                                   
 
     protected:
       OmniMapperBase* mapper_;
       bool initialized_;
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
-      pcl::Grabber& grabber_;
+      //pcl::Grabber& grabber_;
       CloudConstPtr current_cloud_;
       boost::mutex current_cloud_mutex_;
       bool have_new_cloud_;
@@ -56,6 +60,8 @@ namespace omnimapper
       bool downsample_;
       float leaf_size_;
       float score_threshold_;
+      double trans_noise_;
+      double rot_noise_;
       bool debug_;
       bool overwrite_timestamps_;
       gtsam::Symbol previous_sym_;

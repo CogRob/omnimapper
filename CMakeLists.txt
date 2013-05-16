@@ -35,6 +35,7 @@ add_library(lib_omnimapper include/omnimapper/omnimapper_base.h
 					     include/omnimapper/plane_plugin.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
+					     include/omnimapper/cloud_registration_plugin.h
 					     src/omnimapper_base.cpp
 					     src/icp_pose_plugin.cpp
 					     src/omnimapper_visualizer_pcl.cpp
@@ -42,9 +43,10 @@ add_library(lib_omnimapper include/omnimapper/omnimapper_base.h
 					     src/plane.cpp
 					     src/plane_factor.cpp
 					     src/plane_plugin.cpp
+					     src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp)
-target_link_libraries(lib_omnimapper ${PCL_LIBRARIES} pcl_geometry gtsam /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(lib_omnimapper ${PCL_LIBRARIES} gtsam /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper lib_omnimapper)
@@ -56,11 +58,11 @@ target_link_libraries(omnimapper_simple_icp_demo lib_omnimapper ${PCL_LIBRARIES}
 
 add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
 target_link_libraries(omnimapper_handheld lib_omnimapper
-${PCL_LIBRARIES} pcl_geometry /opt/ros/groovy/lib/librostime.so)
+${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
 target_link_libraries(omnimapper_handheld_pcd lib_omnimapper
-${PCL_LIBRARIES} pcl_geometry /opt/ros/groovy/lib/librostime.so)
+${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(isam_splice_test src/isam_splice_test.cpp)
 #target_link_libraries(isam_splice_test gtsam)
@@ -68,5 +70,5 @@ ${PCL_LIBRARIES} pcl_geometry /opt/ros/groovy/lib/librostime.so)
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)
 
-add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-target_link_libraries(omnimapper_plane_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)
+#add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+#target_link_libraries(omnimapper_plane_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)

@@ -10,16 +10,47 @@
 namespace omnimapper 
 {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // template <typename PointT>
+  // ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber) :
+  //   mapper_ (mapper),
+  //   initialized_ (false),
+  //   grabber_ (grabber),
+  //   have_new_cloud_ (false),
+  //   first_ (true),
+  //   downsample_ (true),
+  //   leaf_size_ (0.05f),
+  //   score_threshold_ (0.5),
+  //   debug_ (true),
+  //   overwrite_timestamps_ (true),
+  //   icp_max_correspondence_distance_ (3.5),
+  //   previous_sym_ (gtsam::Symbol ('x', 0)),
+  //   previous2_sym_ (gtsam::Symbol ('x', 0)),
+  //   previous3_sym_ (gtsam::Symbol ('x', 0)),
+  //   use_gicp_ (true),
+  //   add_identity_on_failure_ (false),
+  //   add_multiple_links_ (false),
+  //   add_loop_closures_ (false),
+  //   paused_ (false)
+  // {
+  //   have_new_cloud_ = false;
+  //   boost::function<void (const CloudConstPtr&)> f = boost::bind (&ICPPoseMeasurementPlugin<PointT>::cloudCallback, this, _1);
+  //   boost::signals2::connection c = grabber_.registerCallback(f);
+  //   grabber_.start ();
+  //   first_ = true;
+  // }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT>
-  ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber) :
+  ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper) :
     mapper_ (mapper),
     initialized_ (false),
-    grabber_ (grabber),
     have_new_cloud_ (false),
     first_ (true),
     downsample_ (true),
     leaf_size_ (0.05f),
     score_threshold_ (0.5),
+    trans_noise_ (1.0),
+    rot_noise_ (1.0),
     debug_ (true),
     overwrite_timestamps_ (true),
     icp_max_correspondence_distance_ (3.5),
@@ -33,9 +64,6 @@ namespace omnimapper
     paused_ (false)
   {
     have_new_cloud_ = false;
-    boost::function<void (const CloudConstPtr&)> f = boost::bind (&ICPPoseMeasurementPlugin<PointT>::cloudCallback, this, _1);
-    boost::signals2::connection c = grabber_.registerCallback(f);
-    grabber_.start ();
     first_ = true;
   }
 
@@ -263,13 +291,15 @@ namespace omnimapper
     
     if (icp_converged  && icp_score < icp_score_threshold)
     {
-      gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
-                                  gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+      //gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
+      //                            gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+      Eigen::Matrix4d tform4d = cloud_tform.cast<double>();
+      gtsam::Pose3 relative_pose (tform4d);
       relative_pose = relative_pose.inverse ();
 
       // TODO: make these params
-      double trans_noise = 1.0;// * icp_score;
-      double rot_noise = 1.0;// * icp_score;
+      double trans_noise = trans_noise_;// * icp_score;
+      double rot_noise = rot_noise_;// * icp_score;
       gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
@@ -287,10 +317,12 @@ namespace omnimapper
       if (add_identity_on_failure_)
       {
         Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
-        gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
-                                    gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
-        double trans_noise = 1.0;
-        double rot_noise = 1.0;
+        //gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
+	//                             gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+	Eigen::Matrix4d tform4d = cloud_tform.cast<double>();
+	gtsam::Pose3 relative_pose (tform4d);
+        double trans_noise = trans_noise_;
+        double rot_noise = rot_noise_;
         gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
         omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
         mapper_->addFactor (between);
@@ -420,11 +452,11 @@ namespace omnimapper
     paused_ = pause;
     if (paused_)
     { 
-      grabber_.stop ();
+      //grabber_.stop ();
     } 
     else 
     { 
-      grabber_.start ();
+      //grabber_.start ();
     }
   }
 

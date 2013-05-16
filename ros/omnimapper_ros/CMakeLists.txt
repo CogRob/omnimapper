@@ -13,6 +13,10 @@ rosbuild_init()
 include_directories(../../include)
 link_directories(../../build)
 
+#PCL Library
+find_package(PCL 1.7 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -30,6 +34,10 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
-rosbuild_add_library(${PROJECT_NAME} src/tf_pose_plugin.cpp)
+rosbuild_add_library(${PROJECT_NAME} src/tf_pose_plugin.cpp src/omnimapper_visualizer_rviz.cpp)
+target_link_libraries(${PROJECT_NAME} lib_omnimapper gtsam ${PCL_LIBRARIES})
 
 rosbuild_add_executable(time_test src/time_test.cpp)
+
+rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
+target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} lib_omnimapper gtsam)

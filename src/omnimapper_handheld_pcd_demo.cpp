@@ -60,8 +60,9 @@ main (int argc, char** argv)
   
 
   // Create an ICP pose measurement plugin
-  omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, fake_grabber);
+  //omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, fake_grabber);
   //omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, file_grabber);
+  omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin (&omb);
   icp_plugin.setMaxCorrespondenceDistance (0.15);
   icp_plugin.setScoreThreshold (0.001);
   icp_plugin.setShouldDownsample (false);
