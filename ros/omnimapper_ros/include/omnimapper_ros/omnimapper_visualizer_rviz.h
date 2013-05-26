@@ -2,6 +2,7 @@
 #include <omnimapper/icp_pose_plugin.h>
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
+#include <omnimapper_ros/VisualizeFullCloud.h>
 
 namespace omnimapper
 {
@@ -20,13 +21,33 @@ namespace omnimapper
     public:
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values);
+      void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
+      bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
 
     protected:
+      // A ROS Node Handle
       ros::NodeHandle nh_;
       
+      // A reference to a mapper instance
       OmniMapperBase* mapper_;
       
+      // Publisher for the trajectory
       ros::Publisher pose_array_pub_;
       
+      // Publisher for the map clouds
+      ros::Publisher map_cloud_pub_;
+      
+      // Publisher for Planar boundaries
+      ros::Publisher planar_boundary_pub_;
+
+      ros::ServiceServer draw_icp_clouds_srv_;
+
+      // ICP Plugin Ref
+      boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
+
+      bool draw_icp_clouds_;
+      
+      bool draw_planar_landmarks_;
+
   };
 }

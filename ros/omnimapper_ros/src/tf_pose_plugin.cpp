@@ -42,7 +42,7 @@ omnimapper
 
     gtsam::Pose3 pose1 = tf2pose3 (tf1);
     gtsam::Pose3 pose2 = tf2pose3 (tf2);
-    gtsam::Pose3 relative_pose = pose2.between (pose1);
+    gtsam::Pose3 relative_pose = pose1.between (pose2);
 
     printf ("TFPosePlugin: Adding factor between %d and %d\n", sym1.index (), sym2.index ());
     printf ("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x (), relative_pose.y (), relative_pose.z ());
@@ -51,7 +51,7 @@ omnimapper
     double rot_noise = 1.0;
     gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
     //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
-    gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+    gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
     //mapper_->addFactor (between);
     return (between);
   }

@@ -61,6 +61,7 @@ namespace omnimapper
     add_identity_on_failure_ (false),
     add_multiple_links_ (false),
     add_loop_closures_ (false),
+    loop_closure_distance_threshold_ (0.1),
     paused_ (false)
   {
     have_new_cloud_ = false;
@@ -263,19 +264,31 @@ namespace omnimapper
     // Look up clouds
     CloudConstPtr cloud1 = clouds_.at (sym1);
     CloudConstPtr cloud2 = clouds_.at (sym2);
+    if (!(cloud1 && cloud2))
+    {
+      printf ("Don't have clouds for these poses!\n");
+      return (false);
+    }
+    
     
     // Look up initial guess, if applicable
-    boost::optional<gtsam::Pose3> cloud1_pose = mapper_->getPose (sym1);
-    boost::optional<gtsam::Pose3> cloud2_pose = mapper_->getPose (sym2);
+    //boost::optional<gtsam::Pose3> cloud1_pose = mapper_->getPose (sym1);//mapper_->predictPose (sym1);
+    //boost::optional<gtsam::Pose3> cloud2_pose = mapper_->getPose (sym2);//mapper_->predictPose (sym2);
+    boost::optional<gtsam::Pose3> cloud1_pose = mapper_->predictPose (sym1);
+    boost::optional<gtsam::Pose3> cloud2_pose = mapper_->predictPose (sym2);
     
+
     // If we have an initial guess
     Eigen::Matrix4f cloud_tform;
     if ((cloud1_pose) && (cloud2_pose))
     {
       cloud1_pose->print ("Pose1\n\n\n");
+      printf ("cloud1 pose det: %lf\n", cloud1_pose->rotation ().matrix ().determinant ());
       cloud2_pose->print ("Pose2\n\n\n");
-      gtsam::Pose3 initial_guess = cloud1_pose->transform_to (*cloud2_pose);
+      printf ("cloud2 pose det: %lf\n", cloud2_pose->rotation ().matrix ().determinant ());
+      gtsam::Pose3 initial_guess = cloud1_pose->between (*cloud2_pose);//cloud1_pose->transform_to (*cloud2_pose);
       initial_guess.print ("\n\nInitial guess\n\n");
+      printf ("initial guess det: %lf\n", initial_guess.rotation ().matrix ().determinant ());
       cloud_tform = initial_guess.matrix ().cast<float>();
     }
     else
@@ -304,6 +317,8 @@ namespace omnimapper
       
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       printf ("ADDED FACTOR BETWEEN x%d and x%d\n", sym1.index (), sym2.index ());
+      relative_pose.print ("\n\nICP Relative Pose\n");
+      printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
       //if (direct)
       //  mapper_->addFactorDirect (between);
       //else
@@ -318,9 +333,9 @@ namespace omnimapper
       {
         Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
         //gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
-	//                             gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
-	Eigen::Matrix4d tform4d = cloud_tform.cast<double>();
-	gtsam::Pose3 relative_pose (tform4d);
+        //                             gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
+        Eigen::Matrix4d tform4d = cloud_tform.cast<double>();
+        gtsam::Pose3 relative_pose = gtsam::Pose3::identity ();//(tform4d);
         double trans_noise = trans_noise_;
         double rot_noise = rot_noise_;
         gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
@@ -384,7 +399,11 @@ namespace omnimapper
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::tryLoopClosure (gtsam::Symbol sym)
   {
-    double loop_closure_dist_thresh_ = 0.10;//5.0;
+    // Check if we have a cloud for this
+    if (clouds_.count (sym) == 0)
+      return (false);
+    
+    //double loop_closure_dist_thresh_ = 0.10;//5.0;
     int pose_index_thresh_ = 20;
 
     // Get the latest solution from the mapper
@@ -413,7 +432,7 @@ namespace omnimapper
         gtsam::Pose3 test_pose (key_value.value);
         double test_dist = current_pose.range (test_pose);
         
-        if (test_dist < min_dist)
+        if ((test_dist < min_dist) && (clouds_.count (key_value.key) > 0))
         {
           printf ("setting min dist to %lf\n",test_dist);
           min_dist = test_dist;
@@ -423,7 +442,7 @@ namespace omnimapper
     }
     
     // If we found something, try to add a link
-    if (min_dist < loop_closure_dist_thresh_)
+    if (min_dist < loop_closure_distance_threshold_)
     {
       addConstraint (sym, closest_sym, score_threshold_);
       printf ("ADDED LOOP CLOSURE BETWEEN %d and %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",

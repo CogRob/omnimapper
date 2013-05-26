@@ -23,7 +23,7 @@ include_directories(include)
 #include_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/include)
 #link_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/lib)
 
-add_library(lib_omnimapper include/omnimapper/omnimapper_base.h
+add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/measurement_plugin.h 
 					     include/omnimapper/pose_plugin.h
 					     include/omnimapper/icp_pose_plugin.h
@@ -46,29 +46,28 @@ add_library(lib_omnimapper include/omnimapper/omnimapper_base.h
 					     src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp)
-target_link_libraries(lib_omnimapper ${PCL_LIBRARIES} gtsam /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(omnimapper src/omnimapper.cpp)
-#target_link_libraries(omnimapper lib_omnimapper)
+#target_link_libraries(omnimapper omnimapper)
 
-add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
-target_link_libraries(omnimapper_simple_icp_demo lib_omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
-#rosbuild_add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
-#target_link_libraries(omnimapper_simple_icp_demo lib_omnimapper ${PCL_LIBRARIES})
+#add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
+#target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+
 
 add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-target_link_libraries(omnimapper_handheld lib_omnimapper
+target_link_libraries(omnimapper_handheld omnimapper
 ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
-target_link_libraries(omnimapper_handheld_pcd lib_omnimapper
+target_link_libraries(omnimapper_handheld_pcd omnimapper
 ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(isam_splice_test src/isam_splice_test.cpp)
 #target_link_libraries(isam_splice_test gtsam)
 
 add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper_test omnimapper /opt/ros/groovy/lib/librostime.so)
 
-#add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-#target_link_libraries(omnimapper_plane_test lib_omnimapper /opt/ros/groovy/lib/librostime.so)
+add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+target_link_libraries(omnimapper_plane_test omnimapper /opt/ros/groovy/lib/librostime.so)

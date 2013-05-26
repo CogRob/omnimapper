@@ -1,4 +1,6 @@
 #include <omnimapper/plane_plugin.h>
+#include <pcl/segmentation/extract_polygonal_prism_data.h>
+#include <pcl/io/pcd_io.h>
 
 namespace omnimapper
 {
@@ -8,7 +10,8 @@ namespace omnimapper
       max_plane_id_ (0),
       angular_threshold_ (0.017453*15.0),//7.0
       range_threshold_ (0.2),
-      overwrite_timestamps_ (true)
+      overwrite_timestamps_ (true),
+      disable_data_association_ (false)
   {
     
   }
@@ -33,6 +36,37 @@ namespace omnimapper
       plane_measurements.push_back (plane);
     }
   }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TODO: make this faster
+  template <typename PointT> bool
+  PlaneMeasurementPlugin<PointT>::polygonsOverlap (Cloud& boundary1, Cloud& boundary2)
+  {
+    // TODO: Check if these are coplanar
+    
+    //TODO: we should be able to get contours as const ptrs or something, to avoid the copy
+    //pcl::PointCloud<PointT> boundary1;
+    //boundary1.points = p1.getContour ();
+    
+    //pcl::PointCloud<PointT> boundary2;
+    //boundary2.points = p2.getContour ();
+    
+    for (size_t i = 0; i < boundary1.points.size (); i++)
+    {
+      //if (pcl::isXYPointIn2DXYPolygon (boundary1.points[i], boundary2))
+      if (pcl::isPointIn2DPolygon (boundary1.points[i], boundary2))
+        return true;
+    }
+    
+    for (size_t i = 0; i < boundary2.points.size (); i++)
+    {
+      //if (pcl::isXYPointIn2DXYPolygon (boundary2.points[i], boundary1))
+      if (pcl::isPointIn2DPolygon (boundary2.points[i], boundary1))
+        return true;
+    }
+    
+    return false;
+  }
   
   template <typename PointT> void
   PlaneMeasurementPlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t)
@@ -48,7 +82,7 @@ namespace omnimapper
     
     // Get the planes from the mapper
     gtsam::Values current_solution = mapper_->getSolutionAndUncommitted ();//mapper_->getSolution ();
-    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+    gtsam::Values::Filtered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
 
     // Get the pose symbol for this time
     gtsam::Symbol pose_sym;
@@ -62,6 +96,7 @@ namespace omnimapper
     }
 
     gtsam::Pose3 new_pose_inv = new_pose->inverse ();
+    Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix ().cast<float>();
 
     // Data Association
     for (int i = 0; i < plane_measurements.size (); i++)
@@ -71,10 +106,14 @@ namespace omnimapper
 
       gtsam::Plane<PointT> meas_plane = plane_measurements[i];
       Eigen::Vector3f meas_norm (meas_plane.a (), meas_plane.b (), meas_plane.c ());
+      Cloud meas_hull = meas_plane.hull ();
+      Cloud meas_hull_map_frame;// = meas_hull;
+      pcl::transformPointCloud (meas_hull, meas_hull_map_frame, new_pose_inv_tform);
+
       printf ("measurement: %lf %lf %lf %lf\n", meas_plane.a (), meas_plane.b (), meas_plane.c (), meas_plane.d ());
 
       printf ("plane_filtered size: %d\n", plane_filtered.size ());
-      BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+      BOOST_FOREACH (const typename gtsam::Values::Filtered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
       {
         gtsam::Symbol key_symbol (key_value.key);
         gtsam::Plane<PointT> plane = key_value.value;
@@ -96,15 +135,33 @@ namespace omnimapper
           //double error = (1.0 - angular_error) + range_error;
           double error = angular_error + range_error;
         
-          // Get the 
-          //pcl::PointCloud<PointT> predicted_boundary;
+          // Check for polygon overlap
+          Cloud lm_hull = key_value.value.hull ();
+          
           // TODO: Polygon Overlap Check!
-          if (error < lowest_error)
-          {
-            printf ("new potential match to plane %d\n", key_symbol.index ());
-            lowest_error = error;
-            best_symbol = key_symbol;
+          // Debug
+          // static int cloud_id;
+          char meas_name[2048];
+          char lm_name[2048];
+          sprintf (meas_name, "meas.pcd");
+          sprintf (lm_name, "lm.pcd");
+          pcl::io::savePCDFileBinaryCompressed (meas_name, meas_hull_map_frame);
+          pcl::io::savePCDFileBinaryCompressed (lm_name, lm_hull);
+          // End debug
+          if (polygonsOverlap (meas_hull_map_frame, lm_hull))
+          {   
+            if ((error < lowest_error) && (!disable_data_association_))
+            {
+              printf ("new potential match to plane %d\n", key_symbol.index ());
+              lowest_error = error;
+              best_symbol = key_symbol;
+            }
           }
+          else
+          {
+            printf ("PlaneMeasurementPlugin: Poly overlap failed\n");
+          }
+          
         }
 
       }
@@ -124,13 +181,28 @@ namespace omnimapper
       gtsam::SharedDiagonal measurement_noise;
 //      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.01, 0.01, 0.01, 0.03));
-      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.1, 0.1, 0.1, 0.2));
+      //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.1, 0.1, 0.1, 0.2));
+      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 1.1, 1.1, 1.1, 2.2));
       
       gtsam::Vector measurement_vector = meas_plane.GetXf ();
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor(new gtsam::PlaneFactor<PointT> (measurement_vector, measurement_noise, pose_sym, best_symbol));
       mapper_->addFactor (plane_factor);
       printf ("Adding factor!\n");
       
+      // TEST
+      // Extending...
+      if (lowest_error != std::numeric_limits<double>::infinity ())
+      {
+        //gtsam::Plane<PointT> extend_plane = current_solution.at<gtsam::Plane<PointT> >(best_symbol);
+        //printf ("Extend plane before: %lf %lf %lf %lf\n", extend_plane.a (), extend_plane.b (), extend_plane.c (), extend_plane.d ());
+        //extend_plane.Extend (*new_pose, meas_plane);
+        //printf ("Extend plane after: %lf %lf %lf %lf\n", extend_plane.a (), extend_plane.b (), extend_plane.c (), extend_plane.d ());
+        //mapper_->updateValue (best_symbol, extend_plane);
+        mapper_->updatePlane (best_symbol, *new_pose, meas_plane);
+      }
+      // END TEST
+      
+
     }
     
 
@@ -139,5 +211,5 @@ namespace omnimapper
 
 
 // TODO: Instantiation macros.
-template class omnimapper::PlaneMeasurementPlugin<pcl::PointXYZ>;
+//template class omnimapper::PlaneMeasurementPlugin<pcl::PointXYZ>;
 template class omnimapper::PlaneMeasurementPlugin<pcl::PointXYZRGBA>;

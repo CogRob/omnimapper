@@ -24,6 +24,9 @@ namespace omnimapper
       /** \brief regionsToMeasurements converts a set of planar regions as extracted by PCL's organized segmentation tools into a set of Planar landmark measurements suitable for use with the OmniMapper. */
       void regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, std::vector<gtsam::Plane<PointT> >& plane_measurements);
       
+      /** \brief polygonsOverlapCloud tests if planar boundaries have some overlap or not.  TODO: this could be much more efficient. */
+      bool polygonsOverlap (Cloud& boundary1, Cloud& boundary2);
+
       /** \brief planarRegionCallback receives segmented data from the segmentation. */
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t);
 
@@ -34,6 +37,8 @@ namespace omnimapper
       void setRangeThreshold (double range_threshold) { range_threshold_ = range_threshold; }
         
       void setOverwriteTimestamps (bool overwrite_timestamps) { overwrite_timestamps_ = overwrite_timestamps; }
+
+      void setDisableDataAssociation (bool disable_da) { disable_data_association_ = disable_da; }
       
     protected:
       OmniMapperBase* mapper_;
@@ -41,6 +46,7 @@ namespace omnimapper
       double angular_threshold_;
       double range_threshold_;
       bool overwrite_timestamps_;
+      bool disable_data_association_;
   };
   
 }

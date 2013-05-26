@@ -11,6 +11,10 @@
 // #include <pcl/features/organized_edge_detection.h>
 // #include <pcl/common/time.h>
 
+//#include <pcl/features/impl/organized_edge_detection.hpp>
+// Need to instantiate a thing here to use XYZ Point Type with OFE
+//pcl::features::OrganizedEdgeFromRGBNormals<pcl::PointXYZ, pcl::Normal, pcl::Label>;
+
 namespace omnimapper
 {
   template <typename PointT>
@@ -43,8 +47,9 @@ namespace omnimapper
 
       // Set up plane segmentation
       mps.setMinInliers (10000);
-      mps.setAngularThreshold (pcl::deg2rad (3.0));
+      mps.setAngularThreshold (pcl::deg2rad (2.0));
       mps.setDistanceThreshold (0.01);
+      mps.setProjectPoints (true);
 
       // Set up edge detection
       oed.setDepthDisconThreshold (0.04f);
@@ -321,8 +326,8 @@ namespace omnimapper
       stage3_labels_ = LabelCloudPtr(new LabelCloud ());
 
       double start = pcl::getTime ();
-      mps.segment (stage3_regions_);
-      //mps.segmentAndRefine (stage3_regions_);
+      //mps.segment (stage3_regions_);
+      mps.segmentAndRefine (stage3_regions_);
       //mps.segmentAndRefine (stage3_regions_, model_coefficients, inlier_indices, stage3_labels_, label_indices, boundary_indices);
       double end = pcl::getTime ();
       //char time_str[2048];
@@ -478,4 +483,5 @@ namespace omnimapper
 }
 
 //Instantiate
+//template class omnimapper::OrganizedFeatureExtraction<pcl::PointXYZ>;
 template class omnimapper::OrganizedFeatureExtraction<pcl::PointXYZRGBA>;

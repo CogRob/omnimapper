@@ -25,7 +25,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
-#rosbuild_gensrv()
+rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -35,9 +35,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 rosbuild_add_library(${PROJECT_NAME} src/tf_pose_plugin.cpp src/omnimapper_visualizer_rviz.cpp)
-target_link_libraries(${PROJECT_NAME} lib_omnimapper gtsam ${PCL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES})
 
 rosbuild_add_executable(time_test src/time_test.cpp)
 
 rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
-target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} lib_omnimapper gtsam)
+target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)

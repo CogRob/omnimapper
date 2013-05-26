@@ -42,11 +42,12 @@ namespace omnimapper
       void setUseGICP (bool use_gicp) { use_gicp_ = use_gicp; }
       void setAddMultipleLinks (bool multi_link) { add_multiple_links_ = multi_link; }
       void setAddLoopClosures (bool loop_close) { add_loop_closures_ = loop_close; }
+      void setAddIdentityOnFailure (bool add_identity_on_failure) { add_identity_on_failure_ = add_identity_on_failure; }
       void pause (bool pause);
       void setOverwriteTimestamps (bool overwrite_timestamps) { overwrite_timestamps_ = overwrite_timestamps; }
       void setTransNoise (double trans_noise) { trans_noise_ = trans_noise; }
       void setRotNoise (double rot_noise) { rot_noise_ = rot_noise; }
-                                   
+      void setLoopClosureDistanceThreshold (double dist_thresh) { loop_closure_distance_threshold_ = dist_thresh; }
 
     protected:
       OmniMapperBase* mapper_;
@@ -72,6 +73,7 @@ namespace omnimapper
       bool add_identity_on_failure_;
       bool add_multiple_links_;
       bool add_loop_closures_;
+      float loop_closure_distance_threshold_;
       bool paused_;
   };
 }

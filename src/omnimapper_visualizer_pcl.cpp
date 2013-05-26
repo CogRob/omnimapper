@@ -111,10 +111,10 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Va
   {
     boost::lock_guard<boost::mutex> lock (vis_mutex_);
 
-    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+    gtsam::Values::Filtered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
     printf ("Visualizing %d planes!\n", plane_filtered.size ());
     int plane_num = 0;
-    BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+    BOOST_FOREACH (const typename gtsam::Values::Filtered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
     {
       // Get the hull, put it in the map frame
       Cloud lm_cloud = key_value.value.hull ();

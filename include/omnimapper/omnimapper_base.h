@@ -58,10 +58,13 @@
 #include <omnimapper/pose_plugin.h>
 #include <omnimapper/measurement_plugin.h>
 #include <omnimapper/output_plugin.h>
+#include <omnimapper/plane.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/locks.hpp>
+
+typedef pcl::PointXYZRGBA PointT;
 
 namespace omnimapper
 {
@@ -238,6 +241,14 @@ namespace omnimapper
       /** \brief Adds an initial value to the values. */
       bool
       addNewValue (gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+
+      /** \brief Updates an existing value.  TODO: Fix this. */
+      void
+      updateValue (gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+
+      /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test. */
+      void
+      updatePlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose, gtsam::Plane<PointT>& meas_plane);
 
       /** \brief Looks up a pose by symbol. */
       boost::optional<gtsam::Pose3>

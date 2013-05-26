@@ -364,6 +364,42 @@ omnimapper::OmniMapperBase::addNewValue (gtsam::Symbol& new_symbol, gtsam::Value
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+omnimapper::OmniMapperBase::updateValue (gtsam::Symbol& update_symbol, gtsam::Value& update_value)
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  std::cout << "Updating symbol: " << update_symbol << std::endl;
+  // Check new values first
+  if (new_values.exists (update_symbol))
+  {
+    new_values.update (update_symbol, update_value);
+    return;
+  }
+  gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  state.update (update_symbol, update_value);
+  return;
+}
+
+void
+omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose, gtsam::Plane<PointT>& meas_plane)
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  if (new_values.exists (update_symbol))
+  {
+    gtsam::Plane<PointT> to_update = new_values.at<gtsam::Plane<PointT> >(update_symbol);
+    to_update.Extend2 (pose, meas_plane);
+    new_values.update (update_symbol, to_update);
+    return;
+  }
+  gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT> >(update_symbol);
+  to_update.Extend2 (pose, meas_plane);
+  state.update (update_symbol, to_update);
+  return;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<gtsam::Pose3>
 omnimapper::OmniMapperBase::getPose (gtsam::Symbol& pose_sym)
 {
@@ -383,7 +419,7 @@ omnimapper::OmniMapperBase::predictPose (gtsam::Symbol& pose_sym)
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   if (current_solution.exists<gtsam::Pose3>(pose_sym))
     return (current_solution.at<gtsam::Pose3> (pose_sym));
-  else
+  else if (pose_plugins.size () > 0)
   {
     // This pose isn't in our SLAM problem yet, but may be pending addition
     for(std::list<omnimapper::PoseChainNode>::iterator itr = chain.end (); itr != latest_committed_node; --itr)
@@ -392,8 +428,8 @@ omnimapper::OmniMapperBase::predictPose (gtsam::Symbol& pose_sym)
       {
         // Estimate from latest commited time to this time, using first available pose plugin
         // TODO: should a pose plugin be selectable through some other means?
-        if (pose_plugins.size () > 0)
-        {
+        //if (pose_plugins.size () > 0)
+        //{
           printf ("Latest: %d\n", latest_committed_node->symbol.index ());
           if ((new_values.exists<gtsam::Pose3> (latest_committed_node->symbol)) && !(current_solution.exists<gtsam::Pose3>(latest_committed_node->symbol)))
           {
@@ -406,13 +442,14 @@ omnimapper::OmniMapperBase::predictPose (gtsam::Symbol& pose_sym)
           gtsam::Pose3 incremental_prediction = predicted_pose_factor->measured ();
           gtsam::Pose3 predicted_pose = prev_pose.compose (incremental_prediction);
           return (predicted_pose);
-        }
-        else
-        {
+          //}
+          //else
+          //{
           // If we don't have any pose plugins, our best guess is the most recently optimized pose.
-          gtsam::Pose3 prev_pose = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
-          return (prev_pose);
-        }
+          //printf ("RETURNING PREV POSE\n");
+          //gtsam::Pose3 prev_pose = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
+          //return (prev_pose);
+          //}
       }
     }
   }
@@ -505,6 +542,7 @@ omnimapper::OmniMapperBase::spinOnce ()
     // Print latest
     gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
     printf ("OMB Latest Pose: %lf %lf %lf\n", new_pose_value.x (), new_pose_value.y (), new_pose_value.z ());
+    printf ("OMB Latest pose det: %lf\n", new_pose_value.rotation ().matrix ().determinant ());
   } 
   else 
   {

@@ -28,6 +28,7 @@
 #include <pcl/filters/project_inliers.h>
 
 //typedef pcl::PointXYZRGBA PointT;
+// TODO: find better solution for hull projection. Would be ideal if it were auto-updated.
 
 namespace boost{
   namespace serialization {
@@ -57,6 +58,7 @@ namespace gtsam {
     bool concave_;
     std::vector<std::vector<float> > out_hull;
       Eigen::Vector4f centroid_;
+      //double prev_a_, prev_b_, prev_c_, prev_d_;
 
   public:
     Plane();
@@ -68,7 +70,7 @@ namespace gtsam {
 	  // const omnimapper_msgs::WallFeature& wall_feature);
 
       Plane(const gtsam::Pose3& pose,
-	  const Plane& plane_info,
+	  Plane& plane_info,
 	  const bool& concave=false);
 
     // //This version makes a plane in the local reference frame, for extend/retract
@@ -109,7 +111,7 @@ namespace gtsam {
     double b() const{ return b_; }
     double c() const{ return c_; }
     double d() const{ return d_; }
-    const pcl::PointCloud<PointT>& hull() const{ return hull_; }
+       const pcl::PointCloud<PointT>& hull() const{ return hull_; }
     const pcl::PointCloud<PointT>& inliers() const{ return inliers_; }
 
     Matrix GetDh1(const gtsam::Pose3& xr) const;
@@ -119,6 +121,7 @@ namespace gtsam {
     Vector localCoordinates(const Plane& p2) const;
     Vector GetXo(const gtsam::Pose3& xr) const;
       void Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane);    
+      void Extend2(const Pose3& pose, const gtsam::Plane<PointT>& plane);    
       void Retract(const Pose3& pose, const gtsam::Plane<PointT>& plane);
     void populateCloud();
     gtsam::Vector GetXf()const;
