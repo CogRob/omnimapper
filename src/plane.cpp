@@ -812,6 +812,7 @@ namespace gtsam {
     printf ("meas_norm norm: %lf\n", meas_norm.norm ());
     double angle1 = acos (meas_norm.dot (lm_norm));
     Eigen::Vector3d axis1 = meas_norm.cross (lm_norm);
+    axis1.normalize ();
     Eigen::Affine3d transform1;
     transform1 = Eigen::AngleAxisd (angle1, axis1);
     Eigen::Vector3d translation_part1 = lm_norm * (meas_coeffs_map[3] - d_);
@@ -819,8 +820,9 @@ namespace gtsam {
     pcl::PointCloud<PointT> meas_hull_aligned_map1;
     pcl::transformPointCloud (meas_hull_map, meas_hull_aligned_map1, transform1);
 
-    double angle = acos (lm_norm.dot (meas_norm));
-    Eigen::Vector3d axis = lm_norm.cross (meas_norm);
+    double angle = acos (meas_norm.dot (lm_norm));
+    Eigen::Vector3d axis = meas_norm.cross (lm_norm);
+    axis.normalize ();
     Eigen::Affine3d transform;
     transform = Eigen::AngleAxisd (angle, axis);
     Eigen::Vector3d translation_part = lm_norm * (meas_coeffs_map[3] - d_);
@@ -911,7 +913,7 @@ namespace gtsam {
     }
 
     //hull_ += meas_hull_aligned_map;
-    return;
+    //return;
     
     // Now get the centroid of both clouds so we can de-mean them
     // TODO: make efficient
@@ -940,6 +942,7 @@ namespace gtsam {
     Eigen::Vector3d z_axis (0.0, 0.0, 1.0);
     double lm_to_z_angle = acos (lm_norm.dot (z_axis));//z_axis.dot (lm_norm);
     Eigen::Vector3d lm_to_z_axis = lm_norm.cross (z_axis);//z_axis.cross (lm_norm);
+    lm_to_z_axis.normalize ();
     Eigen::Affine3d lm_to_z_transform;
     lm_to_z_transform = Eigen::AngleAxisd(lm_to_z_angle, lm_to_z_axis);
     pcl::PointCloud<PointT> origin_xy_lm_hull;

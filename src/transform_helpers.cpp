@@ -18,3 +18,15 @@ Eigen::Affine3f pose3ToTransform(const gtsam::Pose3& pose)
   return t;
 }
 
+Eigen::Affine3d planarAlignmentTransform (const Eigen::Vector4f& target, const Eigen::Vector4f& to_align)
+{
+  Eigen::Vector3d target_norm (target[0], target[1], target[2]);
+  Eigen::Vector3d align_norm (to_align[0], to_align[1], to_align[2]);
+  double angle = acos (align_norm.dot (target_norm));
+  Eigen::Vector3d axis = align_norm.cross (target_norm);
+  axis.normalize ();
+  Eigen::Affine3d transform;
+  transform = Eigen::AngleAxisd (angle, axis);
+  transform.translation () = target_norm * (target[3] - to_align[3]);
+  return (transform);
+}
