@@ -35,6 +35,10 @@ namespace omnimapper
      
       /** \brief setRangeThreshold sets the range threshold to be used for data association. */
       void setRangeThreshold (double range_threshold) { range_threshold_ = range_threshold; }
+
+      void setAngularNoise (double angular_noise) { angular_noise_ = angular_noise; }
+
+      void setRangeNoise (double range_noise) { range_noise_ = range_noise; }
         
       void setOverwriteTimestamps (bool overwrite_timestamps) { overwrite_timestamps_ = overwrite_timestamps; }
 
@@ -45,6 +49,8 @@ namespace omnimapper
       int max_plane_id_;
       double angular_threshold_;
       double range_threshold_;
+      double angular_noise_;
+      double range_noise_;
       bool overwrite_timestamps_;
       bool disable_data_association_;
   };

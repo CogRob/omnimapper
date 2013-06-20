@@ -104,8 +104,12 @@ namespace omnimapper
       double commit_window;
       // Timestamp of the previous commit
       Time latest_commit_time;
+      // flag for suppressing commit window
+      bool suppress_commit_window_;
       // Time offset duration
       //Duration time_offset;
+      // The pose to be initialized at
+      gtsam::Pose3 initial_pose_;
 
       // The pose chain itself
       std::list<omnimapper::PoseChainNode> chain;
@@ -156,6 +160,10 @@ namespace omnimapper
       /** \brief Adds an initial pose x_0 to the mapper. TODO: user specificed initial pose */
       void
       initializePose (Time& t);
+
+      /** \brief Sets the initial pose, to be initialized at the timestamp of the first recieved message.  Has no effect if called when already initialized. */
+      void
+      setInitialPose (gtsam::Pose3& init_pose);
 
       /** \brief Initialize plugins. */
       //void
@@ -265,6 +273,10 @@ namespace omnimapper
       /** \brief Set whether or not to output verbose debugging information. */
       void
       setDebug (bool debug) { debug_ = debug; }
+
+      void
+      setSuppressCommitWindow (bool suppress) { suppress_commit_window_ = suppress; }
+      
   };
 
 }

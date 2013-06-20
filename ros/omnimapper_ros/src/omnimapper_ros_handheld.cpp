@@ -72,15 +72,15 @@ class OmniMapperHandheldNode
       icp_plugin_.setLeafSize (0.02);
       icp_plugin_.setMaxCorrespondenceDistance (0.5);
       icp_plugin_.setScoreThreshold (0.8);
-      icp_plugin_.setTransNoise (10.1);
-      icp_plugin_.setRotNoise (10.1);
+      icp_plugin_.setTransNoise (1.1);//10.1
+      icp_plugin_.setRotNoise (1.1);//10.1
       icp_plugin_.setAddLoopClosures (true);
       icp_plugin_.setLoopClosureDistanceThreshold (1.0);
 
       // Set up the Feature Extraction
       plane_plugin_.setOverwriteTimestamps (false);
       plane_plugin_.setDisableDataAssociation (false);
-      plane_plugin_.setRangeThreshold (0.2);
+      plane_plugin_.setRangeThreshold (0.6);
       boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
       organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
 
@@ -111,7 +111,7 @@ class OmniMapperHandheldNode
       pcl::fromROSMsg (*msg, *xyz_cloud);
       CloudPtr cloud (new Cloud ());
       pcl::copyPointCloud (*xyz_cloud, *cloud);
-      //icp_plugin_.cloudCallback (cloud);
+      icp_plugin_.cloudCallback (cloud);
       organized_feature_extraction_.cloudCallback (cloud);
     }
     

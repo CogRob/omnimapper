@@ -28,6 +28,14 @@ namespace omnimapper
       /** \brief A TF listener. */
       tf::TransformListener tf_listener_;
 
+      std::string odom_frame_name_;
+      
+      std::string base_frame_name_;
+
+      double rotation_noise_;
+      
+      double translation_noise_;
+
       bool initialized_;
       
     public:
@@ -35,5 +43,9 @@ namespace omnimapper
 
       gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr addRelativePose (boost::posix_time::ptime t1, gtsam::Symbol sym1, boost::posix_time::ptime t2, gtsam::Symbol sym2);
       bool ready ();
+      void setOdomFrameName (std::string& odom_frame_name) { odom_frame_name_ = odom_frame_name; }
+      void setBaseFrameName (std::string& base_frame_name) { base_frame_name_ = base_frame_name; }
+      void setRotationNoise (double rotation_noise) {rotation_noise_ = rotation_noise; }
+      void setTranslationNoise (double translation_noise) {translation_noise_ = translation_noise; }
   };
 }

@@ -7,7 +7,7 @@ namespace omnimapper
   class OutputPlugin
   {
     public:
-      virtual void update (boost::shared_ptr<gtsam::Values>& vis_values) = 0;
+      virtual void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) = 0;
   };
   
 }

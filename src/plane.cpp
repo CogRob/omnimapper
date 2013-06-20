@@ -288,13 +288,20 @@ namespace gtsam {
       Eigen::Vector3d axis = prev_norm.cross (new_norm);
       axis.normalize ();
       Eigen::Affine3d transform;
-      transform = Eigen::AngleAxisd (angle, axis);
+      // If the normal is near identical, we'll get an invalid transform, and should instead use identity
+      if ((pcl_isfinite (angle)) && (pcl_isfinite (axis[0])) && (pcl_isfinite (axis[1])) && (pcl_isfinite (axis[2])))
+      {
+        transform = Eigen::AngleAxisd (angle, axis);
+      }
+      else
+      {
+        transform = Eigen::Affine3d::Identity ();
+      }
       pcl::PointCloud<PointT> temp;
       Eigen::Vector3d translation_part = new_norm * -1 * d (3);
       transform.translation () = translation_part;
-//      pcl::transformPointCloud (hull_, map_hull_on_map, transform);
-      pcl::transformPointCloud (hull_, temp, transform);  
-      
+      pcl::transformPointCloud (hull_, temp, transform);
+
       std::cout << "plane::retract: angle: " << angle << " axis: " << axis << " trans: " << translation_part << std::endl;
       
       bool project = false;
@@ -342,6 +349,8 @@ namespace gtsam {
           //   printf ("Error in Planeretract!  PTP dist not zero after update: %lf\n", ptp_dist);
           //   printf ("Point: %lf %lf %lf\n", hull_.points[i].x, hull_.points[i].y, hull_.points[i].z);
           // }
+          if (!pcl::isFinite (map_hull_on_map.points[i]))
+            printf ("plane::retract: error -- nan point!\n");
         }
         orig_dist = orig_dist / hull_.points.size ();
         new_dist = new_dist / map_hull_on_map.points.size ();
@@ -752,6 +761,97 @@ namespace gtsam {
   // }
 
   template <typename PointT>
+  void Plane<PointT>::Extend (const Pose3& pose, const gtsam::Plane<PointT>& plane)
+  {
+    // Move the measured boundary to the map frame
+    Eigen::Affine3f map_to_pose = pose3ToTransform (pose);
+    Eigen::Affine3f pose_to_map = map_to_pose.inverse ();
+
+    //pcl::PointCloud<PointT> meas_boundary_map;
+    //pcl::transformPointCloud (plane.hull (), meas_boundary_map, map_to_pose);
+    gtsam::Point3 norm_in (plane.a (), plane.b (), plane.c ());
+    gtsam::Point3 norm_out = pose.rotation ().rotate (norm_in);
+    Eigen::Vector4d meas_coeffs_map (norm_out.x (), 
+                                     norm_out.y (),
+                                     norm_out.z (),
+                                     plane.a () * pose_to_map.translation ().x () +
+                                     plane.b () * pose_to_map.translation ().y () +
+                                     plane.c () * pose_to_map.translation ().z () +
+                                     plane.d ());
+    Eigen::Vector4d lm_coeffs_map (a_, b_, c_, d_);
+    
+    // Align the measured plane to the planar coefficients
+    Eigen::Affine3d alignment_transform = planarAlignmentTransform (lm_coeffs_map, meas_coeffs_map);
+    //pcl::PointCloud<PointT> meas_hull_aligned_map;
+    //pcl::transformPointCloud (meas_hull_map, meas_hull_aligned_map, transform);
+    
+    // Compute the combined centroid for de-meaning the cloud
+    Eigen::Vector4f lm_centroid;
+    Eigen::Vector4f meas_centroid_local;
+    pcl::compute3DCentroid (hull_, lm_centroid);
+    pcl::compute3DCentroid (plane.hull (), meas_centroid_local);
+    // Get the measurement centroid in the map frame
+    Eigen::Vector3f meas_centroid_local_3f (meas_centroid_local[0], meas_centroid_local[1], meas_centroid_local[2]);
+    Eigen::Vector3f meas_centroid_map = map_to_pose * meas_centroid_local_3f;
+
+    Eigen::Vector3d lm_centroid_3d (lm_centroid[0], lm_centroid[1], lm_centroid[2]);
+    Eigen::Vector3d meas_centroid_3d (meas_centroid_map[0], meas_centroid_map[1], meas_centroid_map[2]);
+    Eigen::Vector3d combined_centroid = ((hull_.points.size () * lm_centroid_3d) + (plane.hull ().points.size () * meas_centroid_3d)) / (hull_.points.size () + plane.hull ().points.size ());
+
+    Eigen::Affine3d demean_transform = Eigen::Affine3d::Identity ();
+    demean_transform.translation () = -1.0 * combined_centroid;
+    // pcl::PointCloud<PointT> origin_lm_hull;
+    // pcl::PointCloud<PointT> origin_meas_hull;
+    // pcl::transformPointCloud (hull_, origin_lm_hull, demean_transform);
+    // pcl::transformPointCloud (meas_hull_aligned_map, origin_meas_hull, demean_transform);
+    
+    // Rotate these to XY
+    Eigen::Vector4d z_axis (0.0, 0.0, 1.0, 0.0);
+    Eigen::Vector4d lm_coeffs_rot_only (a_, b_, c_, 0.0);
+    Eigen::Affine3d z_alignment_transform = planarAlignmentTransform(z_axis, lm_coeffs_rot_only);
+    
+    Eigen::Affine3d transform_lm_to_xy = demean_transform * z_alignment_transform;
+    Eigen::Affine3d transform_meas_to_xy = alignment_transform * demean_transform * z_alignment_transform;
+    pcl::PointCloud<PointT> lm_xy;
+    pcl::PointCloud<PointT> meas_xy;
+    pcl::transformPointCloud (hull_, lm_xy, transform_lm_to_xy);
+    pcl::transformPointCloud (plane.hull (), meas_xy, transform_meas_to_xy);
+    
+    // Polygon Union
+    pcl::PointCloud<PointT> fused_xy;
+    bool worked = pcl::fusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
+    
+    if (!worked)
+    {
+      printf ("Error in plane::Extend! Merge failed!\n");
+      return;
+    }
+    
+    
+    // Move it back
+    //pcl::transformPointCloud (fused_xy, hull_, transform_meas_to_xy.inverse ());
+    pcl::PointCloud<PointT> test_out;
+    pcl::transformPointCloud (fused_xy, test_out, transform_meas_to_xy.inverse ());
+    
+    bool verify_ptp_dist = true;
+    if (verify_ptp_dist)
+    {
+      double orig_dist = 0.0;
+      for (int i = 0; i < test_out.points.size (); i++)
+      {
+        double ptp_dist = fabs (a_ * test_out.points[i].x +
+                                b_ * test_out.points[i].y +
+                                c_ * test_out.points[i].z +
+                                d_);
+        orig_dist += ptp_dist;
+      }
+      orig_dist = orig_dist / test_out.points.size ();
+      std::cout << "plane::Extend: dist: " << orig_dist << std::endl;
+    }
+    
+  }
+
+  template <typename PointT>
   void Plane<PointT>::Extend2 (const Pose3& pose, const gtsam::Plane<PointT>& plane)
   {
     bool debug_extend2 = true;
@@ -1038,132 +1138,132 @@ namespace gtsam {
   }
   
 
-  template <typename PointT>
-  void Plane<PointT>::Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane){
-    //Make a model coefficients from our map normal
-    pcl::ModelCoefficients map_model;
-    map_model.values.push_back(a_);
-    map_model.values.push_back(b_);
-    map_model.values.push_back(c_);
-    map_model.values.push_back(d_);
+  // template <typename PointT>
+  // void Plane<PointT>::Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane){
+  //   //Make a model coefficients from our map normal
+  //   pcl::ModelCoefficients map_model;
+  //   map_model.values.push_back(a_);
+  //   map_model.values.push_back(b_);
+  //   map_model.values.push_back(c_);
+  //   map_model.values.push_back(d_);
 
-    //reproject map hull, in case of updates
-    // TODO: this should be a rotation, not a projection.
-    pcl::PointCloud<PointT> map_hull_on_map;
-    pcl::ProjectInliers<PointT> proj1;
-    proj1.setModelType(pcl::SACMODEL_PLANE);
-    proj1.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(hull_));
-    proj1.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
-    proj1.filter(map_hull_on_map);
-    map_hull_on_map.header.frame_id = "/map";
+  //   //reproject map hull, in case of updates
+  //   // TODO: this should be a rotation, not a projection.
+  //   pcl::PointCloud<PointT> map_hull_on_map;
+  //   pcl::ProjectInliers<PointT> proj1;
+  //   proj1.setModelType(pcl::SACMODEL_PLANE);
+  //   proj1.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(hull_));
+  //   proj1.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
+  //   proj1.filter(map_hull_on_map);
+  //   map_hull_on_map.header.frame_id = "/map";
 
-    //put this in the map frame
-    //gtsam::Vector rpy = pose.rotation().rpy();
+  //   //put this in the map frame
+  //   //gtsam::Vector rpy = pose.rotation().rpy();
 
-    pcl::PointCloud<PointT> meas_hull_in_map;
-    //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0], 
-    //								    rpy[1],
-    //								    rpy[2]),
-    //					btVector3(pose.x(),pose.y(),pose.z()));
+  //   pcl::PointCloud<PointT> meas_hull_in_map;
+  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0], 
+  //   //								    rpy[1],
+  //   //								    rpy[2]),
+  //   //					btVector3(pose.x(),pose.y(),pose.z()));
 
-    meas_hull_in_map.header.frame_id = "/map";
-    //tf::Transform posemap = Pose3ToTransform(pose);
-    Eigen::Affine3f posemap = pose3ToTransform(pose);
-    pcl::transformPointCloud(plane.hull_,meas_hull_in_map,posemap);
+  //   meas_hull_in_map.header.frame_id = "/map";
+  //   //tf::Transform posemap = Pose3ToTransform(pose);
+  //   Eigen::Affine3f posemap = pose3ToTransform(pose);
+  //   pcl::transformPointCloud(plane.hull_,meas_hull_in_map,posemap);
 
-    pcl::PointCloud<PointT> meas_hull_on_map;
-    pcl::ProjectInliers<PointT> proj;
-    proj.setModelType(pcl::SACMODEL_PLANE);
-    proj.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(meas_hull_in_map));
-    proj.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
-    proj.filter(meas_hull_on_map);
-    meas_hull_on_map.header.frame_id = "/map";
+  //   pcl::PointCloud<PointT> meas_hull_on_map;
+  //   pcl::ProjectInliers<PointT> proj;
+  //   proj.setModelType(pcl::SACMODEL_PLANE);
+  //   proj.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(meas_hull_in_map));
+  //   proj.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
+  //   proj.filter(meas_hull_on_map);
+  //   meas_hull_on_map.header.frame_id = "/map";
 
-    pcl::PointCloud<PointT> merged_cloud;
-    merged_cloud.header = plane.hull_.header;
-    merged_cloud.header.frame_id = "/map";
-    merged_cloud += map_hull_on_map;//hull_;
-    merged_cloud += meas_hull_on_map;
+  //   pcl::PointCloud<PointT> merged_cloud;
+  //   merged_cloud.header = plane.hull_.header;
+  //   merged_cloud.header.frame_id = "/map";
+  //   merged_cloud += map_hull_on_map;//hull_;
+  //   merged_cloud += meas_hull_on_map;
 
-    pcl::PointCloud<PointT> merged_hull;
+  //   pcl::PointCloud<PointT> merged_hull;
 
-    //TEST
-    Eigen::Vector4f vec_model (map_model.values[0], map_model.values[1], map_model.values[2], map_model.values[3]);
-    pcl::PlanarPolygon<PointT> map_region (map_hull_on_map.points, vec_model);
-    pcl::PlanarPolygon<PointT> meas_region (meas_hull_on_map.points, vec_model);
-    pcl::PlanarPolygon<PointT> fused_region;
-    pcl::PointCloud<PointT> xy1;
-    pcl::PointCloud<PointT> xy2;
+  //   //TEST
+  //   Eigen::Vector4f vec_model (map_model.values[0], map_model.values[1], map_model.values[2], map_model.values[3]);
+  //   pcl::PlanarPolygon<PointT> map_region (map_hull_on_map.points, vec_model);
+  //   pcl::PlanarPolygon<PointT> meas_region (meas_hull_on_map.points, vec_model);
+  //   pcl::PlanarPolygon<PointT> fused_region;
+  //   pcl::PointCloud<PointT> xy1;
+  //   pcl::PointCloud<PointT> xy2;
     
-    //pcl::PlanarPolygon<Point> approx_map;
-    //pcl::PlanarPolygon<Point> approx_meas;
-    //pcl::approximatePolygon (map_region, approx_map, 0.005, false);
-    //pcl::approximatePolygon (meas_region, approx_meas, 0.005, false);
+  //   //pcl::PlanarPolygon<Point> approx_map;
+  //   //pcl::PlanarPolygon<Point> approx_meas;
+  //   //pcl::approximatePolygon (map_region, approx_map, 0.005, false);
+  //   //pcl::approximatePolygon (meas_region, approx_meas, 0.005, false);
 
-    bool fused_worked = pcl::fusePlanarPolygons (map_region, meas_region, fused_region, vec_model, xy1, xy2);
+  //   bool fused_worked = pcl::fusePlanarPolygons (map_region, meas_region, fused_region, vec_model, xy1, xy2);
 
-    if (!fused_worked)
-    {
-      printf ("ERROR FUSING INSIDE PLANE!\n\n\n\n\n\n\n");
-    }
+  //   if (!fused_worked)
+  //   {
+  //     printf ("ERROR FUSING INSIDE PLANE!\n\n\n\n\n\n\n");
+  //   }
     
-    //TEST
+  //   //TEST
 
-    /*
-    if(concave_){
-      //project and merge inliers
-      pcl::PointCloud<Point> map_inliers_on_map;
-      pcl::ProjectInliers<Point> proj2;
-      proj2.setModelType(pcl::SACMODEL_PLANE);
-      proj2.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(inliers_));
-      proj2.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
-      proj2.filter(map_inliers_on_map);
+  //   /*
+  //   if(concave_){
+  //     //project and merge inliers
+  //     pcl::PointCloud<Point> map_inliers_on_map;
+  //     pcl::ProjectInliers<Point> proj2;
+  //     proj2.setModelType(pcl::SACMODEL_PLANE);
+  //     proj2.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(inliers_));
+  //     proj2.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
+  //     proj2.filter(map_inliers_on_map);
       
-      pcl::PointCloud<Point> meas_inliers_in_map;
-      pcl::transformPointCloud(plane.inliers_,meas_inliers_in_map,posemap);
+  //     pcl::PointCloud<Point> meas_inliers_in_map;
+  //     pcl::transformPointCloud(plane.inliers_,meas_inliers_in_map,posemap);
       
-      pcl::PointCloud<Point> meas_inliers_on_map;
-      pcl::ProjectInliers<Point> proj3;
-      proj3.setModelType(pcl::SACMODEL_PLANE);
-      proj3.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(meas_inliers_in_map));
-      proj3.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
-      proj3.filter(meas_inliers_on_map);
+  //     pcl::PointCloud<Point> meas_inliers_on_map;
+  //     pcl::ProjectInliers<Point> proj3;
+  //     proj3.setModelType(pcl::SACMODEL_PLANE);
+  //     proj3.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(meas_inliers_in_map));
+  //     proj3.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
+  //     proj3.filter(meas_inliers_on_map);
 
-      pcl::PointCloud<Point> merged_cloud_full;
-      merged_cloud_full.header = hull_.header;
-      merged_cloud_full += map_inliers_on_map;
-      merged_cloud_full += meas_inliers_on_map;
+  //     pcl::PointCloud<Point> merged_cloud_full;
+  //     merged_cloud_full.header = hull_.header;
+  //     merged_cloud_full += map_inliers_on_map;
+  //     merged_cloud_full += meas_inliers_on_map;
 
-      inliers_ = merged_cloud_full;
+  //     inliers_ = merged_cloud_full;
 
-      pcl::ConcaveHull<Point> chull;
-      std::vector<pcl::Vertices> pgons;
-      chull.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud_full));
-      chull.setAlpha(0.15);
-      chull.reconstruct(merged_hull,pgons);
-    } else {
-    */
-    //pcl::ConvexHull<Point> chull;
-    // chull.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud));
-    //  chull.reconstruct(merged_hull);
-      //}
-    //hull_ = merged_hull;
+  //     pcl::ConcaveHull<Point> chull;
+  //     std::vector<pcl::Vertices> pgons;
+  //     chull.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud_full));
+  //     chull.setAlpha(0.15);
+  //     chull.reconstruct(merged_hull,pgons);
+  //   } else {
+  //   */
+  //   //pcl::ConvexHull<Point> chull;
+  //   // chull.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud));
+  //   //  chull.reconstruct(merged_hull);
+  //     //}
+  //   //hull_ = merged_hull;
 
-    // std::vector<int> hull_inds;
-    // getConvexHull2D(merged_cloud.points,hull_inds);
-    // pcl::ExtractIndices<Point> extract;
-    // pcl::PointIndices hull_pi;
-    // hull_pi.indices = hull_inds;
-    // extract.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud));
-    // extract.setIndices(boost::make_shared<pcl::PointIndices>(hull_pi));
-    // extract.filter(merged_hull);
-    //hull_ = merged_hull;
-    if (fused_worked)
-      hull_.points = fused_region.getContour ();
-    else
-      hull_ = map_hull_on_map;
+  //   // std::vector<int> hull_inds;
+  //   // getConvexHull2D(merged_cloud.points,hull_inds);
+  //   // pcl::ExtractIndices<Point> extract;
+  //   // pcl::PointIndices hull_pi;
+  //   // hull_pi.indices = hull_inds;
+  //   // extract.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(merged_cloud));
+  //   // extract.setIndices(boost::make_shared<pcl::PointIndices>(hull_pi));
+  //   // extract.filter(merged_hull);
+  //   //hull_ = merged_hull;
+  //   if (fused_worked)
+  //     hull_.points = fused_region.getContour ();
+  //   else
+  //     hull_ = map_hull_on_map;
 
-  }
+  // }
   /* ************************************************************************* */
 } // namespace gtsam
 

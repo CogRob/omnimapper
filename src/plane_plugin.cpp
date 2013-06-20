@@ -10,6 +10,8 @@ namespace omnimapper
       max_plane_id_ (0),
       angular_threshold_ (0.017453*15.0),//7.0
       range_threshold_ (0.2),
+      angular_noise_ (0.1),
+      range_noise_ (0.2),
       overwrite_timestamps_ (true),
       disable_data_association_ (false)
   {
@@ -182,7 +184,8 @@ namespace omnimapper
 //      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.01, 0.01, 0.01, 0.03));
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.1, 0.1, 0.1, 0.2));
-      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 1.1, 1.1, 1.1, 2.2));
+      //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 1.1, 1.1, 1.1, 2.2));
+      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, angular_noise_, angular_noise_, angular_noise_, range_noise_));
       
       gtsam::Vector measurement_vector = meas_plane.GetXf ();
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor(new gtsam::PlaneFactor<PointT> (measurement_vector, measurement_noise, pose_sym, best_symbol));

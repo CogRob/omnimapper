@@ -58,7 +58,7 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::OmniMapperVisualizerPCL (omnimapper
 }
 
 template <typename PointT> void
-omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values)
+omnimapper::OmniMapperVisualizerPCL<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
   // Pull poses from the mapper
   //gtsam::Values current_solution = mapper_->getSolution ();

@@ -41,3 +41,6 @@ rosbuild_add_executable(time_test src/time_test.cpp)
 
 rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
 target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
+
+rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)

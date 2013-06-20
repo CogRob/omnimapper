@@ -1,4 +1,5 @@
 #include <omnimapper/organized_feature_extraction.h>
+#include <pcl/segmentation/plane_refinement_comparator.h>
 
 // // Boost
 // #include <boost/thread/thread.hpp>
@@ -40,16 +41,20 @@ namespace omnimapper
         printf ("Start!\n");
 
       // Set up Normal Estimation
-      ne.setNormalEstimationMethod (ne.SIMPLE_3D_GRADIENT);
-      //ne.setNormalEstimationMethod (ne.COVARIANCE_MATRIX);
+      //ne.setNormalEstimationMethod (ne.SIMPLE_3D_GRADIENT);
+      ne.setNormalEstimationMethod (ne.COVARIANCE_MATRIX);
       ne.setMaxDepthChangeFactor (0.02f);
       ne.setNormalSmoothingSize (20.0f);
 
       // Set up plane segmentation
-      mps.setMinInliers (10000);
+      mps.setMinInliers (20000);
       mps.setAngularThreshold (pcl::deg2rad (2.0));
-      mps.setDistanceThreshold (0.01);
+      mps.setDistanceThreshold (0.03);
       mps.setProjectPoints (true);
+      mps.setRemoveDuplicatePoints (true);
+      pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
+      refine_compare->setDistanceThreshold (0.0025);
+      mps.setRefinementComparator (refine_compare);
 
       // Set up edge detection
       oed.setDepthDisconThreshold (0.04f);
@@ -326,8 +331,8 @@ namespace omnimapper
       stage3_labels_ = LabelCloudPtr(new LabelCloud ());
 
       double start = pcl::getTime ();
-      //mps.segment (stage3_regions_);
-      mps.segmentAndRefine (stage3_regions_);
+      mps.segment (stage3_regions_);
+      //mps.segmentAndRefine (stage3_regions_);
       //mps.segmentAndRefine (stage3_regions_, model_coefficients, inlier_indices, stage3_labels_, label_indices, boundary_indices);
       double end = pcl::getTime ();
       //char time_str[2048];

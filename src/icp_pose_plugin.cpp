@@ -62,7 +62,8 @@ namespace omnimapper
     add_multiple_links_ (false),
     add_loop_closures_ (false),
     loop_closure_distance_threshold_ (0.1),
-    paused_ (false)
+    paused_ (false),
+    save_full_res_clouds_ (false)
   {
     have_new_cloud_ = false;
     first_ = true;
@@ -196,12 +197,18 @@ namespace omnimapper
     }
     mapper_->getPoseSymbolAtTime (current_time, current_sym);
     //std::cout << "stamp time: " << current_cloud_->header.stamp << " converted time: " << current_time << std::endl;
-    printf ("current symbol: %d\n", current_sym.index ());
+    printf ("ICP Plugin: current symbol: %d, inserting cloud\n", current_sym.index ());
     //{
     //  boost::mutex::scoped_lock (current_cloud_mutex_);
     clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_filtered));//current_cloud_));
     //}
   
+    if (save_full_res_clouds_)
+    {
+      printf ("ICPPlugin: Saving full res cloud with %d\n", current_cloud->points.size ());
+      full_res_clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud));
+    }
+    
     // We're done if that was the first cloud
     printf ("first: %d\n", first_);
     if (first_)
@@ -486,6 +493,21 @@ namespace omnimapper
     printf ("ICPPlugin: In getCloudPtr!\n");
     if (clouds_.count (sym) > 0)
       return (clouds_.at (sym));
+    else
+    {
+      printf ("ERROR: REQUESTED SYMBOL WITH NO POINTS!\n");
+      CloudConstPtr empty (new Cloud ());
+      return (empty);
+    }
+  }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudConstPtr
+  ICPPoseMeasurementPlugin<PointT>::getFullResCloudPtr (gtsam::Symbol sym)
+  {
+    printf ("ICPPlugin: In getCloudPtr!\n");
+    if (full_res_clouds_.count (sym) > 0)
+      return (full_res_clouds_.at (sym));
     else
     {
       printf ("ERROR: REQUESTED SYMBOL WITH NO POINTS!\n");

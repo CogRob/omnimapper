@@ -18,7 +18,7 @@ Eigen::Affine3f pose3ToTransform(const gtsam::Pose3& pose)
   return t;
 }
 
-Eigen::Affine3d planarAlignmentTransform (const Eigen::Vector4f& target, const Eigen::Vector4f& to_align)
+Eigen::Affine3d planarAlignmentTransform (const Eigen::Vector4d& target, const Eigen::Vector4d& to_align)
 {
   Eigen::Vector3d target_norm (target[0], target[1], target[2]);
   Eigen::Vector3d align_norm (to_align[0], to_align[1], to_align[2]);

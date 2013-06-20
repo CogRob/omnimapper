@@ -35,6 +35,7 @@ namespace omnimapper
       void cloudCallback (const CloudConstPtr& cloud);
       bool ready ();
       CloudConstPtr getCloudPtr (gtsam::Symbol sym);
+      CloudConstPtr getFullResCloudPtr (gtsam::Symbol sym);
       void setMaxCorrespondenceDistance (float max_correspondence_distance) { icp_max_correspondence_distance_ = max_correspondence_distance; }
       void setShouldDownsample (bool should_downsample) { downsample_ = should_downsample; }
       void setLeafSize (float leaf_size) { leaf_size_ = leaf_size; }
@@ -48,11 +49,13 @@ namespace omnimapper
       void setTransNoise (double trans_noise) { trans_noise_ = trans_noise; }
       void setRotNoise (double rot_noise) { rot_noise_ = rot_noise; }
       void setLoopClosureDistanceThreshold (double dist_thresh) { loop_closure_distance_threshold_ = dist_thresh; }
+      void setSaveFullResClouds (bool save_full_res_clouds) { save_full_res_clouds_ = save_full_res_clouds; }
 
     protected:
       OmniMapperBase* mapper_;
       bool initialized_;
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
+      std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;
       //pcl::Grabber& grabber_;
       CloudConstPtr current_cloud_;
       boost::mutex current_cloud_mutex_;
@@ -75,5 +78,6 @@ namespace omnimapper
       bool add_loop_closures_;
       float loop_closure_distance_threshold_;
       bool paused_;
+      bool save_full_res_clouds_;
   };
 }

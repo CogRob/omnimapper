@@ -60,7 +60,7 @@ namespace omnimapper
 
     public:
       OmniMapperVisualizerPCL (omnimapper::OmniMapperBase* mapper);
-      void update (boost::shared_ptr<gtsam::Values>& vis_values);
+      void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void spin ();
       void spinThread ();
       void spinOnce ();

@@ -7,7 +7,9 @@ omnimapper
   TFPosePlugin::TFPosePlugin (omnimapper::OmniMapperBase* mapper) 
     : mapper_ (mapper),
       nh_ ("~"),
-      tf_listener_ (ros::Duration (30.0))
+      tf_listener_ (ros::Duration (30.0)),
+      odom_frame_name_ ("/odom"),
+      base_frame_name_ ("/camera_depth_optical_frame")
   {
     
   }
@@ -24,31 +26,39 @@ omnimapper
     tf::StampedTransform tf2;
 
     // Add the factor
+    bool got_tf = true;
+    gtsam::Pose3 relative_pose = gtsam::Pose3::identity ();
     try{
-      tf_listener_.waitForTransform("/odom", "/camera_depth_optical_frame",
-                                    rt1, ros::Duration(5.0));
+      //tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
+      //                              rt1, ros::Duration(0.2));
       
-      tf_listener_.lookupTransform("/odom" , "/camera_depth_optical_frame",
+      tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt1, tf1);
 
-      tf_listener_.waitForTransform("/odom", "/camera_depth_optical_frame",
-                                    rt2, ros::Duration(5.0));
+      //tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
+      //                              rt2, ros::Duration(0.2));
       
-      tf_listener_.lookupTransform("/odom" , "/camera_depth_optical_frame",
+      tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt2, tf2);
     } catch(tf::TransformException ex) {
-      ROS_INFO("OMNImapper reports :: Transform from %s to %s not yet available.  Exception: %s", "/odom", "/base_link",ex.what());
+      ROS_INFO("OmniMapper reports :: Transform from %s to %s not yet available.  Exception: %s", odom_frame_name_.c_str (), base_frame_name_.c_str (), ex.what());
+      ROS_INFO ("Writing identity instead\n");
+      got_tf = false;
     }
 
-    gtsam::Pose3 pose1 = tf2pose3 (tf1);
-    gtsam::Pose3 pose2 = tf2pose3 (tf2);
-    gtsam::Pose3 relative_pose = pose1.between (pose2);
+    if (got_tf)
+    {
+      gtsam::Pose3 pose1 = tf2pose3 (tf1);
+      gtsam::Pose3 pose2 = tf2pose3 (tf2);
+      //gtsam::Pose3 relative_pose = pose1.between (pose2);
+      relative_pose = pose1.between (pose2);
+    }
 
     printf ("TFPosePlugin: Adding factor between %d and %d\n", sym1.index (), sym2.index ());
     printf ("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x (), relative_pose.y (), relative_pose.z ());
     
-    double trans_noise = 1.0;
-    double rot_noise = 1.0;
+    double trans_noise = translation_noise_;//1.0;
+    double rot_noise = rotation_noise_;//1.0;
     gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
     //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));

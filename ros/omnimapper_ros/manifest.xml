@@ -10,7 +10,8 @@
   <url>http://ros.org/wiki/omnimapper_ros</url>
   <depend package="roscpp"/>
   <depend package="tf"/>
-
+  <depend package="visualization_msgs"/>
+  <depend package="geometry_msgs"/>
 </package>
 
 

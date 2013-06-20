@@ -19,6 +19,10 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
+include_directories(/home/atrevor/github/cpu_tsdf/include)
+link_directories(/home/atrevor/github/cpu_tsdf/build)
+
+
 include_directories(include)
 #include_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/include)
 #link_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/lib)
@@ -36,6 +40,7 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     include/omnimapper/cloud_registration_plugin.h
+					     include/omnimapper/tsdf_output_plugin.h
 					     src/omnimapper_base.cpp
 					     src/icp_pose_plugin.cpp
 					     src/omnimapper_visualizer_pcl.cpp
@@ -45,8 +50,11 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     src/plane_plugin.cpp
 					     src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
-					     src/no_motion_pose_plugin.cpp)
-target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam /opt/ros/groovy/lib/librostime.so)
+					     src/no_motion_pose_plugin.cpp
+					     src/tsdf_output_plugin.cpp)
+target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
+					     /opt/ros/groovy/lib/librostime.so
+					     cpu_tsdf)
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper omnimapper)

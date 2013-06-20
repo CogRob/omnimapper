@@ -1,11 +1,13 @@
 #include <omnimapper/omnimapper_base.h>
 
 omnimapper::OmniMapperBase::OmniMapperBase () 
-  : initialized_ (false)
+  : initialized_ (false),
+    initial_pose_ (gtsam::Pose3::identity ())
 {
   debug_ = true;
   // TODO: make it optional to set an arbitrary initial pose
   //initializePose ();
+  suppress_commit_window_ = false;
   largest_pose_index = 0;
   latest_committed_node = chain.begin ();
   latest_commit_time = boost::posix_time::microsec_clock::local_time();
@@ -28,9 +30,11 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   // TODO: make this a default param, but changeable
   gtsam::Symbol init_symbol ('x', 0);
   current_pose_symbol = init_symbol;
-  gtsam::Pose3 init_pose = gtsam::Pose3 (gtsam::Rot3::ypr (0.0, 0.0, 0.0), gtsam::Point3 (0.0, 0.0, 0.0));
-  new_values.insert (init_symbol, init_pose);
-  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, init_pose, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+  //gtsam::Pose3 init_pose = gtsam::Pose3 (gtsam::Rot3::ypr (0.0, 0.0, 0.0), gtsam::Point3 (0.0, 0.0, 0.0));
+  //new_values.insert (init_symbol, init_pose);
+  new_values.insert (init_symbol, initial_pose_);
+  //gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, init_pose, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, initial_pose_, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
   new_factors.add (posePrior);
   PoseChainNode init_node (t, init_symbol);
   init_node.status = omnimapper::PoseChainNode::COMMITTED;
@@ -51,6 +55,13 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   latest_committed_node = new_itr;
   printf ("OmnimapperBase: Initialized!\n");
   return;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+omnimapper::OmniMapperBase::setInitialPose (gtsam::Pose3& initial_pose)
+{
+  initial_pose_ = initial_pose;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,11 +97,15 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   }
   
   // Check that enough time has elapsed
-  if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
-  {
-    printf ("OmniMapper: commitNext -- not time to commit yet!\n");
-    return (false);
+  if (!suppress_commit_window_)
+  {  
+    if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
+    {
+      printf ("OmniMapper: commitNext -- not time to commit yet!\n");
+      return (false);
+    }
   }
+  
 
   if (debug_)
     printf ("OmniMapper: Commiting...\n");
@@ -155,7 +170,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   printf ("Optimizing!\n");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
-  //current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
+  current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
   printf ("Optimized!\n");
@@ -319,7 +334,7 @@ omnimapper::OmniMapperBase::optimize ()
   new_values.print ("New Values: ");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
-  //current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
+  current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
 }
@@ -394,6 +409,8 @@ omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol, gtsam::Po
   gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
   gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT> >(update_symbol);
   to_update.Extend2 (pose, meas_plane);
+  //to_update.Extend (pose, meas_plane);
+
   state.update (update_symbol, to_update);
   return;
 }
@@ -557,10 +574,11 @@ omnimapper::OmniMapperBase::updateOutputPlugins ()
   //boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   boost::shared_ptr<gtsam::Values> vis_values (new gtsam::Values (current_solution));
+  boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph (new gtsam::NonlinearFactorGraph (current_graph));
   for (int i = 0; i < output_plugins.size (); i++)
   {
     printf ("Updating plugin %d with %u values\n", i, vis_values->size ());
-    output_plugins[i]->update (vis_values);
+    output_plugins[i]->update (vis_values, vis_graph);
   }
 }
 
