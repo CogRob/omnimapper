@@ -288,6 +288,14 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+omnimapper::OmniMapperBase::getTimeAtPoseSymbol (gtsam::Symbol& sym, Time& t)
+{
+  //boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  t = symbol_lookup[sym]->time;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 gtsam::Values 
 omnimapper::OmniMapperBase::getSolution ()
 {

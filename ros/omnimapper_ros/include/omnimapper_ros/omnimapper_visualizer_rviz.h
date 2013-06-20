@@ -25,6 +25,7 @@ namespace omnimapper
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
+      void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
 
     protected:
       // A ROS Node Handle
@@ -53,6 +54,8 @@ namespace omnimapper
       bool draw_icp_clouds_;
       
       bool draw_planar_landmarks_;
+
+      bool draw_pose_array_;
 
   };
 }

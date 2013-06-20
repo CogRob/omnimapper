@@ -173,6 +173,10 @@ namespace omnimapper
       void
       getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym);
 
+      /** \brief Given a symbol, return the timestamp.  This is primarily used for doing error analysis after mapping. */
+      void
+      getTimeAtPoseSymbol (gtsam::Symbol& sym, Time& t);
+
       /** \brief Appends a pose factor to the graph.  Symbols of the form x_n are used, starting with x0, incrementing by 1 each time appendPose is called.  All pose plugins are then invoked to add a factor between x_n-1 and x_n. */
       //gtsam::Symbol
       //appendPose ();

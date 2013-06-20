@@ -8,7 +8,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   : nh_ ("~"),
     mapper_ (mapper),
     draw_icp_clouds_ (false),
-    draw_planar_landmarks_ (true)
+    draw_planar_landmarks_ (true),
+    draw_pose_array_ (true)
 {
   //tf::Transform
 
@@ -57,7 +58,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     pose.position.x = sam_pose.x ();
     pose.position.y = sam_pose.y ();
     pose.position.z = sam_pose.z ();
-    pose_array.poses.push_back (pose);
+    if (draw_pose_array_)
+      pose_array.poses.push_back (pose);
 
     // Optionally Draw clouds too
     if (draw_icp_clouds_)
@@ -77,7 +79,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   }
   
   // Publish the poses
-  pose_array_pub_.publish (pose_array);
+  if (draw_pose_array_)
+    pose_array_pub_.publish (pose_array);
 
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)
