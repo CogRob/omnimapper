@@ -1,4 +1,5 @@
 #include <omnimapper/omnimapper_base.h>
+#include <pcl/common/time.h> //TODO: remove, debug only
 
 omnimapper::OmniMapperBase::OmniMapperBase () 
   : initialized_ (false),
@@ -112,6 +113,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   // TODO: verify that this won't break our chain by inspecting pose information
   // Call pose plugins to add pose factors between previous chain time and current pose time
   bool initialized = false;
+
   for (int i = 0; i < pose_plugins.size (); i++)
   {
     // TODO: make this a boost::optional, in case the plugin is disabled or unable to give a pose
@@ -124,10 +126,21 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       gtsam::Pose3 relative_pose = new_pose_factor->measured ();
       // Compose the relative pose with the previously optimized pose
       gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol).compose (relative_pose);
+
+      // Note: this is a workaround for a GTSAM bug, where compose (also between) return invalid/nan poses for small motions
+      if (!(std::isfinite (new_pose_value.x ()) && 
+            std::isfinite (new_pose_value.y ()) && 
+            std::isfinite (new_pose_value.z ()) &&
+            std::isfinite (new_pose_value.rotation ().matrix ().determinant ())))
+      {
+        new_pose_value = current_solution.at<gtsam::Pose3>(latest_committed_node->symbol);
+      }
+      
       new_values.insert (to_commit->symbol, new_pose_value);
       initialized = true;
     }
   }
+
   // Add the rest of the factors
   if (!initialized)
   {
@@ -139,6 +152,16 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       {
         gtsam::Pose3 relative_pose = between->measured ();
         gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol).compose (relative_pose);
+        // Note: this is a workaround for a GTSAM bug, where compose (also between) return invalid/nan poses for small motions
+        if (!(std::isfinite (new_pose_value.x ()) && 
+              std::isfinite (new_pose_value.y ()) && 
+              std::isfinite (new_pose_value.z ()) &&
+              std::isfinite (new_pose_value.rotation ().matrix ().determinant ())))
+        {
+          new_pose_value = current_solution.at<gtsam::Pose3>(latest_committed_node->symbol);
+        }
+        
+
         new_values.insert (to_commit->symbol, new_pose_value);
         initialized = true;
         break;
@@ -165,6 +188,12 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   latest_committed_node++;
   latest_commit_time = boost::posix_time::microsec_clock::local_time();
   printf ("Committed!\n");
+
+  if (debug_)
+  {
+    new_factors.print ("New Factors: \n");
+    new_values.print ("New Values: \n");
+  }
 
   // Optimize
   printf ("Optimizing!\n");
@@ -583,11 +612,14 @@ omnimapper::OmniMapperBase::updateOutputPlugins ()
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   boost::shared_ptr<gtsam::Values> vis_values (new gtsam::Values (current_solution));
   boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph (new gtsam::NonlinearFactorGraph (current_graph));
+  double start = pcl::getTime ();
   for (int i = 0; i < output_plugins.size (); i++)
   {
     printf ("Updating plugin %d with %u values\n", i, vis_values->size ());
     output_plugins[i]->update (vis_values, vis_graph);
   }
+  double end = pcl::getTime ();
+  std::cout << "OmniMapperBase: updating output plugins took: " << double (end - start) << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

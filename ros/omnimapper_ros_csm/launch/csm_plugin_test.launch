@@ -1,0 +1,19 @@
+<launch>
+  <param name="/use_sim_time" value="true"/>
+
+      <node name="omnimapper_ros_csm" pkg="omnimapper_ros_csm" type="omnimapper_pelican" respawn="false" output="screen">
+      <remap from="/scan" to="utm30_scan" />
+      <param name="odom_frame_name" value="/odom"/>
+      <param name="base_frame_name" value="/base_link"/>
+      <param name="cloud_topic_name" value="/cloud"/>
+      <param name="trans_noise" value="0.005"/>
+      <param name="rot_noise" value="0.005"/>
+      <param name="score_threshold" value="0.005"/>
+      <param name="leaf_size" value="0.005"/>
+      </node>
+
+      <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.425 -0.035 0.958 0.0 0.0 0.0 /odom /world 100" respawn="false" output="screen"/>
+   <!-- <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/>-->
+
+
+</launch>

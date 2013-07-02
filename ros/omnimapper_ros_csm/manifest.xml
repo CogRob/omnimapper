@@ -1,0 +1,19 @@
+<package>
+  <description brief="omnimapper_ros_csm">
+
+     omnimapper_ros_csm
+
+  </description>
+  <author>Alex Trevor</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/omnimapper_ros_csm</url>
+  <depend package="roscpp"/>
+  <depend package="omnimapper_ros"/>
+  <depend package="csm"/>
+  <depend package="laser_scan_matcher"/>
+  <depend package="visualization_msgs"/>
+  <depend package="laser_geometry"/>
+</package>
+
+

@@ -325,6 +325,7 @@ namespace omnimapper
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       printf ("ADDED FACTOR BETWEEN x%d and x%d\n", sym1.index (), sym2.index ());
       relative_pose.print ("\n\nICP Relative Pose\n");
+      printf ("ICP SCORE: %lf\n", icp_score);
       printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
       //if (direct)
       //  mapper_->addFactorDirect (between);

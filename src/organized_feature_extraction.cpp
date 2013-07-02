@@ -25,8 +25,12 @@ namespace omnimapper
       stage1_cloud_ (new Cloud ()),
       stage1_normals_ (new NormalCloud ()),
       stage2_cloud_ (new Cloud ()),
+      stage3_cloud_ (new Cloud ()),
+      stage4_cloud_ (new Cloud ()),
       stage2_normals_ (new NormalCloud ()),
       stage3_labels_ (new LabelCloud ()),
+      stage4_labels_ (new LabelCloud ()),
+      stage5_labels_ (new LabelCloud ()),
       stage3_occluding_cloud_ (new Cloud ()),
       vis_cloud_ (new Cloud ()),
       vis_labels_ (new LabelCloud ()),
@@ -34,6 +38,7 @@ namespace omnimapper
       vis_normals_ (new NormalCloud ()),
       updated_data_ (false),
       updated_cloud_ (false),
+      euclidean_cluster_comparator_ (new pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>()),
       debug_ (true),
       timing_ (false)
     {
@@ -48,10 +53,10 @@ namespace omnimapper
 
       // Set up plane segmentation
       mps.setMinInliers (20000);
-      mps.setAngularThreshold (pcl::deg2rad (2.0));
-      mps.setDistanceThreshold (0.03);
+      mps.setAngularThreshold (pcl::deg2rad (1.0));//2.0
+      mps.setDistanceThreshold (0.015);//0.03
       mps.setProjectPoints (true);
-      mps.setRemoveDuplicatePoints (true);
+      mps.setRemoveDuplicatePoints (false);
       pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
       refine_compare->setDistanceThreshold (0.0025);
       mps.setRefinementComparator (refine_compare);
@@ -82,7 +87,8 @@ namespace omnimapper
     OrganizedFeatureExtraction<PointT>::cloudCallback (const CloudConstPtr& cloud)
     {
       // Store cloud
-      boost::mutex::scoped_lock (cloud_mutex);
+      //boost::mutex::scoped_lock (cloud_mutex);
+      boost::lock_guard<boost::mutex> lock (cloud_mutex);
       //std::cout << "OrganizedFeatureExtraction: Cloud stamp: " << cloud->header.stamp << std::endl;
       FPS_CALC ("cloud_callback");
       prev_sensor_cloud_ = cloud;
@@ -179,12 +185,6 @@ namespace omnimapper
           
           // Now we extract features for the frame before this, for which we now have normals
           // Extract planes
-          // std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions;
-          // std::vector<pcl::ModelCoefficients> model_coefficients;
-          // std::vector<pcl::PointIndices> inlier_indices;  
-          // pcl::PointCloud<pcl::Label>::Ptr labels (new pcl::PointCloud<pcl::Label>);
-          // std::vector<pcl::PointIndices> label_indices;
-          // std::vector<pcl::PointIndices> boundary_indices;
           mps.setInputNormals (stage2_normals_);
           mps.setInputCloud (stage2_cloud_);
           //if (stage2_cloud_->points.size () > 0)
@@ -197,6 +197,10 @@ namespace omnimapper
           double oed_thread_spawn = pcl::getTime ();
           boost::thread oed_thread (&OrganizedFeatureExtraction::computeEdges, this);
           
+          // Compute Euclidean Clusters
+          double clust_thread_spawn = pcl::getTime ();
+          boost::thread clust_thread (&OrganizedFeatureExtraction::computeClusters, this);
+
           // Wait for these to all complete
           ne_thread.join ();
           if (debug_)
@@ -207,13 +211,21 @@ namespace omnimapper
           mps_thread.join ();
           if (debug_)
             std::cout << "MPS thread joined: " << double(pcl::getTime () - mps_thread_spawn) << std::endl;
-          
+          clust_thread.join ();
+          if (debug_)
+            std::cout << "Clust thread joined: " << double (pcl::getTime () - clust_thread_spawn) << std::endl;
+
           //printf ("publishing with %d %d\n", stage2_cloud_->points.size (), labels->points.size ());
           if (label_cloud_callback_)
           {
             double cb_start = pcl::getTime ();
             label_cloud_callback_ (stage2_cloud_, stage3_labels_);
             std::cout << "Callback took: " << double (pcl::getTime () - cb_start) << std::endl;
+          }
+
+          if (cluster_label_cloud_callback_)
+          {
+            cluster_label_cloud_callback_ (stage3_cloud_, stage4_labels_);
           }
 
           if (region_cloud_callback_)
@@ -247,8 +259,16 @@ namespace omnimapper
             // vis_regions_ = stage3_regions_;
             // vis_occluding_cloud_ = stage3_occluding_cloud_;
             // Update completed stage1 to stage2
+            stage4_regions_ = stage3_regions_;
+            stage4_cloud_ = stage3_cloud_;
+            stage3_cloud_ = stage2_cloud_;
             stage2_cloud_ = stage1_cloud_;
             stage2_normals_ = stage1_normals_;
+            stage4_labels_ = stage3_labels_;
+            stage4_model_coefficients_ = stage3_model_coefficients_;
+            stage4_inlier_indices_ = stage3_inlier_indices_;
+            stage4_label_indices_ = stage3_label_indices_;
+            stage4_boundary_indices_ =  stage3_boundary_indices_;
             // updated_data_ = true;
           }
         }
@@ -275,83 +295,99 @@ namespace omnimapper
   template <typename PointT> void
   OrganizedFeatureExtraction<PointT>::computeClusters ()
   {
-  //   if (stage3_labels_->poitns.size () == 0)
-  //     return;
-  //   //Segment Objects
-  //   pcl::PointCloud<PointT>::CloudVectorType clusters;
+    if (stage4_labels_->points.size () == 0 || stage4_cloud_->points.size () == 0)
+      return;
+    //Segment Objects
+    typename pcl::PointCloud<PointT>::CloudVectorType clusters;
+
+    stage5_labels_ = LabelCloudPtr(new LabelCloud ());
+
+    std::vector<bool> plane_labels;
+    plane_labels.resize (stage4_label_indices_.size (), false);
     
-  //   if (regions.size () > 0)
-  //   {
-  //     std::vector<bool> plane_labels;
-  //     plane_labels.resize (label_indices.size (), false);
-  //     for (size_t i = 0; i < label_indices.size (); i++)
-  //     {
-  //       if (label_indices[i].indices.size () > 10000)
-  //       {
-  //         plane_labels[i] = true;
-  //       }
-  //     }  
+    if (stage4_regions_.size () > 0)
+    {
+      // for (size_t i = 0; i < stage3_label_indices_.size (); i++)
+      // {
+      //   if (stage3_label_indices_[i].indices.size () > 10000)
+      //   {
+      //     plane_labels[i] = true;
+      //   }
+      // }  
       
-  //     euclidean_cluster_comparator_->setInputCloud (cloud);
-  //     euclidean_cluster_comparator_->setLabels (labels);
-  //     euclidean_cluster_comparator_->setExcludeLabels (plane_labels);
-  //     euclidean_cluster_comparator_->setDistanceThreshold (0.01f, false);
+      for (size_t i = 0; i < stage4_inlier_indices_.size (); i++)
+      {
+        if (stage4_inlier_indices_[i].indices.size () > 10000)
+        {
+          plane_labels[stage4_labels_->points[stage4_inlier_indices_[i].indices[0] ].label] = true;
+        }
+      }
+    }
+    
+    printf ("stage4 cloud has: %d labels has %d, exclude labels has %d\n", stage4_cloud_->points.size (), stage4_labels_->points.size (), plane_labels.size ());
+    euclidean_cluster_comparator_->setInputCloud (stage4_cloud_);
+    euclidean_cluster_comparator_->setLabels (stage4_labels_);
+    euclidean_cluster_comparator_->setExcludeLabels (plane_labels);
+    euclidean_cluster_comparator_->setDistanceThreshold (0.01f, false);
       
-  //     pcl::PointCloud<pcl::Label> euclidean_labels;
-  //     std::vector<pcl::PointIndices> euclidean_label_indices;
-  //     pcl::OrganizedConnectedComponentSegmentation<PointT,pcl::Label> euclidean_segmentation (euclidean_cluster_comparator_);
-  //     euclidean_segmentation.setInputCloud (cloud);
-  //     euclidean_segmentation.segment (euclidean_labels, euclidean_label_indices);
-      
-  //     for (size_t i = 0; i < euclidean_label_indices.size (); i++)
-  //     {
-  //       if (euclidean_label_indices[i].indices.size () > 1000)
-  //       {
-  //         pcl::PointCloud<PointT> cluster;
-  //         pcl::copyPointCloud (*cloud,euclidean_label_indices[i].indices,cluster);
-  //         clusters.push_back (cluster);
-  //       }    
-  //     }
-      
-  //     PCL_INFO ("Got %d euclidean clusters!\n", clusters.size ());
+    pcl::PointCloud<pcl::Label> euclidean_labels;
+    std::vector<pcl::PointIndices> euclidean_label_indices;
+    pcl::OrganizedConnectedComponentSegmentation<PointT,pcl::Label> euclidean_segmentation (euclidean_cluster_comparator_);
+    euclidean_segmentation.setInputCloud (stage4_cloud_);
+    printf ("Calling segment for euclidean clusters\n");
+    euclidean_segmentation.segment (*stage5_labels_, euclidean_label_indices);
+    printf ("Done with segment for euclidean clusters\n");
+
+    for (size_t i = 0; i < euclidean_label_indices.size (); i++)
+    {
+      if (euclidean_label_indices[i].indices.size () > 1000)
+      {
+        pcl::PointCloud<PointT> cluster;
+        pcl::copyPointCloud (*stage4_cloud_,euclidean_label_indices[i].indices,cluster);
+        clusters.push_back (cluster);
+        }    
+    }
+    
+    PCL_INFO ("Got %d euclidean clusters!\n", clusters.size ());
+    
   }
   
-
-    // Compute planes
-    template <typename PointT> void
-    OrganizedFeatureExtraction<PointT>::computePlanes ()
+  
+  // Compute planes
+  template <typename PointT> void
+  OrganizedFeatureExtraction<PointT>::computePlanes ()
+  {
+    if (stage2_cloud_->points.size () == 0)
+      return;
+    
+    // std::vector<pcl::ModelCoefficients> model_coefficients;
+    // std::vector<pcl::PointIndices> inlier_indices;  
+    // std::vector<pcl::PointIndices> label_indices;
+    // std::vector<pcl::PointIndices> boundary_indices;
+    stage3_labels_ = LabelCloudPtr(new LabelCloud ());
+    
+    double start = pcl::getTime ();
+    //mps.segment (stage3_regions_);
+    //mps.segmentAndRefine (stage3_regions_);
+    mps.segmentAndRefine (stage3_regions_, stage3_model_coefficients_, stage3_inlier_indices_, stage3_labels_, stage3_label_indices_, stage3_boundary_indices_);
+    double end = pcl::getTime ();
+    //char time_str[2048];
+    //sprintf (time_str,"%lf\n",double(end - start));
+    //printf ("MPS took: %s\n", time_str);
+    if (timing_)
     {
-      if (stage2_cloud_->points.size () == 0)
-        return;
-
-      std::vector<pcl::ModelCoefficients> model_coefficients;
-      std::vector<pcl::PointIndices> inlier_indices;  
-      std::vector<pcl::PointIndices> label_indices;
-      std::vector<pcl::PointIndices> boundary_indices;
-      stage3_labels_ = LabelCloudPtr(new LabelCloud ());
-
-      double start = pcl::getTime ();
-      mps.segment (stage3_regions_);
-      //mps.segmentAndRefine (stage3_regions_);
-      //mps.segmentAndRefine (stage3_regions_, model_coefficients, inlier_indices, stage3_labels_, label_indices, boundary_indices);
-      double end = pcl::getTime ();
-      //char time_str[2048];
-      //sprintf (time_str,"%lf\n",double(end - start));
-      //printf ("MPS took: %s\n", time_str);
-      if (timing_)
-      {
-        mps_times_file_ << double(end - start) << std::endl;
-        std::cout << double(end - start) << std::endl;
-      }
-      printf ("Got %d regions!\n", stage3_regions_.size ());
+      mps_times_file_ << double(end - start) << std::endl;
+      std::cout << double(end - start) << std::endl;
     }
-
-    // Extract edges
-    template <typename PointT> void
-    OrganizedFeatureExtraction<PointT>::computeEdges ()
-    {
-      if (stage2_cloud_->points.size () == 0)
-        return;
+    printf ("Got %d regions!\n", stage3_regions_.size ());
+    }
+  
+  // Extract edges
+  template <typename PointT> void
+  OrganizedFeatureExtraction<PointT>::computeEdges ()
+  {
+    if (stage2_cloud_->points.size () == 0)
+      return;
 
       pcl::PointCloud<pcl::Label> labels;
       std::vector<pcl::PointIndices> label_indices;
@@ -418,6 +454,9 @@ namespace omnimapper
                 planar_region_stamped_callback_ (regions, timestamp);
               
             }
+
+
+            
             
             
             
@@ -476,6 +515,12 @@ namespace omnimapper
   OrganizedFeatureExtraction<PointT>::setLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn)
   {
     label_cloud_callback_ = fn;
+  }
+
+  template <typename PointT> void
+  OrganizedFeatureExtraction<PointT>::setClusterLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn)
+  {
+    cluster_label_cloud_callback_ = fn;
   }
 
   template <typename PointT> void
