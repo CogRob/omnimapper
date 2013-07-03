@@ -1,0 +1,19 @@
+<launch>
+	<param name="/use_sim_time" value="true"/>
+
+      <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
+      	    <param name="odom_frame_name" value="/odom"/>
+	    <param name="base_frame_name" value="/openni_rgb_optical_frame"/>
+	    <param name="cloud_topic_name" value="/cloud"/>
+	    <param name="icp_leaf_size" value="0.005"/>
+	    <param name="icp_max_correspondence_distance" value="0.1"/>
+	    <param name="icp_trans_noise" value="0.05"/>
+	    <param name="icp_rot_noise" value="0.05"/>
+	    <param name="plane_range_threshold" value="0.1"/>
+	    <param name="plane_angular_threshold" value="0.174532925"/>
+	    <param name="plane_range_noise" value="0.1"/>
+	    <param name="plane_angular_noise" value="0.174532925"/>
+      </node>
+
+	 <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/> 
+</launch>
