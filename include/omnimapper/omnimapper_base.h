@@ -193,6 +193,14 @@ namespace omnimapper
       gtsam::Values
       getSolutionAndUncommitted ();
 
+      /** \brief Returns the most recent optimized pose. */
+      gtsam::Pose3
+      getLatestPose ();
+
+      /** \brief Returns the most recent optimized pose, and the timestamp. */
+      void
+      getLatestPose (gtsam::Pose3& pose, Time& time);
+
       /** \brief Optimizes the graph.  This will update the SLAM problem with the newly added factors, and optimize. */
       void
       optimize ();

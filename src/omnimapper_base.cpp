@@ -605,6 +605,33 @@ omnimapper::OmniMapperBase::spinOnce ()
   
 }
 
+gtsam::Pose3
+omnimapper::OmniMapperBase::getLatestPose ()
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  if (latest_committed_node == chain.begin ())
+  {
+    return (gtsam::Pose3::identity ());
+  }
+  gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
+  return (new_pose_value);
+}
+
+void
+omnimapper::OmniMapperBase::getLatestPose (gtsam::Pose3& pose, Time& time)
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  if (latest_committed_node == chain.begin ())
+  {
+    pose = gtsam::Pose3::identity ();
+    time = boost::posix_time::microsec_clock::local_time();
+    return;
+  }
+  pose = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
+  time = latest_committed_node->time;
+  return;
+}
+
 void
 omnimapper::OmniMapperBase::updateOutputPlugins ()
 {

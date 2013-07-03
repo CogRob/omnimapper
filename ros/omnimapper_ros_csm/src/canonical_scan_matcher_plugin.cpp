@@ -460,7 +460,7 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename LScanT> bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym)
   {
-    double loop_closure_dist_thresh_ = 0.50;//5.0;
+    double loop_closure_dist_thresh_ = 1.50;//5.0;
     int pose_index_thresh_ = 40;
 
     // Get the latest solution from the mapper
