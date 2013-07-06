@@ -34,7 +34,7 @@ rosbuild_gensrv()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
-rosbuild_add_library(${PROJECT_NAME} src/ros_time_utils.cpp src/tf_pose_plugin.cpp src/omnimapper_visualizer_rviz.cpp src/tum_data_error_plugin.cpp)
+rosbuild_add_library(${PROJECT_NAME} src/ros_time_utils.cpp src/ros_tf_utils.cpp src/tf_pose_plugin.cpp src/omnimapper_visualizer_rviz.cpp src/tum_data_error_plugin.cpp)
 target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES})
 
 rosbuild_add_executable(time_test src/time_test.cpp)

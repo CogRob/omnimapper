@@ -7,6 +7,7 @@
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
 #include <omnimapper_ros/OutputMapTSDF.h>
 #include <omnimapper_ros/tum_data_error_plugin.h>
+#include <omnimapper_ros/ros_tf_utils.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -16,6 +17,9 @@
 
 #include <pcl/io/pcd_grabber.h>
 #include <boost/filesystem.hpp>
+
+#include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -58,6 +62,10 @@ class OmniMapperHandheldNode
     // Organized Feature Extraction
     omnimapper::OrganizedFeatureExtraction<PointT> organized_feature_extraction_;
 
+    // TF Listener  (for initialization)
+    tf::TransformListener tf_listener_;
+    tf::TransformBroadcaster tf_broadcaster_;
+
     // Subscribers
     ros::Subscriber pointcloud_sub_;
 
@@ -74,6 +82,7 @@ class OmniMapperHandheldNode
     std::string base_frame_name_;
     std::string cloud_topic_name_;
 
+    bool init_pose_from_tf_;
     bool use_init_pose_;
     double init_x_, init_y_, init_z_;
     double init_qx_, init_qy_, init_qz_, init_qw_;
@@ -111,7 +120,7 @@ class OmniMapperHandheldNode
 
     // Other Flags
     bool add_pose_per_cloud_;
-    
+    bool broadcast_map_to_odom_;
 
     OmniMapperHandheldNode ()
       : n_ ("~"),
@@ -151,6 +160,7 @@ class OmniMapperHandheldNode
       n_.param ("tf_trans_noise", tf_trans_noise_, 0.05);
       n_.param ("tf_rot_noise", tf_rot_noise_, pcl::deg2rad (10.0));
       n_.param ("use_init_pose", use_init_pose_, false);
+      n_.param ("init_pose_from_tf", init_pose_from_tf_, false);
       n_.param ("init_x", init_x_, 0.0);
       n_.param ("init_y", init_y_, 0.0);
       n_.param ("init_z", init_z_, 0.0);
@@ -160,6 +170,7 @@ class OmniMapperHandheldNode
       n_.param ("init_qw", init_qw_, 1.0);
       n_.param ("draw_pose_array", draw_pose_array_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
+      n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -167,6 +178,33 @@ class OmniMapperHandheldNode
         gtsam::Pose3 init_pose(gtsam::Rot3::quaternion (init_qw_, init_qx_, init_qy_, init_qz_), 
                                gtsam::Point3 (init_x_, init_y_, init_z_));
         omb_.setInitialPose (init_pose);
+      }
+
+      // Optionally get initial pose from TF
+      if (init_pose_from_tf_)
+      {
+        bool got_tf = false;
+        tf::StampedTransform init_transform;
+        
+        while (!got_tf)
+        {
+          got_tf = true;
+          try
+          {
+            ROS_INFO ("Waiting for initial pose from %s to %s", odom_frame_name_.c_str (), base_frame_name_.c_str ());
+            tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_, ros::Time::now (), ros::Duration (10.0));
+            tf_listener_.lookupTransform (odom_frame_name_, base_frame_name_, ros::Time::now (), init_transform);
+          }
+          catch (tf::TransformException ex)
+          {
+            ROS_INFO ("Transform not yet available!");
+            got_tf = false;
+          }
+        }
+        
+        gtsam::Pose3 init_pose = omnimapper::tf2pose3 (init_transform);
+        gtsam::Pose3 init_pose_inv = init_pose.inverse ();
+        omb_.setInitialPose (init_pose_inv);
       }
 
       omb_.setSuppressCommitWindow (true);
@@ -230,6 +268,8 @@ class OmniMapperHandheldNode
       {
         boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
         organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
+        boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_vis_cb = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback, &vis_plugin_, _1, _2);
+        organized_feature_extraction_.setPlanarRegionStampedCallback (plane_vis_cb);
       }
 
       // Set the ICP Plugin on the visualizer
@@ -293,6 +333,8 @@ class OmniMapperHandheldNode
         boost::posix_time::ptime header_time = cloud->header.stamp.toBoost ();
         omb_.getPoseSymbolAtTime (header_time, sym);
       }
+      if (broadcast_map_to_odom_)
+        publishMapToOdom ();
     }
     
     bool
@@ -301,6 +343,31 @@ class OmniMapperHandheldNode
       printf ("TSDF Service call, calling tsdf plugin\n");
       tsdf_plugin_.generateTSDF ();
       return (true);
+    }
+
+    void
+    publishMapToOdom ()
+    {
+      gtsam::Pose3 current_pose;
+      boost::posix_time::ptime current_time;
+      omb_.getLatestPose (current_pose, current_time);
+      ros::Time current_time_ros = omnimapper::ptime2rostime (current_time);
+      tf::Transform current_pose_ros = omnimapper::pose3totf (current_pose);
+
+      tf::Stamped<tf::Pose> odom_to_map;
+      try
+      {
+//        tf_listener_.transformPose ("/odom", tf::Stamped<tf::Pose> (tf::btTransform (tf::btQuaternion (current_quat[1], current_quat[2], current_quat[3], current_quat[0]), btVector3 (current_pose.x (), current_pose.y (), current_pose.z ())).inverse (), current_time_ros, "/base_link"), odom_to_map);
+        tf_listener_.transformPose (odom_frame_name_, tf::Stamped<tf::Pose> (current_pose_ros.inverse (), current_time_ros, base_frame_name_), odom_to_map);
+      }
+      catch (tf::TransformException e)
+      {
+        ROS_ERROR ("OmniMapperROS: Error with  TF.\n");
+        odom_to_map.setIdentity ();
+        return;
+      }
+      tf::Transform map_to_odom = odom_to_map.inverse ();//tf::Transform (tf::Quaternion (odom_to_map.getRotation ()), tf::Point (odom_to_map.getOrigin ())
+      tf_broadcaster_.sendTransform (tf::StampedTransform (map_to_odom, ros::Time::now (), "/world", odom_frame_name_));
     }
 
     // void

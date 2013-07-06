@@ -31,14 +31,14 @@ omnimapper
     bool got_tf = true;
     gtsam::Pose3 relative_pose = gtsam::Pose3::identity ();
     try{
-      //tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
-      //                              rt1, ros::Duration(0.2));
+      tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
+                                    rt1, ros::Duration(0.2));
       
       tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt1, tf1);
-
-      //tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
-      //                              rt2, ros::Duration(0.2));
+      
+      tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
+                                    rt2, ros::Duration(0.2));
       
       tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt2, tf2);

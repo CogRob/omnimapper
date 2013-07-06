@@ -5,6 +5,8 @@
 #include <omnimapper_ros/VisualizeFullCloud.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
+#include <pcl/segmentation/planar_region.h>
+
 
 namespace omnimapper
 {
@@ -23,6 +25,7 @@ namespace omnimapper
     public:
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
+      void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
@@ -46,6 +49,9 @@ namespace omnimapper
       // Publisher for visualization marker arrays
       ros::Publisher marker_array_pub_;
 
+      // Publishers for segmentation results of planes
+      ros::Publisher segmented_plane_pub_;
+      
       ros::ServiceServer draw_icp_clouds_srv_;
 
       // ICP Plugin Ref

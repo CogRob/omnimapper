@@ -1,4 +1,5 @@
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
+#include <omnimapper_ros/ros_time_utils.h>
 #include <geometry_msgs/PoseArray.h>
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
@@ -20,6 +21,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   planar_boundary_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("planar_boundaries", 0);
   
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
+
+  segmented_plane_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("segmented_planes", 0);
 
   draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 }
@@ -170,6 +173,33 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   }
   
 }
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t)
+{
+  // Display the segmented planar regions
+  pcl::PointCloud<PointT> aggregate_cloud;
+  for (int i = 0; i < regions.size (); i++)
+  {
+    pcl::PointCloud<PointT> border_cloud;
+    std::vector<PointT, Eigen::aligned_allocator<PointT> > border = regions[i].getContour ();
+    border_cloud.points = border;
+    aggregate_cloud += border_cloud;
+  }
+  
+  if (aggregate_cloud.points.size () > 0)
+  {
+    sensor_msgs::PointCloud2 cloud_msg;
+    pcl::toROSMsg (aggregate_cloud, cloud_msg);
+    cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
+    cloud_msg.header.stamp = ptime2rostime (t);
+    segmented_plane_pub_.publish (cloud_msg);
+  }
+  
+}
+
+// template <typename PointT> void
+// clusterLabelsCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels)
 
 template <typename PointT> bool 
 omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res)
