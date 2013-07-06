@@ -115,6 +115,8 @@ class OrganizedFeatureExtraction
     // Planar Region Stamped Callback
     boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)> planar_region_stamped_callback_;
 
+    std::vector<boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)> > planar_region_stamped_callbacks_;
+
     // Edge Callbacks
     boost::function<void(const CloudConstPtr&)> occluding_edge_callback_;
 

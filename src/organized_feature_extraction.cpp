@@ -96,53 +96,53 @@ namespace omnimapper
     }
 
     // Get latest cloud from the sensor
-    template <typename PointT> void 
-    OrganizedFeatureExtraction<PointT>::cloudCallbackProcess (const CloudConstPtr& cloud)
-    {
-      // Store cloud
-      boost::mutex::scoped_lock (cloud_mutex);
-      //std::cout << "OrganizedFeatureExtraction: Cloud stamp: " << cloud->header.stamp << std::endl;
-      FPS_CALC ("cloud_callback");
-      //prev_sensor_cloud_ = cloud;
-      //stage1_cloud_ = prev_sensor_cloud_;
-      stage1_cloud_ = cloud;
+    // template <typename PointT> void 
+    // OrganizedFeatureExtraction<PointT>::cloudCallbackProcess (const CloudConstPtr& cloud)
+    // {
+    //   // Store cloud
+    //   boost::mutex::scoped_lock (cloud_mutex);
+    //   //std::cout << "OrganizedFeatureExtraction: Cloud stamp: " << cloud->header.stamp << std::endl;
+    //   FPS_CALC ("cloud_callback");
+    //   //prev_sensor_cloud_ = cloud;
+    //   //stage1_cloud_ = prev_sensor_cloud_;
+    //   stage1_cloud_ = cloud;
 
-      if (true)
-      {
+    //   if (true)
+    //   {
         
-        double start = pcl::getTime ();
-        ne.setInputCloud (stage1_cloud_);
-        boost::thread ne_thread (&OrganizedFeatureExtraction::computeNormals, this);
+    //     double start = pcl::getTime ();
+    //     ne.setInputCloud (stage1_cloud_);
+    //     boost::thread ne_thread (&OrganizedFeatureExtraction::computeNormals, this);
         
-        mps.setInputNormals (stage2_normals_);
-        mps.setInputCloud (stage2_cloud_);
-        boost::thread mps_thread (&OrganizedFeatureExtraction::computePlanes, this);
+    //     mps.setInputNormals (stage2_normals_);
+    //     mps.setInputCloud (stage2_cloud_);
+    //     boost::thread mps_thread (&OrganizedFeatureExtraction::computePlanes, this);
         
-        ne_thread.join ();
-        mps_thread.join ();
-        std::cout << "time: " << double(pcl::getTime () - start) << std::endl;
+    //     ne_thread.join ();
+    //     mps_thread.join ();
+    //     std::cout << "time: " << double(pcl::getTime () - start) << std::endl;
         
         
-        //if (label_cloud_callback_)
-        //  label_cloud_callback_ (stage2_cloud_, stage3_labels_);
+    //     //if (label_cloud_callback_)
+    //     //  label_cloud_callback_ (stage2_cloud_, stage3_labels_);
         
-        {
-          // boost::mutex::scoped_lock lock (vis_mutex);
-          // // Store the latest results for the visualizer
-          // vis_cloud_ = stage2_cloud_;
-          // vis_labels_ = stage3_labels_;
-          // vis_normals_ = stage2_normals_;
-          // vis_regions_ = stage3_regions_;
-          // vis_occluding_cloud_ = stage3_occluding_cloud_;
-          // Update completed stage1 to stage2
-          stage2_cloud_ = stage1_cloud_;
-          stage2_normals_ = stage1_normals_;
-          //updated_data_ = true;
-        }
-      }
+    //     {
+    //       // boost::mutex::scoped_lock lock (vis_mutex);
+    //       // // Store the latest results for the visualizer
+    //       // vis_cloud_ = stage2_cloud_;
+    //       // vis_labels_ = stage3_labels_;
+    //       // vis_normals_ = stage2_normals_;
+    //       // vis_regions_ = stage3_regions_;
+    //       // vis_occluding_cloud_ = stage3_occluding_cloud_;
+    //       // Update completed stage1 to stage2
+    //       stage2_cloud_ = stage1_cloud_;
+    //       stage2_normals_ = stage1_normals_;
+    //       //updated_data_ = true;
+    //     }
+    //   }
       
-      //updated_cloud_ = true;
-    }
+    //   //updated_cloud_ = true;
+    // }
 
     template <typename PointT> void
     OrganizedFeatureExtraction<PointT>::processFrame ()
@@ -213,11 +213,14 @@ namespace omnimapper
             std::cout << "MPS thread joined: " << double(pcl::getTime () - mps_thread_spawn) << std::endl;
           clust_thread.join ();
           if (debug_)
-            std::cout << "Clust thread joined: " << double (pcl::getTime () - clust_thread_spawn) << std::endl;
+           std::cout << "Clust thread joined: " << double (pcl::getTime () - clust_thread_spawn) << std::endl;
 
           //printf ("publishing with %d %d\n", stage2_cloud_->points.size (), labels->points.size ());
           if (label_cloud_callback_)
           {
+            std::cout << "Starting label callback!" << std::endl;
+            std::cout << "Stage 2 cloud: " << stage2_cloud_->points.size () << std::endl;
+            std::cout << "Stage3 labels: " << stage3_labels_->points.size () << std::endl;
             double cb_start = pcl::getTime ();
             label_cloud_callback_ (stage2_cloud_, stage3_labels_);
             std::cout << "Callback took: " << double (pcl::getTime () - cb_start) << std::endl;
@@ -225,7 +228,10 @@ namespace omnimapper
 
           if (cluster_label_cloud_callback_)
           {
-            cluster_label_cloud_callback_ (stage3_cloud_, stage4_labels_);
+            std::cout << "Starting cluster label cloud callback!" << std::endl;
+            std::cout << "Stage4 cloud: " << stage4_cloud_->points.size () << std::endl;
+            std::cout << "stage5 labels: " << stage5_labels_->points.size () << std::endl;
+            cluster_label_cloud_callback_ (stage4_cloud_, stage5_labels_);
           }
 
           if (region_cloud_callback_)
@@ -240,12 +246,16 @@ namespace omnimapper
             occluding_edge_callback_ (stage3_occluding_cloud_);
           }
 
-          if (planar_region_stamped_callback_)
+          if (planar_region_stamped_callbacks_.size () > 0)
           {
+            std::cout << "Starting planar region stamped callback" << std::endl;
+            std::cout << "stage3 regions has: " << stage3_regions_.size () << std::endl;
             Time timestamp = stage2_cloud_->header.stamp.toBoost ();
             if (stage2_cloud_->points.size () > 200)
-              planar_region_stamped_callback_ (stage3_regions_, timestamp);
-            
+            {
+              for (int i = 0; i < planar_region_stamped_callbacks_.size (); i++)
+                planar_region_stamped_callbacks_[i] (stage3_regions_, timestamp);
+            }
           }
           
 
@@ -253,12 +263,8 @@ namespace omnimapper
           {
             // boost::mutex::scoped_lock lock (vis_mutex);
             // // Store the latest results for the visualizer
-            // vis_cloud_ = stage2_cloud_;
-            // vis_labels_ = stage3_labels_;
-            // vis_normals_ = stage2_normals_;
-            // vis_regions_ = stage3_regions_;
-            // vis_occluding_cloud_ = stage3_occluding_cloud_;
             // Update completed stage1 to stage2
+
             stage4_regions_ = stage3_regions_;
             stage4_cloud_ = stage3_cloud_;
             stage3_cloud_ = stage2_cloud_;
@@ -360,20 +366,28 @@ namespace omnimapper
     if (stage2_cloud_->points.size () == 0)
       return;
     
-    // std::vector<pcl::ModelCoefficients> model_coefficients;
-    // std::vector<pcl::PointIndices> inlier_indices;  
-    // std::vector<pcl::PointIndices> label_indices;
-    // std::vector<pcl::PointIndices> boundary_indices;
+    double init_start = pcl::getTime ();
+    std::vector<pcl::ModelCoefficients> model_coefficients;
+    std::vector<pcl::PointIndices> inlier_indices;  
+    std::vector<pcl::PointIndices> label_indices;
+    std::vector<pcl::PointIndices> boundary_indices;
+    stage3_model_coefficients_ = model_coefficients;
+    stage3_inlier_indices_ = inlier_indices;
+    stage3_label_indices_ = label_indices;
+    stage3_boundary_indices_ = boundary_indices;
     stage3_labels_ = LabelCloudPtr(new LabelCloud ());
-    
+    std::cout << "MPS init took: " << double (pcl::getTime () - init_start) << std::endl;
+
     double start = pcl::getTime ();
     //mps.segment (stage3_regions_);
     //mps.segmentAndRefine (stage3_regions_);
     mps.segmentAndRefine (stage3_regions_, stage3_model_coefficients_, stage3_inlier_indices_, stage3_labels_, stage3_label_indices_, stage3_boundary_indices_);
+    //mps.segmentAndRefine (stage3_regions_, model_coefficients, inlier_indices, stage3_labels_, label_indices, boundary_indices);
     double end = pcl::getTime ();
+    std::cout << "mps segment and refine took: " << double(end - start) << std::endl;
     //char time_str[2048];
     //sprintf (time_str,"%lf\n",double(end - start));
-    //printf ("MPS took: %s\n", time_str);
+    //printf ("MPS segmentandrefine took: %s\n", time_str);
     if (timing_)
     {
       mps_times_file_ << double(end - start) << std::endl;
@@ -501,7 +515,8 @@ namespace omnimapper
     template <typename PointT> void
     OrganizedFeatureExtraction<PointT>::setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)>& fn)
     {
-      planar_region_stamped_callback_ = fn;
+      planar_region_stamped_callbacks_.push_back (fn);
+      //planar_region_stamped_callback_ = fn;
       printf ("planar region stamped callback set!\n");
     }
 
