@@ -24,6 +24,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
 
   segmented_plane_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("segmented_planes", 0);
 
+  segmented_label_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("segmented_label_cloud", 0);
+
   draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 }
 
@@ -198,6 +200,32 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<
   
 }
 
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels)
+{
+  // Create a colored label cloud
+  pcl::PointCloud<pcl::PointXYZRGB> labeled_cloud;
+  //labeled_cloud = (*cloud);
+  pcl::copyPointCloud (*cloud, labeled_cloud);
+
+  unsigned char red [6] = {255,   0,   0, 255, 255,   0};
+  unsigned char grn [6] = {  0, 255,   0, 255,   0, 255};
+  unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
+  
+  for (int i = 0; i < labeled_cloud.points.size (); i++)
+  {
+    labeled_cloud.points[i].r = (labeled_cloud.points[i].r + red[labels->points[i].label%6]) / 2;
+    labeled_cloud.points[i].g = (labeled_cloud.points[i].r + grn[labels->points[i].label%6]) / 2;
+    labeled_cloud.points[i].b = (labeled_cloud.points[i].r + blu[labels->points[i].label%6]) / 2;
+  }
+  
+  sensor_msgs::PointCloud2 cloud_msg;
+  pcl::toROSMsg (labeled_cloud, cloud_msg);
+  cloud_msg.header.frame_id = cloud->header.frame_id;
+  cloud_msg.header.stamp = cloud->header.stamp;
+  segmented_label_cloud_pub_.publish (cloud_msg);
+}
+
 // template <typename PointT> void
 // clusterLabelsCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels)
 
@@ -208,6 +236,5 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback (omnimapper_
   return (true);
 }
 
-
-template class omnimapper::OmniMapperVisualizerRViz<pcl::PointXYZ>;
+//template class omnimapper::OmniMapperVisualizerRViz<pcl::PointXYZ>;
 template class omnimapper::OmniMapperVisualizerRViz<pcl::PointXYZRGBA>;

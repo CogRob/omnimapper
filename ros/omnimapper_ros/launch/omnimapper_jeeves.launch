@@ -23,10 +23,13 @@
 	    <param name="icp_rot_noise" value="0.05"/>
 	    <param name="plane_range_threshold" value="0.1"/>
 	    <param name="plane_angular_threshold" value="0.174532925"/>
-	    <param name="plane_range_noise" value="0.1"/>
-	    <param name="plane_angular_noise" value="0.174532925"/>
+	    <param name="plane_range_noise" value="1.1"/>
+	    <param name="plane_angular_noise" value="1.174532925"/>
 	    <param name="tf_trans_noise" value="0.05"/>
 	    <param name="tf_rot_noise" value="0.0872664626"/>
+	    <param name="tf_roll_noise" value="0.001"/>
+	    <param name="tf_pitch_noise" value="0.0872"/>
+	    <param name="tf_yaw_noise" value="0.001"/>
 	    <param name="add_pose_per_cloud" value="true"/>
 	    <param name="broadcast_map_to_odom" value="true"/>
       </node>

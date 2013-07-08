@@ -25,6 +25,9 @@ typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
 typedef Cloud::ConstPtr CloudConstPtr;
+typedef pcl::PointCloud<pcl::Label> LabelCloud;
+typedef typename LabelCloud::Ptr LabelCloudPtr;
+typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
 
 template <typename PointT> 
 class OmniMapperHandheldNode
@@ -108,10 +111,12 @@ class OmniMapperHandheldNode
     // TF Plugin Params
     double tf_trans_noise_;
     double tf_rot_noise_;
+    double tf_roll_noise_, tf_pitch_noise_, tf_yaw_noise_;
     
     // Visualization params
     bool draw_pose_array_;
-    
+    bool draw_label_cloud_;
+
     // TSDF plugin params
     bool use_tsdf_plugin_;
 
@@ -159,6 +164,9 @@ class OmniMapperHandheldNode
       n_.param ("plane_angular_noise", plane_angular_noise_, 0.26);
       n_.param ("tf_trans_noise", tf_trans_noise_, 0.05);
       n_.param ("tf_rot_noise", tf_rot_noise_, pcl::deg2rad (10.0));
+      n_.param ("tf_roll_noise", tf_roll_noise_, tf_rot_noise_);
+      n_.param ("tf_pitch_noise", tf_pitch_noise_, tf_rot_noise_);
+      n_.param ("tf_yaw_noise", tf_yaw_noise_, tf_rot_noise_);
       n_.param ("use_init_pose", use_init_pose_, false);
       n_.param ("init_pose_from_tf", init_pose_from_tf_, false);
       n_.param ("init_x", init_x_, 0.0);
@@ -169,6 +177,7 @@ class OmniMapperHandheldNode
       n_.param ("init_qz", init_qz_, 0.0);
       n_.param ("init_qw", init_qw_, 1.0);
       n_.param ("draw_pose_array", draw_pose_array_, true);
+      n_.param ("draw_label_cloud", draw_label_cloud_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
 
@@ -213,6 +222,9 @@ class OmniMapperHandheldNode
       tf_plugin_.setOdomFrameName (odom_frame_name_);
       tf_plugin_.setBaseFrameName (base_frame_name_);
       tf_plugin_.setRotationNoise (tf_trans_noise_);//0.1
+      tf_plugin_.setRollNoise (tf_roll_noise_);
+      tf_plugin_.setPitchNoise (tf_pitch_noise_);
+      tf_plugin_.setYawNoise (tf_yaw_noise_);
       tf_plugin_.setTranslationNoise (tf_rot_noise_);//0.1
       if (use_tf_)
       {
@@ -272,6 +284,13 @@ class OmniMapperHandheldNode
         organized_feature_extraction_.setPlanarRegionStampedCallback (plane_vis_cb);
       }
 
+      // Optionally draw label cloud
+      if (draw_label_cloud_)
+      {
+        boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback, &vis_plugin_, _1, _2);
+        organized_feature_extraction_.setClusterLabelsCallback (label_vis_callback);
+      }
+
       // Set the ICP Plugin on the visualizer
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr (&icp_plugin_);
       vis_plugin_.setICPPlugin (icp_ptr);
@@ -314,12 +333,12 @@ class OmniMapperHandheldNode
     cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     {
       ROS_INFO ("OmniMapperROS got a cloud.");
-      //CloudPtr cloud (new Cloud ());
-      //pcl::fromROSMsg (*msg, *cloud);
-      pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
-      pcl::fromROSMsg (*msg, *xyz_cloud);
       CloudPtr cloud (new Cloud ());
-      pcl::copyPointCloud (*xyz_cloud, *cloud);
+      pcl::fromROSMsg (*msg, *cloud);
+      //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
+      //pcl::fromROSMsg (*msg, *xyz_cloud);
+      //CloudPtr cloud (new Cloud ());
+      // pcl::copyPointCloud (*xyz_cloud, *cloud);
       if (use_icp_)
       {
         printf ("Calling ICP Plugin!\n");

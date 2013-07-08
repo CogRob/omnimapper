@@ -53,10 +53,10 @@ namespace omnimapper
 
       // Set up plane segmentation
       mps.setMinInliers (20000);
-      mps.setAngularThreshold (pcl::deg2rad (1.0));//2.0
-      mps.setDistanceThreshold (0.015);//0.03
+      mps.setAngularThreshold (pcl::deg2rad (2.0));//2.0
+      mps.setDistanceThreshold (0.2);//0.03
       mps.setProjectPoints (true);
-      mps.setRemoveDuplicatePoints (false);
+      mps.setRemoveDuplicatePoints (true);
       pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
       refine_compare->setDistanceThreshold (0.0025);
       mps.setRefinementComparator (refine_compare);
@@ -180,7 +180,7 @@ namespace omnimapper
           //boost::thread ne_thread (&pcl::IntegralImageNormalEstimation<PointT, pcl::Normal>::compute, &ne, *stage1_normals_);
           //ne_thread.join ();
           double ne_thread_spawn = pcl::getTime ();
-          boost::thread ne_thread (&OrganizedFeatureExtraction::computeNormals, this);
+          boost::thread ne_thread (&OrganizedFeatureExtraction::computeNormals, boost::ref (this));
           //ne_thread.join ();
           
           // Now we extract features for the frame before this, for which we now have normals
@@ -190,16 +190,16 @@ namespace omnimapper
           //if (stage2_cloud_->points.size () > 0)
           //  mps.segmentAndRefine (regions);
           double mps_thread_spawn = pcl::getTime ();
-          boost::thread mps_thread (&OrganizedFeatureExtraction::computePlanes, this);
+          boost::thread mps_thread (&OrganizedFeatureExtraction::computePlanes, boost::ref (this));
           
           // Extract edges
           oed.setInputCloud (stage2_cloud_);
           double oed_thread_spawn = pcl::getTime ();
-          boost::thread oed_thread (&OrganizedFeatureExtraction::computeEdges, this);
+          boost::thread oed_thread (&OrganizedFeatureExtraction::computeEdges, boost::ref (this));
           
           // Compute Euclidean Clusters
           double clust_thread_spawn = pcl::getTime ();
-          boost::thread clust_thread (&OrganizedFeatureExtraction::computeClusters, this);
+          boost::thread clust_thread (&OrganizedFeatureExtraction::computeClusters, boost::ref (this));
 
           // Wait for these to all complete
           ne_thread.join ();
@@ -216,22 +216,25 @@ namespace omnimapper
            std::cout << "Clust thread joined: " << double (pcl::getTime () - clust_thread_spawn) << std::endl;
 
           //printf ("publishing with %d %d\n", stage2_cloud_->points.size (), labels->points.size ());
-          if (label_cloud_callback_)
-          {
-            std::cout << "Starting label callback!" << std::endl;
-            std::cout << "Stage 2 cloud: " << stage2_cloud_->points.size () << std::endl;
-            std::cout << "Stage3 labels: " << stage3_labels_->points.size () << std::endl;
-            double cb_start = pcl::getTime ();
-            label_cloud_callback_ (stage2_cloud_, stage3_labels_);
-            std::cout << "Callback took: " << double (pcl::getTime () - cb_start) << std::endl;
-          }
+          // if (label_cloud_callback_)
+          // {
+          //   std::cout << "Starting label callback!" << std::endl;
+          //   std::cout << "Stage 2 cloud: " << stage2_cloud_->points.size () << std::endl;
+          //   std::cout << "Stage3 labels: " << stage3_labels_->points.size () << std::endl;
+          //   double cb_start = pcl::getTime ();
+          //   label_cloud_callback_ (stage2_cloud_, stage3_labels_);
+          //   std::cout << "Callback took: " << double (pcl::getTime () - cb_start) << std::endl;
+          // }
 
           if (cluster_label_cloud_callback_)
           {
-            std::cout << "Starting cluster label cloud callback!" << std::endl;
-            std::cout << "Stage4 cloud: " << stage4_cloud_->points.size () << std::endl;
-            std::cout << "stage5 labels: " << stage5_labels_->points.size () << std::endl;
-            cluster_label_cloud_callback_ (stage4_cloud_, stage5_labels_);
+            if ((stage4_cloud_->points.size () > 200) && (stage5_labels_->points.size () > 200))
+            {
+              std::cout << "Starting cluster label cloud callback!" << std::endl;
+              std::cout << "Stage4 cloud: " << stage4_cloud_->points.size () << std::endl;
+              std::cout << "stage5 labels: " << stage5_labels_->points.size () << std::endl;
+              cluster_label_cloud_callback_ (stage4_cloud_, stage5_labels_);
+            }
           }
 
           if (region_cloud_callback_)
@@ -271,6 +274,7 @@ namespace omnimapper
             stage2_cloud_ = stage1_cloud_;
             stage2_normals_ = stage1_normals_;
             stage4_labels_ = stage3_labels_;
+            //stage4_labels_.swap (stage3_labels_);
             stage4_model_coefficients_ = stage3_model_coefficients_;
             stage4_inlier_indices_ = stage3_inlier_indices_;
             stage4_label_indices_ = stage3_label_indices_;
@@ -307,6 +311,7 @@ namespace omnimapper
     typename pcl::PointCloud<PointT>::CloudVectorType clusters;
 
     stage5_labels_ = LabelCloudPtr(new LabelCloud ());
+    //pcl::copyPointCloud (*stage4_labels_, *stage5_labels_);
 
     std::vector<bool> plane_labels;
     plane_labels.resize (stage4_label_indices_.size (), false);
@@ -334,7 +339,7 @@ namespace omnimapper
     euclidean_cluster_comparator_->setInputCloud (stage4_cloud_);
     euclidean_cluster_comparator_->setLabels (stage4_labels_);
     euclidean_cluster_comparator_->setExcludeLabels (plane_labels);
-    euclidean_cluster_comparator_->setDistanceThreshold (0.01f, false);
+    euclidean_cluster_comparator_->setDistanceThreshold (0.02f, false);
       
     pcl::PointCloud<pcl::Label> euclidean_labels;
     std::vector<pcl::PointIndices> euclidean_label_indices;
@@ -377,6 +382,8 @@ namespace omnimapper
     stage3_boundary_indices_ = boundary_indices;
     stage3_labels_ = LabelCloudPtr(new LabelCloud ());
     std::cout << "MPS init took: " << double (pcl::getTime () - init_start) << std::endl;
+    std::cout << "Checking  stage3 labels!" << std::endl;
+    std::cout << "stage3_labels_ size: " << stage3_labels_->points.size () << std::endl;
 
     double start = pcl::getTime ();
     //mps.segment (stage3_regions_);

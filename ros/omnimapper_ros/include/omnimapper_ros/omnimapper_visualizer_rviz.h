@@ -21,11 +21,15 @@ namespace omnimapper
     typedef typename pcl::PointCloud<PointT> Cloud;
     typedef typename Cloud::Ptr CloudPtr;
     typedef typename Cloud::ConstPtr CloudConstPtr;
+    typedef pcl::PointCloud<pcl::Label> LabelCloud;
+    typedef typename LabelCloud::Ptr LabelCloudPtr;
+    typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
 
     public:
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t);
+      void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
@@ -51,6 +55,7 @@ namespace omnimapper
 
       // Publishers for segmentation results of planes
       ros::Publisher segmented_plane_pub_;
+      ros::Publisher segmented_label_cloud_pub_;
       
       ros::ServiceServer draw_icp_clouds_srv_;
 
