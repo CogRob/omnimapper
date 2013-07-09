@@ -25,9 +25,9 @@ add_definitions(-DEIGEN_USE_NEW_STDVECTOR
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
-#message(STATUS "pcl library dir" 
-include_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/include)
-link_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/lib/)
+
+include_directories(/home/atrevor/github/cpu_tsdf/include)
+link_directories(/home/atrevor/github/cpu_tsdf/build)
 
 find_package(cloudcv REQUIRED)
 include_directories(${CLOUDCV_INCLUDE_DIRS})
