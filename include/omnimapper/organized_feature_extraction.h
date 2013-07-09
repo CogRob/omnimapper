@@ -124,7 +124,7 @@ class OrganizedFeatureExtraction
     boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_cloud_callback_;
 
     // Cluster Label Callback
-    boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> cluster_label_cloud_callback_;
+    std::vector<boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> > cluster_label_cloud_callbacks_;
 
     // RegionCloud Callback
     boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> region_cloud_callback_;    

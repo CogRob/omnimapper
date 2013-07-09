@@ -226,14 +226,15 @@ namespace omnimapper
           //   std::cout << "Callback took: " << double (pcl::getTime () - cb_start) << std::endl;
           // }
 
-          if (cluster_label_cloud_callback_)
+          if (cluster_label_cloud_callbacks_.size() >0)
           {
             if ((stage4_cloud_->points.size () > 200) && (stage5_labels_->points.size () > 200))
             {
               std::cout << "Starting cluster label cloud callback!" << std::endl;
               std::cout << "Stage4 cloud: " << stage4_cloud_->points.size () << std::endl;
               std::cout << "stage5 labels: " << stage5_labels_->points.size () << std::endl;
-              cluster_label_cloud_callback_ (stage4_cloud_, stage5_labels_);
+              for(int i=0; i< cluster_label_cloud_callbacks_.size(); i++)
+               cluster_label_cloud_callbacks_[i] (stage4_cloud_, stage5_labels_);
             }
           }
 
@@ -542,7 +543,7 @@ namespace omnimapper
   template <typename PointT> void
   OrganizedFeatureExtraction<PointT>::setClusterLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn)
   {
-    cluster_label_cloud_callback_ = fn;
+    cluster_label_cloud_callbacks_.push_back(fn);
   }
 
   template <typename PointT> void
