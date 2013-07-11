@@ -116,6 +116,7 @@ class OmniMapperHandheldNode
     // Visualization params
     bool draw_pose_array_;
     bool draw_label_cloud_;
+    bool draw_clusters_;
 
     // TSDF plugin params
     bool use_tsdf_plugin_;
@@ -138,7 +139,8 @@ class OmniMapperHandheldNode
         tsdf_plugin_ (&omb_),
         error_plugin_ (&omb_),
         fake_grabber_ (empty_files_, 1.0, false),
-        organized_feature_extraction_ (fake_grabber_)
+        organized_feature_extraction_ (fake_grabber_),
+        tf_listener_ (ros::Duration (500.0))
     {
       // Load some params
       n_.param ("use_planes", use_planes_, true);
@@ -177,7 +179,8 @@ class OmniMapperHandheldNode
       n_.param ("init_qz", init_qz_, 0.0);
       n_.param ("init_qw", init_qw_, 1.0);
       n_.param ("draw_pose_array", draw_pose_array_, true);
-      n_.param ("draw_label_cloud", draw_label_cloud_, true);
+      n_.param ("draw_label_cloud", draw_label_cloud_, false);
+      n_.param ("draw_clusters", draw_clusters_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
 
@@ -278,9 +281,9 @@ class OmniMapperHandheldNode
 
       if (use_planes_)
       {
-        boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
+        boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
         organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
-        boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_vis_cb = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback, &vis_plugin_, _1, _2);
+        boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_vis_cb = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setPlanarRegionStampedCallback (plane_vis_cb);
       }
 
@@ -289,6 +292,13 @@ class OmniMapperHandheldNode
       {
         boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterLabelsCallback (label_vis_callback);
+      }
+
+      // Optionally draw clusters
+      if (draw_clusters_)
+      {
+        boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> cluster_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback, &vis_plugin_, _1, _2);
+        organized_feature_extraction_.setClusterCloudCallback (cluster_vis_callback);
       }
 
       // Set the ICP Plugin on the visualizer
@@ -377,11 +387,12 @@ class OmniMapperHandheldNode
       try
       {
 //        tf_listener_.transformPose ("/odom", tf::Stamped<tf::Pose> (tf::btTransform (tf::btQuaternion (current_quat[1], current_quat[2], current_quat[3], current_quat[0]), btVector3 (current_pose.x (), current_pose.y (), current_pose.z ())).inverse (), current_time_ros, "/base_link"), odom_to_map);
+        tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_, current_time_ros, ros::Duration (0.02));
         tf_listener_.transformPose (odom_frame_name_, tf::Stamped<tf::Pose> (current_pose_ros.inverse (), current_time_ros, base_frame_name_), odom_to_map);
       }
       catch (tf::TransformException e)
       {
-        ROS_ERROR ("OmniMapperROS: Error with  TF.\n");
+        ROS_ERROR ("OmniMapperROS: Error .\n");
         odom_to_map.setIdentity ();
         return;
       }

@@ -924,7 +924,14 @@ namespace gtsam {
     Eigen::Vector3d axis = meas_norm.cross (lm_norm);
     axis.normalize ();
     Eigen::Affine3d transform;
-    transform = Eigen::AngleAxisd (angle, axis);
+    if ((pcl_isfinite (angle)) && (pcl_isfinite (axis[0])) && (pcl_isfinite (axis[1])) && (pcl_isfinite (axis[2])))
+    {
+      transform = Eigen::AngleAxisd (angle, axis);
+    }
+    else
+    {
+      transform = Eigen::Affine3d::Identity ();
+    }
     Eigen::Vector3d translation_part = lm_norm * (meas_coeffs_map[3] - d_);
     transform.translation () = translation_part;
     pcl::PointCloud<PointT> meas_hull_aligned_map;

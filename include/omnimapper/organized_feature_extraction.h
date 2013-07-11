@@ -70,6 +70,7 @@ class OrganizedFeatureExtraction
     CloudConstPtr stage2_cloud_;
     CloudConstPtr stage3_cloud_;
     CloudConstPtr stage4_cloud_;
+    CloudConstPtr dummy_cloud_;
     NormalCloudConstPtr stage2_normals_;
     std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > stage3_regions_;
     std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > stage4_regions_;
@@ -85,6 +86,7 @@ class OrganizedFeatureExtraction
     std::vector<pcl::PointIndices> stage4_inlier_indices_;
     std::vector<pcl::PointIndices> stage4_label_indices_;
     std::vector<pcl::PointIndices> stage4_boundary_indices_;
+    std::vector<CloudPtr> stage5_clusters_;
     boost::mutex cloud_mutex;
 
     // Most recently processed cloud
@@ -94,8 +96,10 @@ class OrganizedFeatureExtraction
     NormalCloudConstPtr vis_normals_;
     std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > vis_regions_;    
     boost::mutex vis_mutex;
+    boost::mutex state_mutex;
     bool updated_data_;
     bool updated_cloud_;
+    boost::condition_variable updated_cond_;
 
     // Normal Estimation
     pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
@@ -113,7 +117,7 @@ class OrganizedFeatureExtraction
     boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> planar_region_callback_;
 
     // Planar Region Stamped Callback
-    boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)> planar_region_stamped_callback_;
+    boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, Time)> planar_region_stamped_callback_;
 
     std::vector<boost::function<void(std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)> > planar_region_stamped_callbacks_;
 
@@ -128,6 +132,9 @@ class OrganizedFeatureExtraction
 
     // RegionCloud Callback
     boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> region_cloud_callback_;    
+    
+    // Cluster Cloud Callback
+    boost::function<void(std::vector<CloudPtr>, Time t)> cluster_cloud_callback_;
 
     // Threads
     boost::thread vis_thread;
@@ -153,11 +160,12 @@ class OrganizedFeatureExtraction
     void computeEdges ();
     void spin ();
     void setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
-    void setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, Time&)>& fn);
+    void setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, Time)>& fn);
     void setOccludingEdgeCallback (boost::function<void (const CloudConstPtr&)>& fn);
     void setLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
     void setClusterLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
     void setRegionCloudCallback (boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
+    void setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time)> fn);
     
 };
 

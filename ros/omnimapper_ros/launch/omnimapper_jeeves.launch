@@ -30,8 +30,11 @@
 	    <param name="tf_roll_noise" value="0.001"/>
 	    <param name="tf_pitch_noise" value="0.0872"/>
 	    <param name="tf_yaw_noise" value="0.001"/>
-	    <param name="add_pose_per_cloud" value="true"/>
+	    <param name="add_pose_per_cloud" value="false"/>
 	    <param name="broadcast_map_to_odom" value="true"/>
+	    <param name="draw_pose_array" value="true"/>
+	    <param name="draw_label_cloud" value="true"/>
+	    <param name="draw_clusters" value="true"/>
       </node>
 
 	 <!-- <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/> -->

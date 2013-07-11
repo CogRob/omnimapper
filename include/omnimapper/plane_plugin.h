@@ -28,7 +28,7 @@ namespace omnimapper
       bool polygonsOverlap (Cloud& boundary1, Cloud& boundary2);
 
       /** \brief planarRegionCallback receives segmented data from the segmentation. */
-      void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t);
+      void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
 
       /** \brief setAngularThreshold sets the angular threshold to be used for data association. */
       void setAngularThreshold (double angular_threshold) { angular_threshold_ = angular_threshold; }

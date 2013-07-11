@@ -63,13 +63,13 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 #target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 
-add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-target_link_libraries(omnimapper_handheld omnimapper
-${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+#add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
+#target_link_libraries(omnimapper_handheld omnimapper
+#${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
-add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
-target_link_libraries(omnimapper_handheld_pcd omnimapper
-${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+#add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
+#target_link_libraries(omnimapper_handheld_pcd omnimapper
+#${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(isam_splice_test src/isam_splice_test.cpp)
 #target_link_libraries(isam_splice_test gtsam)

@@ -26,6 +26,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
 
   segmented_label_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("segmented_label_cloud", 0);
 
+  segmented_clusters_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("segmented_clusters", 0);
+
   draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 }
 
@@ -177,7 +179,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 }
 
 template <typename PointT> void
-omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t)
+omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
 {
   // Display the segmented planar regions
   pcl::PointCloud<PointT> aggregate_cloud;
@@ -215,8 +217,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback (const CloudCon
   for (int i = 0; i < labeled_cloud.points.size (); i++)
   {
     labeled_cloud.points[i].r = (labeled_cloud.points[i].r + red[labels->points[i].label%6]) / 2;
-    labeled_cloud.points[i].g = (labeled_cloud.points[i].r + grn[labels->points[i].label%6]) / 2;
-    labeled_cloud.points[i].b = (labeled_cloud.points[i].r + blu[labels->points[i].label%6]) / 2;
+    labeled_cloud.points[i].g = (labeled_cloud.points[i].g + grn[labels->points[i].label%6]) / 2;
+    labeled_cloud.points[i].b = (labeled_cloud.points[i].b + blu[labels->points[i].label%6]) / 2;
   }
   
   sensor_msgs::PointCloud2 cloud_msg;
@@ -225,6 +227,60 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback (const CloudCon
   cloud_msg.header.stamp = cloud->header.stamp;
   segmented_label_cloud_pub_.publish (cloud_msg);
 }
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t)
+{
+  printf ("Omnimappervisualizerrviz: Got %d clusters\n", clusters.size ());
+  
+  if (clusters.size () == 0)
+    return;
+
+  pcl::PointCloud<pcl::PointXYZRGB> aggregate_cloud;
+  
+  unsigned char red [6] = {255,   0,   0, 255, 255,   0};
+  unsigned char grn [6] = {  0, 255,   0, 255,   0, 255};
+  unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
+  
+  
+  // color the clouds
+  pcl::PointCloud<pcl::PointXYZRGB> color_cluster;
+  for (int i = 0; i < clusters.size (); i++)
+  {
+    //if (clusters[i]->points.size () > 0)
+    //aggregate_cloud += ((*(clusters[i])));
+    
+
+    if (clusters[i]->points.size () > 0)
+    {
+      printf ("Cluster %d has %d points\n", clusters[i]->points.size ());
+      color_cluster.resize (clusters[i]->points.size ());
+      pcl::copyPointCloud ((*(clusters[i])), color_cluster);
+      for (int j = 0; j < color_cluster.points.size (); j++)
+      {
+        color_cluster.points[j].r = (color_cluster.points[j].r + red[i%6]) / 2;
+        color_cluster.points[j].g = (color_cluster.points[j].g + grn[i%6]) / 2;
+        color_cluster.points[j].b = (color_cluster.points[j].b + blu[i%6]) / 2;
+      }
+    
+       try
+       {
+         aggregate_cloud += color_cluster;
+       }
+       catch (std::bad_alloc& ba)
+       {
+         std::cerr << "bad_alloc caught in omnimapper_rviz: " << ba.what () << std::endl;
+       }
+     }
+  }
+
+  sensor_msgs::PointCloud2 cloud_msg;
+  pcl::toROSMsg (aggregate_cloud, cloud_msg);
+  cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
+  cloud_msg.header.stamp = ptime2rostime (t);
+  segmented_clusters_pub_.publish (cloud_msg);
+}
+
 
 // template <typename PointT> void
 // clusterLabelsCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels)

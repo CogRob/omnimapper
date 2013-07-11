@@ -81,7 +81,7 @@ class OmniMapperHandheldNode
       plane_plugin_.setOverwriteTimestamps (false);
       plane_plugin_.setDisableDataAssociation (false);
       plane_plugin_.setRangeThreshold (0.6);
-      boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&, omnimapper::Time&)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
+      boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_cb = boost::bind (&omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback, &plane_plugin_, _1, _2);
       organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
 
       // Set the ICP Plugin on the visualizer

@@ -71,7 +71,7 @@ namespace omnimapper
   }
   
   template <typename PointT> void
-  PlaneMeasurementPlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time& t)
+  PlaneMeasurementPlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
   {
     printf ("PlaneMeasurementPlugin: Got %d planes.\n", regions.size ());
     
@@ -143,12 +143,12 @@ namespace omnimapper
           // TODO: Polygon Overlap Check!
           // Debug
           // static int cloud_id;
-          char meas_name[2048];
-          char lm_name[2048];
-          sprintf (meas_name, "meas.pcd");
-          sprintf (lm_name, "lm.pcd");
-          pcl::io::savePCDFileBinaryCompressed (meas_name, meas_hull_map_frame);
-          pcl::io::savePCDFileBinaryCompressed (lm_name, lm_hull);
+          // char meas_name[2048];
+          // char lm_name[2048];
+          // sprintf (meas_name, "meas.pcd");
+          // sprintf (lm_name, "lm.pcd");
+          // pcl::io::savePCDFileBinaryCompressed (meas_name, meas_hull_map_frame);
+          // pcl::io::savePCDFileBinaryCompressed (lm_name, lm_hull);
           // End debug
           if (polygonsOverlap (meas_hull_map_frame, lm_hull))
           {   
