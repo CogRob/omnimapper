@@ -17,6 +17,10 @@ link_directories(../../build)
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 
+#find_package(cloudcv REQUIRED)
+#include_directories(${CLOUDCV_INCLUDE_DIRS})
+#link_directories(${CLOUDCV_LIB_DIRS})
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -43,4 +47,4 @@ rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
 target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam ${CLOUDCV_LIBRARIES}) 

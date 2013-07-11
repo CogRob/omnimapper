@@ -14,7 +14,14 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 project(omnimapper)
 
 #add_definitions(-DUSE_ROS)
+# Eigen (required)
+find_package(Eigen REQUIRED)
+include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
+add_definitions(-DEIGEN_USE_NEW_STDVECTOR
+                -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET)
 
+#include_directories(/usr/local/include/pcl-1.7/)
+#set(PCL_DIR "/home/siddharth/Research/projects/workspace/pcl_alex/share/pcl-1.7/")
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -22,7 +29,11 @@ link_directories(${PCL_LIBRARY_DIRS})
 include_directories(/home/atrevor/github/cpu_tsdf/include)
 link_directories(/home/atrevor/github/cpu_tsdf/build)
 
+#find_package(cloudcv REQUIRED)
+#include_directories(${CLOUDCV_INCLUDE_DIRS})
+#link_directories(${CLOUDCV_LIBRARY_DIRS})
 
+include_directories(/opt/ros/groovy/include)
 include_directories(include)
 #include_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/include)
 #link_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/lib)
@@ -39,7 +50,7 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/plane_plugin.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
-					     include/omnimapper/cloud_registration_plugin.h
+					     #include/omnimapper/cloud_registration_plugin.h
 					     include/omnimapper/tsdf_output_plugin.h
 					     src/omnimapper_base.cpp
 					     src/icp_pose_plugin.cpp
@@ -48,13 +59,13 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     src/plane.cpp
 					     src/plane_factor.cpp
 					     src/plane_plugin.cpp
-					     src/cloud_registration_plugin.cpp
+					     #src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp
 					     src/tsdf_output_plugin.cpp)
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 					     /opt/ros/groovy/lib/librostime.so
-					     cpu_tsdf)
+					     cpu_tsdf ${CLOUDCV_LIBRARIES})
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper omnimapper)
@@ -75,10 +86,10 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 #target_link_libraries(isam_splice_test gtsam)
 
 add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test omnimapper /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-target_link_libraries(omnimapper_plane_test omnimapper /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
 target_link_libraries(organized_feature_extraction_demo omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6)

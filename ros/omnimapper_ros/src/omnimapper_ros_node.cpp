@@ -9,6 +9,8 @@
 #include <omnimapper_ros/tum_data_error_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
 
+#include <cloudcv/cloud_plugin.h>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_grabber.h>
@@ -49,6 +51,9 @@ class OmniMapperHandheldNode
 
     // Plane Plugin
     omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin_;
+
+    // Cloud Plugin
+    CloudPlugin<PointT> cloud_plugin_;
 
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
@@ -108,6 +113,9 @@ class OmniMapperHandheldNode
     double plane_range_noise_;
     double plane_angular_noise_;
 
+    // Labelled Cloud Plugin Params
+    bool use_label_cloud_;
+
     // TF Plugin Params
     double tf_trans_noise_;
     double tf_rot_noise_;
@@ -138,6 +146,7 @@ class OmniMapperHandheldNode
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         error_plugin_ (&omb_),
+        cloud_plugin_(),
         fake_grabber_ (empty_files_, 1.0, false),
         organized_feature_extraction_ (fake_grabber_),
         tf_listener_ (ros::Duration (500.0))
@@ -179,8 +188,8 @@ class OmniMapperHandheldNode
       n_.param ("init_qz", init_qz_, 0.0);
       n_.param ("init_qw", init_qw_, 1.0);
       n_.param ("draw_pose_array", draw_pose_array_, true);
-      n_.param ("draw_label_cloud", draw_label_cloud_, false);
-      n_.param ("draw_clusters", draw_clusters_, true);
+      n_.param ("draw_label_cloud", draw_label_cloud_, true);
+      n_.param ("use_label_cloud", use_label_cloud_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
 
@@ -292,6 +301,11 @@ class OmniMapperHandheldNode
       {
         boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterLabelsCallback (label_vis_callback);
+
+        //boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> cloud_callback = boost::bind (&CloudPlugin<PointT>::labelCloudCallback, &cloud_plugin_, _1, _2);
+        //organized_feature_extraction_.setClusterLabelsCallback (cloud_callback);
+
+
       }
 
       // Optionally draw clusters
@@ -300,6 +314,7 @@ class OmniMapperHandheldNode
         boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> cluster_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterCloudCallback (cluster_vis_callback);
       }
+
 
       // Set the ICP Plugin on the visualizer
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr (&icp_plugin_);
@@ -394,7 +409,7 @@ class OmniMapperHandheldNode
       {
         ROS_ERROR ("OmniMapperROS: Error .\n");
         odom_to_map.setIdentity ();
-        return;
+//        return;
       }
       tf::Transform map_to_odom = odom_to_map.inverse ();//tf::Transform (tf::Quaternion (odom_to_map.getRotation ()), tf::Point (odom_to_map.getOrigin ())
       tf_broadcaster_.sendTransform (tf::StampedTransform (map_to_odom, ros::Time::now (), "/world", odom_frame_name_));
