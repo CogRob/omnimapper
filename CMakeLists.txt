@@ -48,6 +48,7 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/plane.h
 					     include/omnimapper/plane_factor.h
 					     include/omnimapper/plane_plugin.h
+					     include/omnimapper/object_plugin.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     #include/omnimapper/cloud_registration_plugin.h
@@ -59,6 +60,7 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     src/plane.cpp
 					     src/plane_factor.cpp
 					     src/plane_plugin.cpp
+					     src/object_plugin.cpp
 					     #src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp

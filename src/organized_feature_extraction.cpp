@@ -68,8 +68,13 @@ namespace omnimapper
       mps.setDistanceThreshold (0.02);//0.03
       mps.setProjectPoints (true);
       mps.setRemoveDuplicatePoints (true);
+      pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>::Ptr plane_compare (new pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>());
+      plane_compare->setAngularThreshold (pcl::deg2rad (3.0));
+      plane_compare->setDistanceThreshold (0.02, true);
+      mps.setComparator (plane_compare);
+
       pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
-      refine_compare->setDistanceThreshold (0.01);//0.0025
+      refine_compare->setDistanceThreshold (0.01, true);//0.0025
       mps.setRefinementComparator (refine_compare);
 
       // Set up edge detection
@@ -266,10 +271,13 @@ namespace omnimapper
             }
           }
 
-          if (cluster_cloud_callback_)
+          if (cluster_cloud_callbacks_.size () > 0)
           {
             Time timestamp = stage4_cloud_->header.stamp.toBoost ();
-            cluster_cloud_callback_ (stage5_clusters_, timestamp);
+            for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
+            {
+              cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp);
+            }
           }
 
           // if (region_cloud_callback_)
@@ -406,7 +414,7 @@ namespace omnimapper
     euclidean_cluster_comparator_->setInputCloud (stage4_cloud_);
     euclidean_cluster_comparator_->setLabels (stage4_labels_);
     euclidean_cluster_comparator_->setExcludeLabels (plane_labels);
-    euclidean_cluster_comparator_->setDistanceThreshold (0.01f, false);
+    euclidean_cluster_comparator_->setDistanceThreshold (0.005f, true);
       
     pcl::PointCloud<pcl::Label> euclidean_labels;
     std::vector<pcl::PointIndices> euclidean_label_indices;
@@ -424,6 +432,7 @@ namespace omnimapper
         CloudPtr cluster (new Cloud ());
         pcl::copyPointCloud (*stage4_cloud_,euclidean_label_indices[i].indices, *cluster);
         //clusters.push_back (cluster);
+        
         stage5_clusters_.push_back (cluster);
         }    
     }
@@ -626,7 +635,7 @@ namespace omnimapper
   template <typename PointT> void
   OrganizedFeatureExtraction<PointT>::setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time)> fn)
   {
-    cluster_cloud_callback_ = fn;
+    cluster_cloud_callbacks_.push_back (fn);
   }
   
   

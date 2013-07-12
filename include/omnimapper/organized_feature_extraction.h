@@ -134,7 +134,7 @@ class OrganizedFeatureExtraction
     boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> region_cloud_callback_;    
     
     // Cluster Cloud Callback
-    boost::function<void(std::vector<CloudPtr>, Time t)> cluster_cloud_callback_;
+    std::vector<boost::function<void(std::vector<CloudPtr>, Time t)> > cluster_cloud_callbacks_;
 
     // Threads
     boost::thread vis_thread;

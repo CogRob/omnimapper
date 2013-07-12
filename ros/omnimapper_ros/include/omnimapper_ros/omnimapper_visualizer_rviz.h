@@ -1,5 +1,6 @@
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/icp_pose_plugin.h>
+#include <omnimapper/object_plugin.h>
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
 #include <omnimapper_ros/VisualizeFullCloud.h>
@@ -32,6 +33,8 @@ namespace omnimapper
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
       void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
+      void setObjectPlugin (boost::shared_ptr<omnimapper::ObjectPlugin<PointT> >& object_plugin) { object_plugin_ = object_plugin; }
+      bool drawObjectObservationCloud (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
 
@@ -59,16 +62,26 @@ namespace omnimapper
       ros::Publisher segmented_label_cloud_pub_;
       ros::Publisher segmented_clusters_pub_;
       
+      // Publisher for object observations
+      ros::Publisher object_observation_pub_;
+
       ros::ServiceServer draw_icp_clouds_srv_;
+
+      ros::ServiceServer draw_object_observation_cloud_srv_;
 
       // ICP Plugin Ref
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
+
+      // Object Plugin Ref
+      boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > object_plugin_;
 
       bool draw_icp_clouds_;
       
       bool draw_planar_landmarks_;
 
       bool draw_pose_array_;
+
+      bool draw_object_observation_cloud_;
 
   };
 }

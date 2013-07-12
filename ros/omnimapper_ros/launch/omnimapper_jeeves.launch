@@ -18,9 +18,9 @@
 	    <param name="base_frame_name" value="/camera_rgb_optical_frame"/>
 	    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
 	    <param name="icp_leaf_size" value="0.02"/>
-	    <param name="icp_max_correspondence_distance" value="0.1"/>
+	    <param name="icp_max_correspondence_distance" value="0.2"/>
 	    <param name="icp_trans_noise" value="0.05"/>
-	    <param name="icp_rot_noise" value="0.05"/>
+	    <param name="icp_rot_noise" value=".05"/>
 	    <param name="plane_range_threshold" value="0.1"/>
 	    <param name="plane_angular_threshold" value="0.174532925"/>
 	    <param name="plane_range_noise" value="1.1"/>

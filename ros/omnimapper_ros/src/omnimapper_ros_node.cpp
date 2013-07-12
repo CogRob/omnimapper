@@ -2,6 +2,7 @@
 #include <omnimapper_ros/tf_pose_plugin.h>
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/plane_plugin.h>
+#include <omnimapper/object_plugin.h>
 #include <omnimapper/tsdf_output_plugin.h>
 #include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
@@ -10,6 +11,8 @@
 #include <omnimapper_ros/ros_tf_utils.h>
 
 #include <cloudcv/cloud_plugin.h>
+
+#include <omnimapper/distortion_model_standalone.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -55,6 +58,9 @@ class OmniMapperHandheldNode
     // Cloud Plugin
     CloudPlugin<PointT> cloud_plugin_;
 
+    // Object Plugin
+    omnimapper::ObjectPlugin<PointT> object_plugin_;
+
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
 
@@ -63,6 +69,9 @@ class OmniMapperHandheldNode
 
     // Benchmark Data Analysis
     omnimapper::TUMDataErrorPlugin error_plugin_;
+
+    // Distortion Model
+    DistortionModelStandalone distortion_model_;
 
     // Fake Grabber (TODO: Fix this)
     std::vector<std::string> empty_files_;
@@ -81,6 +90,7 @@ class OmniMapperHandheldNode
 
     // Mapper config
     bool use_planes_;
+    bool use_objects_;
     bool use_icp_;
     bool use_occ_edge_icp_;
     bool use_tf_;
@@ -135,6 +145,7 @@ class OmniMapperHandheldNode
     // Other Flags
     bool add_pose_per_cloud_;
     bool broadcast_map_to_odom_;
+    bool use_distortion_model_;
 
     OmniMapperHandheldNode ()
       : n_ ("~"),
@@ -143,6 +154,7 @@ class OmniMapperHandheldNode
         icp_plugin_ (&omb_),
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
+        object_plugin_ (&omb_),
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         error_plugin_ (&omb_),
@@ -153,6 +165,7 @@ class OmniMapperHandheldNode
     {
       // Load some params
       n_.param ("use_planes", use_planes_, true);
+      n_.param ("use_objects", use_objects_, true);
       n_.param ("use_icp", use_icp_, true);
       n_.param ("use_occ_edge_icp", use_occ_edge_icp_, true);
       n_.param ("use_tf", use_tf_, true);
@@ -192,6 +205,7 @@ class OmniMapperHandheldNode
       n_.param ("use_label_cloud", use_label_cloud_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
+      n_.param ("use_distortion_model", use_distortion_model_, true);
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -229,6 +243,13 @@ class OmniMapperHandheldNode
       }
 
       omb_.setSuppressCommitWindow (true);
+
+      // Optionally use distortion model
+      if (use_distortion_model_)
+      {
+        distortion_model_.load ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model");
+
+      }
 
       // Add the TF Pose Plugin
       tf_plugin_.setOdomFrameName (odom_frame_name_);
@@ -315,11 +336,21 @@ class OmniMapperHandheldNode
         organized_feature_extraction_.setClusterCloudCallback (cluster_vis_callback);
       }
 
+      // Optionally use labels
+      if (use_objects_)
+      {
+        boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2);
+        organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
+      }
 
       // Set the ICP Plugin on the visualizer
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr (&icp_plugin_);
       vis_plugin_.setICPPlugin (icp_ptr);
       
+      // Set up the Object Plugin with the visualizer
+      boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > obj_ptr (&object_plugin_);
+      vis_plugin_.setObjectPlugin (obj_ptr);
+
       // Subscribe to Point Clouds
       pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperHandheldNode::cloudCallback, this);//("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
       
@@ -364,6 +395,12 @@ class OmniMapperHandheldNode
       //pcl::fromROSMsg (*msg, *xyz_cloud);
       //CloudPtr cloud (new Cloud ());
       // pcl::copyPointCloud (*xyz_cloud, *cloud);
+
+      if (use_distortion_model_)
+      {
+        distortion_model_.undistort (*cloud);
+      }
+
       if (use_icp_)
       {
         printf ("Calling ICP Plugin!\n");

@@ -17,6 +17,9 @@ link_directories(../../build)
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 
+include_directories(/home/atrevor/github/cpu_tsdf/include)
+link_directories(/home/atrevor/github/cpu_tsdf/build)
+
 #find_package(cloudcv REQUIRED)
 #include_directories(${CLOUDCV_INCLUDE_DIRS})
 #link_directories(${CLOUDCV_LIB_DIRS})
