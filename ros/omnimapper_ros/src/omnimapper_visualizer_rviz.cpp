@@ -11,7 +11,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_icp_clouds_ (false),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
-    draw_object_observation_cloud_ (true)
+    draw_object_observation_cloud_ (true),
+    draw_object_observation_bboxes_ (true)
 {
   //tf::Transform
 
@@ -38,6 +39,96 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
 }
 
 template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx)
+{
+  // Get bbox points
+  Eigen::Vector4f min_pt;
+  Eigen::Vector4f max_pt;
+  pcl::getMinMax3D (cloud, min_pt, max_pt);
+  
+  geometry_msgs::Point p1;
+  p1.x = min_pt[0];
+  p1.y = min_pt[1];
+  p1.z = min_pt[2];
+  geometry_msgs::Point p2;
+  p2.x = max_pt[0];
+  p2.y = min_pt[1];
+  p2.z = min_pt[2];
+  geometry_msgs::Point p3;
+  p3.x = min_pt[0];
+  p3.y = max_pt[1];
+  p3.z = min_pt[2];
+  geometry_msgs::Point p4;
+  p4.x = max_pt[0];
+  p4.y = max_pt[1];
+  p4.z = min_pt[2];
+
+  geometry_msgs::Point p5;
+  p5.x = min_pt[0];
+  p5.y = min_pt[1];
+  p5.z = max_pt[2];
+  geometry_msgs::Point p6;
+  p6.x = max_pt[0];
+  p6.y = min_pt[1];
+  p6.z = max_pt[2];
+  geometry_msgs::Point p7;
+  p7.x = min_pt[0];
+  p7.y = max_pt[1];
+  p7.z = max_pt[2];
+  geometry_msgs::Point p8;
+  p8.x = max_pt[0];
+  p8.y = max_pt[1];
+  p8.z = max_pt[2];
+  
+
+  visualization_msgs::MarkerArray marker_array;
+  visualization_msgs::Marker bbox_marker;
+  bbox_marker.header.frame_id = "/world";
+  bbox_marker.header.stamp = ros::Time::now ();
+  bbox_marker.ns = "object_bboxes";
+  bbox_marker.id = obj_idx;
+  bbox_marker.type = visualization_msgs::Marker::LINE_LIST;
+  bbox_marker.action = visualization_msgs::Marker::ADD;
+
+  bbox_marker.points.push_back (p1);
+  bbox_marker.points.push_back (p2);
+  bbox_marker.points.push_back (p1);
+  bbox_marker.points.push_back (p3);
+  bbox_marker.points.push_back (p2);
+  bbox_marker.points.push_back (p4);
+  bbox_marker.points.push_back (p3);
+  bbox_marker.points.push_back (p4);
+
+  bbox_marker.points.push_back (p5);
+  bbox_marker.points.push_back (p6);
+  bbox_marker.points.push_back (p5);
+  bbox_marker.points.push_back (p7);
+  bbox_marker.points.push_back (p6);
+  bbox_marker.points.push_back (p8);
+  bbox_marker.points.push_back (p7);
+  bbox_marker.points.push_back (p8);
+
+  bbox_marker.points.push_back (p1);
+  bbox_marker.points.push_back (p5);
+  bbox_marker.points.push_back (p2);
+  bbox_marker.points.push_back (p6);
+  bbox_marker.points.push_back (p3);
+  bbox_marker.points.push_back (p7);
+  bbox_marker.points.push_back (p4);
+  bbox_marker.points.push_back (p8);
+
+  bbox_marker.scale.x = 0.01;
+  bbox_marker.color.a = 0.2;
+  bbox_marker.color.r = 1.0;
+  bbox_marker.color.g = 1.0;
+  bbox_marker.color.b = 1.0;
+  marker_array.markers.push_back (bbox_marker);
+  marker_pub_.publish (marker_array);
+  
+}
+
+
+template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
   gtsam::Values current_solution = *vis_values;
@@ -56,6 +147,11 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   pose_array.header.frame_id = "/world";
   pose_array.header.stamp = ros::Time::now ();
   
+  unsigned char red [6] = {255,   0,   0, 255, 255,   0};
+  unsigned char grn [6] = {  0, 255,   0, 255,   0, 255};
+  unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
+  int obj_id = 0;
+  
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -64,6 +160,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     gtsam::Symbol key_symbol (key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation ();
+    int pose_idx = key_symbol.index ();
     // W X Y Z
     gtsam::Vector quat = rot.quaternion ();
     Eigen::Matrix4f map_tform = sam_pose.matrix ().cast<float>();
@@ -108,8 +205,21 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
         // Get the cluster
         pcl::copyPointCloud ((*(obs_clouds[i])), cluster);
 
+        for (int j = 0; j < cluster.points.size (); j++)
+        {
+          cluster.points[j].r = (cluster.points[j].r + red[i%6]) / 2;
+          cluster.points[j].g = (cluster.points[j].g + grn[i%6]) / 2;
+          cluster.points[j].b = (cluster.points[j].b + blu[i%6]) / 2;
+        }
+
         // Move it to the map frame
         pcl::transformPointCloud (cluster, cluster, map_tform);
+
+        // Optionally draw a bbox too
+        if (draw_object_observation_bboxes_)
+        {
+          drawBBox (cluster, marker_array_pub_, ++obj_id);
+        }
 
         aggregate_object_observation_cloud += cluster;
       }

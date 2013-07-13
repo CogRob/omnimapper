@@ -30,6 +30,7 @@ namespace omnimapper
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
+      void drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx);
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
       void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
@@ -82,6 +83,8 @@ namespace omnimapper
       bool draw_pose_array_;
 
       bool draw_object_observation_cloud_;
+
+      bool draw_object_observation_bboxes_;
 
   };
 }
