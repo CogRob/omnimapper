@@ -13,7 +13,16 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 
 project(omnimapper)
 
-#add_definitions(-DUSE_ROS)
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+#set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
+message (MODULE_PATH= ${CMAKE_MODULE_PATH})
+
+find_package(cloudcv REQUIRED)
+include_directories(${CLOUDCV_INCLUDE_DIRS})
+link_directories(${CLOUDCV_LIBRARY_DIRS})
+
+
 # Eigen (required)
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
@@ -26,12 +35,15 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
-include_directories(/home/atrevor/github/cpu_tsdf/include)
-link_directories(/home/atrevor/github/cpu_tsdf/build)
+#include_directories(/home/atrevor/github/cpu_tsdf/include)
+#link_directories(/home/atrevor/github/cpu_tsdf/build)
 
-#find_package(cloudcv REQUIRED)
-#include_directories(${CLOUDCV_INCLUDE_DIRS})
-#link_directories(${CLOUDCV_LIBRARY_DIRS})
+message (MODULE_PATH= ${CMAKE_MODULE_PATH})
+find_package(CPUTSDF REQUIRED)
+include_directories(${CPUTSDF_INCLUDE_DIRS})
+link_directories(${CPUTSDF_LIBRARY_DIRS})
+
+
 
 include_directories(/opt/ros/groovy/include)
 include_directories(include)
@@ -53,6 +65,8 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     #include/omnimapper/cloud_registration_plugin.h
 					     include/omnimapper/tsdf_output_plugin.h
+					     include/omnimapper/geometry.h
+					     include/omnimapper/impl/geometry.hpp
 					     src/omnimapper_base.cpp
 					     src/icp_pose_plugin.cpp
 					     src/omnimapper_visualizer_pcl.cpp

@@ -15,6 +15,8 @@
 #include <pcl/segmentation/planar_polygon_fusion.h>
 #include <pcl/geometry/polygon_operations.h>
 #include <pcl/geometry/impl/polygon_operations.hpp>
+#include <omnimapper/geometry.h>
+#include <omnimapper/impl/geometry.hpp>
 
 #define KILL_INLIERS 1
 
@@ -819,8 +821,9 @@ namespace gtsam {
     
     // Polygon Union
     pcl::PointCloud<PointT> fused_xy;
-    bool worked = pcl::fusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
-    
+    //bool worked = pcl::fusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
+    bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (lm_xy, meas_xy, fused_xy);
+
     if (!worked)
     {
       printf ("Error in plane::Extend! Merge failed!\n");
@@ -1099,7 +1102,9 @@ namespace gtsam {
     }
     
     pcl::PointCloud<PointT> origin_xy_fused_hull;
-    bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
+    //bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
+    bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
+
     if (!worked)
     {
       printf ("Error fusing polygons in inside planeextend!!\n");
