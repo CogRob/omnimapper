@@ -12,7 +12,7 @@
 
 #include <cloudcv/cloud_plugin.h>
 
-#include <omnimapper/distortion_model_standalone.h>
+#include <distortion_model/distortion_model_standalone.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -35,7 +35,7 @@ typedef typename LabelCloud::Ptr LabelCloudPtr;
 typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
 
 template <typename PointT> 
-class OmniMapperHandheldNode
+class OmniMapperROSNode
 {
   public:
     // ROS Node Handle
@@ -50,6 +50,7 @@ class OmniMapperHandheldNode
     // ICP Plugin
     omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin_;
 
+    // Edge ICP Plugin
     omnimapper::ICPPoseMeasurementPlugin<PointT> edge_icp_plugin_;
 
     // Plane Plugin
@@ -147,7 +148,7 @@ class OmniMapperHandheldNode
     bool broadcast_map_to_odom_;
     bool use_distortion_model_;
 
-    OmniMapperHandheldNode ()
+    OmniMapperROSNode ()
       : n_ ("~"),
         omb_ (),
         tf_plugin_ (&omb_),
@@ -227,7 +228,7 @@ class OmniMapperHandheldNode
           try
           {
             ROS_INFO ("Waiting for initial pose from %s to %s", odom_frame_name_.c_str (), base_frame_name_.c_str ());
-            tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_, ros::Time::now (), ros::Duration (10.0));
+            tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_, ros::Time::now (), ros::Duration (1.0));
             tf_listener_.lookupTransform (odom_frame_name_, base_frame_name_, ros::Time::now (), init_transform);
           }
           catch (tf::TransformException ex)
@@ -352,7 +353,7 @@ class OmniMapperHandheldNode
       vis_plugin_.setObjectPlugin (obj_ptr);
 
       // Subscribe to Point Clouds
-      pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperHandheldNode::cloudCallback, this);//("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
+      pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperROSNode::cloudCallback, this);//("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
       
       // Install the visualizer
       vis_plugin_.setDrawPoseArray (draw_pose_array_);
@@ -374,7 +375,7 @@ class OmniMapperHandheldNode
         omb_.addOutputPlugin (error_plugin_ptr);
       }
 
-      generate_tsdf_srv_ = n_.advertiseService ("generate_map_tsdf", &OmniMapperHandheldNode::generateMapTSDFCallback, this);
+      generate_tsdf_srv_ = n_.advertiseService ("generate_map_tsdf", &OmniMapperROSNode::generateMapTSDFCallback, this);
 
       //OmniMapper thread
       omb_.setDebug (true);
@@ -463,7 +464,7 @@ class OmniMapperHandheldNode
 int
 main (int argc, char** argv)
 {
-  ros::init (argc, argv, "OmniMapperROSHandheld");
-  OmniMapperHandheldNode<PointT> omnimapper;
+  ros::init (argc, argv, "OmniMapperROSNode");
+  OmniMapperROSNode<PointT> omnimapper;
   ros::spin ();
 }

@@ -13,6 +13,8 @@ rosbuild_init()
 include_directories(../../include)
 link_directories(../../build)
 
+include_directories(../../3rdparty/distortion_model/include)
+
 #PCL Library
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
