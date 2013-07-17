@@ -10,8 +10,6 @@
 #include <omnimapper_ros/tum_data_error_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
 
-#include <cloudcv/cloud_plugin.h>
-
 #include <distortion_model/distortion_model_standalone.h>
 
 #include <pcl/point_cloud.h>
@@ -55,9 +53,6 @@ class OmniMapperROSNode
 
     // Plane Plugin
     omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin_;
-
-    // Cloud Plugin
-    CloudPlugin<PointT> cloud_plugin_;
 
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
@@ -159,7 +154,6 @@ class OmniMapperROSNode
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         error_plugin_ (&omb_),
-        cloud_plugin_(),
         fake_grabber_ (empty_files_, 1.0, false),
         organized_feature_extraction_ (fake_grabber_),
         tf_listener_ (ros::Duration (500.0))
@@ -248,7 +242,7 @@ class OmniMapperROSNode
       // Optionally use distortion model
       if (use_distortion_model_)
       {
-        distortion_model_.load ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model");
+        distortion_model_.load ("/home/siddharth/kinect/distortion_model/new_distortion_model");
 
       }
 
@@ -323,11 +317,6 @@ class OmniMapperROSNode
       {
         boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterLabelsCallback (label_vis_callback);
-
-        //boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> cloud_callback = boost::bind (&CloudPlugin<PointT>::labelCloudCallback, &cloud_plugin_, _1, _2);
-        //organized_feature_extraction_.setClusterLabelsCallback (cloud_callback);
-
-
       }
 
       // Optionally draw clusters
