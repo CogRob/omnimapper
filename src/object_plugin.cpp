@@ -39,6 +39,7 @@ namespace omnimapper
     // Get pose symbol for this timestamp
     gtsam::Symbol pose_symbol;
     mapper_->getPoseSymbolAtTime (t, pose_symbol);
+    boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (pose_symbol);
 
     gtsam::Values solution;
     if (filter_points_near_planes_)
@@ -176,6 +177,7 @@ namespace omnimapper
 
     observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol, filtered_observations));
 
+    cloud_plugin_.callCloudCV(pose_symbol, cloud_pose, filtered_observations, t);
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
