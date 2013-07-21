@@ -126,6 +126,7 @@ class OmniMapperPelicanNode
       {
         ROS_ERROR ("OmniMapperROS: Error with  TF.\n");
         odom_to_map.setIdentity ();
+        return;
       }
       tf::Transform map_to_odom = odom_to_map.inverse ();//tf::Transform (tf::Quaternion (odom_to_map.getRotation ()), tf::Point (odom_to_map.getOrigin ())
       tf_broadcaster_.sendTransform (tf::StampedTransform (map_to_odom, ros::Time::now (), "/world", "/odom"));

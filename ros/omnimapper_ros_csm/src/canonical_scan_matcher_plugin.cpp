@@ -1,7 +1,7 @@
 #include <omnimapper_ros_csm/canonical_scan_matcher_plugin.h>
 #include <omnimapper_ros_csm/math_functions.h>
 #include <omnimapper/omnimapper_base.h>
-#include <omnimapper/time_utils.h>
+#include <omnimapper/time.h>
 
 
 
@@ -153,7 +153,10 @@ namespace omnimapper
       add_multiple_links_ (false),
       add_loop_closures_ (true),
       paused_ (false),
-      count_(0)
+    count_(0),
+    triggered_mode_ (false),
+    triggered_ (false),
+    triggered_time_ (ros::Time::now ())
     {
       //ros::NodeHandle nh;
       canonical_scan_.initParams (nh_);
@@ -180,15 +183,24 @@ namespace omnimapper
     template <typename LScanT> void CanonicalScanMatcherPlugin<LScanT>::laserScanCallback (const LaserScanPtr& lscan)
     {
        printf ("cloud callback\n");
+       // Check timestamp
+       if (triggered_mode_ & !triggered_)
+       {
+         return;
+       }
        // Store this as the previous cloud
        boost::mutex::scoped_lock lock(current_lscan_mutex_);
-       count_++;
-        if (count_ % 10 == 0)
-        {
+       //count_++;
+       // if (count_ % 10 == 0)
+       // {
         current_lscan_ = lscan;
         have_new_lscan_ = true;
         printf ("stored new scan!\n");
         std::cout << "Scan stamp in cb: " << lscan->header.stamp.toBoost() << std::endl;
+        //}
+        if (triggered_mode_)
+        {
+          triggered_ = false;
         }
     }
 
@@ -460,8 +472,8 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename LScanT> bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym)
   {
-    double loop_closure_dist_thresh_ = 1.50;//5.0;
-    int pose_index_thresh_ = 40;
+    double loop_closure_dist_thresh_ = 1.50;//0.5//5.0;
+    int pose_index_thresh_ = 40;//40
 
     // Get the latest solution from the mapper
     gtsam::Values solution = mapper_->getSolution ();

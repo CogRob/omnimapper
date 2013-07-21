@@ -40,6 +40,8 @@ namespace omnimapper
       bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool always_add=true);
       bool tryLoopClosure (gtsam::Symbol sym);
       bool ready ();
+      void setTriggeredMode (bool triggered_mode) { triggered_mode_ = triggered_mode; }
+      void trigger () { triggered_ = true; }
       LaserScanPConstPtr getLaserScanPtr (gtsam::Symbol sym);
       sensor_msgs::PointCloud2 getPC2 (gtsam::Symbol sym);
 
@@ -74,6 +76,9 @@ namespace omnimapper
       bool add_loop_closures_;
       bool paused_;
       int count_;
+      bool triggered_mode_;
+      bool triggered_;
+      ros::Time triggered_time_;
       tf::Transform base_to_laser_;
       tf::Transform laser_to_base_;
       ros::Publisher visualization_marker_array_pub_;
