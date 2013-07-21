@@ -13,14 +13,24 @@ namespace omnimapper
       angular_noise_ (0.1),
       range_noise_ (0.2),
       overwrite_timestamps_ (true),
-      disable_data_association_ (false)
+      disable_data_association_ (false),
+      updated_ (false)
   {
     
   }
 
   template <typename PointT> void
-  PlaneMeasurementPlugin<PointT>::regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, std::vector<gtsam::Plane<PointT> >& plane_measurements)
+  PlaneMeasurementPlugin<PointT>::regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time t, std::vector<gtsam::Plane<PointT> >& plane_measurements)
   {
+    // If we have a sensor_to_base_transform function, use it and apply the transform to incoming measurements
+    Eigen::Affine3d sensor_to_base;
+    bool use_transform = false;
+    if (get_sensor_to_base_)
+    {
+      use_transform = true;
+      sensor_to_base = (*get_sensor_to_base_)(t);
+    }
+    
     for (size_t i = 0; i < regions.size (); ++i)
     {
       Eigen::Vector4f model = regions[i].getCoefficients ();
@@ -31,11 +41,41 @@ namespace omnimapper
       border_cloud.points = border;
       pcl::PointCloud<PointT> empty_inliers;
       std_msgs::Header empty_header;
-      
-      // Make a Plane
+
+      // Make a Plane      
+      if (use_transform)
+      {
+        Eigen::Vector3d trans = sensor_to_base.inverse ().translation ();
+        Eigen::Vector4f centroid4f_base = sensor_to_base.cast<float>() * centroid4f;
+        Eigen::Vector3d model_norm (model[0], model[1], model[2]);
+        Eigen::Vector3d model_norm_rot = sensor_to_base.linear () * model_norm;
+        double d = model[0] * trans[0] + model[1] * trans[1] + model[2] * trans[2] + model[3];
+        Eigen::Vector4f model_base (model_norm_rot[0], model_norm_rot[1], model_norm_rot[2], d);
+        //model_base[3] = model_base.dot (centroid4f_base);
+
+        Eigen::Vector4f vp = -centroid4f_base;
+        float cos_theta = vp.dot (model_base);
+        if (cos_theta < 0)
+        {
+          model_base *= -1;
+          model_base[3] = 0;
+          model_base[3] = -1 * model_base.dot (centroid4f_base);
+        }
+
+
+        printf ("Model: %lf %lf %lf %lf, Base Model: %lf %lf %lf %lf\n", model[0], model[1], model[2], model[3],
+                model_base[0], model_base[1], model_base[2], model_base[3]);
+        pcl::PointCloud<PointT> border_base;
+        pcl::transformPointCloud (border_cloud, border_base, sensor_to_base);
+        gtsam::Plane<PointT> plane (model_base[0], model_base[1], model_base[2], model_base[3], border_base, empty_inliers, centroid4f_base, empty_header);
+        plane_measurements.push_back (plane);
+      }
+      else 
+      { 
+
       gtsam::Plane<PointT> plane (model[0], model[1], model[2], model[3], border_cloud, empty_inliers, centroid4f, empty_header);
-      
       plane_measurements.push_back (plane);
+      }
     }
   }
 
@@ -70,9 +110,47 @@ namespace omnimapper
     return false;
   }
   
+  // template <typename PointT> void
+  // PlaneMeasurementPlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
+  // {
+  //   {
+  //     boost::lock_guard<boost::mutex> lock (data_mutex_);
+  //     prev_regions_ = regions;
+  //     prev_time_ = t;
+  //     updated_ = true;
+  //   }
+  //   updated_cond_.notify_one ();
+  // }
+  
+
+
+
+  template <typename PointT> void
+  PlaneMeasurementPlugin<PointT>::spin ()
+  {
+
+  }
+  
   template <typename PointT> void
   PlaneMeasurementPlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
   {
+
+    //while (true)
+    {
+    //   std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions;
+    // omnimapper::Time t;
+    // {
+    //   boost::unique_lock<boost::mutex> lock (data_mutex_);
+    //   while (!updated_)
+    //   {
+    //     updated_cond_.wait (lock);
+    //     printf ("planeplugin: in boost condition while!\n");
+    //   }
+    //   regions = prev_regions_;
+    //   t = prev_time_;
+    //   updated_ = false;
+    // }
+
     printf ("PlaneMeasurementPlugin: Got %d planes.\n", regions.size ());
     
     if (overwrite_timestamps_)
@@ -80,7 +158,7 @@ namespace omnimapper
 
     // Convert the regions to gtsam::Planes
     std::vector<gtsam::Plane<PointT> > plane_measurements;
-    regionsToMeasurements (regions, plane_measurements);
+    regionsToMeasurements (regions, t, plane_measurements);
     
     // Get the planes from the mapper
     gtsam::Values current_solution = mapper_->getSolutionAndUncommitted ();//mapper_->getSolution ();
@@ -209,8 +287,11 @@ namespace omnimapper
     }
     
 
+    }
   }
-}
+  
+} // namespace omnimapper
+
 
 
 // TODO: Instantiation macros.

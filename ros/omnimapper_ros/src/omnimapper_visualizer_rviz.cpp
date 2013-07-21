@@ -408,7 +408,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<
 
     if (clusters[i]->points.size () > 0)
     {
-      printf ("Cluster %d has %d points\n", clusters[i]->points.size ());
+      printf ("Cluster %d has %d points\n", i, clusters[i]->points.size ());
       color_cluster.resize (clusters[i]->points.size ());
       pcl::copyPointCloud ((*(clusters[i])), color_cluster);
       for (int j = 0; j < color_cluster.points.size (); j++)

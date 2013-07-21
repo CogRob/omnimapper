@@ -9,6 +9,7 @@
 #include <omnimapper_ros/OutputMapTSDF.h>
 #include <omnimapper_ros/tum_data_error_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
+#include <omnimapper_ros/get_transform_functor_tf.h>
 
 #include <cloudcv/cloud_plugin.h>
 
@@ -249,7 +250,6 @@ class OmniMapperROSNode
       if (use_distortion_model_)
       {
         distortion_model_.load ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model");
-
       }
 
       // Add the TF Pose Plugin
@@ -266,6 +266,11 @@ class OmniMapperROSNode
         omb_.addPosePlugin (tf_plugin_ptr);
       }
 
+      // Set up a sensor_to_base functor, for plugins to use
+      //omnimapper::GetTransformFunctorTF rgbd_to_base (std::string ("/camera_rgb_optical_frame"), std::string ("/base_link"));
+      //omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (&rgbd_to_base);
+      omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (new omnimapper::GetTransformFunctorTF (std::string ("/camera_rgb_optical_frame"), std::string ("/base_link")));
+
       // Set up an ICP Plugin
       icp_plugin_.setUseGICP (true);
       icp_plugin_.setOverwriteTimestamps (false);
@@ -279,6 +284,7 @@ class OmniMapperROSNode
       icp_plugin_.setAddLoopClosures (true);
       icp_plugin_.setLoopClosureDistanceThreshold (1.0);
       icp_plugin_.setSaveFullResClouds (true);
+      icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up edge ICP plugin
       edge_icp_plugin_.setUseGICP (false);
@@ -292,6 +298,7 @@ class OmniMapperROSNode
       edge_icp_plugin_.setAddLoopClosures (true);
       edge_icp_plugin_.setLoopClosureDistanceThreshold (0.15);
       edge_icp_plugin_.setSaveFullResClouds (false);
+      edge_icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up the Feature Extraction
       plane_plugin_.setOverwriteTimestamps (false);
@@ -302,6 +309,7 @@ class OmniMapperROSNode
       plane_plugin_.setAngularNoise (plane_angular_noise_);//0.26
       //plane_plugin_.setRangeNoise (2.2);
       plane_plugin_.setRangeNoise (plane_range_noise_);//0.2
+      plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up the feature extraction
       if (use_occ_edge_icp_)
@@ -384,14 +392,21 @@ class OmniMapperROSNode
         boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
       if (use_occ_edge_icp_)
         boost::thread edge_icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
+      // if (use_planes_)
+      //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
+      
     }
 
     void
     cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     {
       ROS_INFO ("OmniMapperROS got a cloud.");
+      double start_cb = pcl::getTime ();
+      double start_copy = pcl::getTime ();
       CloudPtr cloud (new Cloud ());
       pcl::fromROSMsg (*msg, *cloud);
+      double end_copy = pcl::getTime ();
+      std::cout << "cloudCallback: conversion took " << double(end_copy - start_copy) << std::endl;
       //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
       //pcl::fromROSMsg (*msg, *xyz_cloud);
       //CloudPtr cloud (new Cloud ());
@@ -399,7 +414,10 @@ class OmniMapperROSNode
 
       if (use_distortion_model_)
       {
+        double start_undistort = pcl::getTime ();
         distortion_model_.undistort (*cloud);
+        double end_undistort = pcl::getTime ();
+        std::cout << "cloudCallback: undistortion took " << double(end_undistort - start_undistort) << std::endl;
       }
 
       if (use_icp_)
@@ -407,16 +425,30 @@ class OmniMapperROSNode
         printf ("Calling ICP Plugin!\n");
         icp_plugin_.cloudCallback (cloud);
       }
+      
+      double start_ofe = pcl::getTime ();
       organized_feature_extraction_.cloudCallback (cloud);
+      double end_ofe = pcl::getTime ();
+      std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe) << std::endl;
 
       if (add_pose_per_cloud_)
       {
+        double start_getpose = pcl::getTime ();
         gtsam::Symbol sym;
         boost::posix_time::ptime header_time = cloud->header.stamp.toBoost ();
         omb_.getPoseSymbolAtTime (header_time, sym);
+        double end_getpose = pcl::getTime ();
+        std::cout << "cloudCallback: get_pose took " << double(end_getpose - start_getpose) << std::endl;
       }
       if (broadcast_map_to_odom_)
+      {
+        double start_pub = pcl::getTime ();
         publishMapToOdom ();
+        double end_pub = pcl::getTime ();
+        std::cout << "cloudCallback: pub took " << double(end_pub - start_pub) << std::endl;
+      }
+      double end_cb = pcl::getTime ();
+      std::cout << "cloudCallback: cb took: " << double (end_cb - start_cb) << std::endl;
     }
     
     bool

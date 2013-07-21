@@ -5,6 +5,7 @@
 #include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper/plane.h>
 #include <omnimapper/plane_factor.h>
+#include <omnimapper/get_transform_functor.h>
 
 namespace omnimapper
 {
@@ -22,7 +23,7 @@ namespace omnimapper
       PlaneMeasurementPlugin (omnimapper::OmniMapperBase* mapper);
 
       /** \brief regionsToMeasurements converts a set of planar regions as extracted by PCL's organized segmentation tools into a set of Planar landmark measurements suitable for use with the OmniMapper. */
-      void regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, std::vector<gtsam::Plane<PointT> >& plane_measurements);
+      void regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time t, std::vector<gtsam::Plane<PointT> >& plane_measurements);
       
       /** \brief polygonsOverlapCloud tests if planar boundaries have some overlap or not.  TODO: this could be much more efficient. */
       bool polygonsOverlap (Cloud& boundary1, Cloud& boundary2);
@@ -43,9 +44,14 @@ namespace omnimapper
       void setOverwriteTimestamps (bool overwrite_timestamps) { overwrite_timestamps_ = overwrite_timestamps; }
 
       void setDisableDataAssociation (bool disable_da) { disable_data_association_ = disable_da; }
+
+      void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
+
+      void spin ();
       
     protected:
       OmniMapperBase* mapper_;
+      GetTransformFunctorPtr get_sensor_to_base_;
       int max_plane_id_;
       double angular_threshold_;
       double range_threshold_;
@@ -53,6 +59,11 @@ namespace omnimapper
       double range_noise_;
       bool overwrite_timestamps_;
       bool disable_data_association_;
+      std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > prev_regions_;
+      omnimapper::Time prev_time_;
+      bool updated_;
+      boost::condition_variable updated_cond_;
+      boost::mutex data_mutex_;
   };
   
 }

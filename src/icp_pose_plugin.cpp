@@ -1,6 +1,6 @@
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/omnimapper_base.h>
-#include <omnimapper/time_utils.h>
+#include <omnimapper/time.h>
 
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
@@ -43,6 +43,7 @@ namespace omnimapper
   template <typename PointT>
   ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper) :
     mapper_ (mapper),
+    get_sensor_to_base_ (GetTransformFunctorPtr ()),
     initialized_ (false),
     have_new_cloud_ (false),
     first_ (true),
@@ -195,12 +196,27 @@ namespace omnimapper
       current_time = boost::posix_time::ptime( omnimapper::stamp2ptime (current_cloud->header.stamp));//(current_cloud_->header.stamp) );
 #endif //USE_ROS
     }
+
+    // Apply sensor to base transform, if we have one
+    CloudPtr current_cloud_base (new Cloud ());
+    if (get_sensor_to_base_)
+    {
+      printf ("ICPPosePlugin: Applying sensor to base transform\n");
+      Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
+      pcl::transformPointCloud (*current_cloud_filtered, *current_cloud_base, sensor_to_base);
+    }
+    else
+    {
+      printf ("ICPPosePlugin: No sensor to base transform exists!\n");
+    }
+
+
     mapper_->getPoseSymbolAtTime (current_time, current_sym);
     //std::cout << "stamp time: " << current_cloud_->header.stamp << " converted time: " << current_time << std::endl;
     printf ("ICP Plugin: current symbol: %d, inserting cloud\n", current_sym.index ());
     //{
     //  boost::mutex::scoped_lock (current_cloud_mutex_);
-    clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_filtered));//current_cloud_));
+    clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_base));//current_cloud_));
     //}
   
     if (save_full_res_clouds_)

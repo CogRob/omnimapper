@@ -364,7 +364,9 @@ omnimapper::OmniMapperBase::optimize ()
 {
   //boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
-  current_solution.print ("Current Solution: ");
+  double opt_start = pcl::getTime ();
+  if (debug_)
+    current_solution.print ("Current Solution: ");
   
   printf ("OmniMapper: optimizing with:\n");
   new_factors.print ("New Factors: ");
@@ -374,6 +376,8 @@ omnimapper::OmniMapperBase::optimize ()
   current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
+  double opt_end = pcl::getTime ();
+  std::cout << "OmniMapperBase: optimize() took: " << double (opt_end - opt_start) << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -565,7 +569,7 @@ omnimapper::OmniMapperBase::spin ()
   while (true)
   {
     spinOnce ();
-    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+    boost::this_thread::sleep (boost::posix_time::milliseconds (1));
   }
 }
 

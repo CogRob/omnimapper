@@ -53,6 +53,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
+#include <omnimapper/time.h>
 #include <omnimapper/pose_chain.h>
 //#include <omnimapper/StampedSymbol.h>
 #include <omnimapper/pose_plugin.h>
@@ -68,7 +69,6 @@ typedef pcl::PointXYZRGBA PointT;
 
 namespace omnimapper
 {
-  typedef boost::posix_time::ptime Time;
   /** \brief OmniMapperBase is the base class for the OmniMapper system.  It contains a GTSAM-based factor graph and optimizer,
    * as well as a variety of helper functions for various SLAM tasks.  In particular, it handles adding poses to the graph,
    * which might come from a variety of sources such as robot odometry, frame-to-frame ICP, IMU data, or any/all of the above.  

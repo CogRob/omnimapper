@@ -827,6 +827,7 @@ namespace gtsam {
     if (!worked)
     {
       printf ("Error in plane::Extend! Merge failed!\n");
+      exit (1);
       return;
     }
     
@@ -1104,6 +1105,8 @@ namespace gtsam {
     pcl::PointCloud<PointT> origin_xy_fused_hull;
     //bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
     bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
+    printf ("Fuse Result: orig: %d meas: %d fused: %d\n", origin_xy_lm_hull.points.size (),
+            origin_xy_meas_hull.points.size (), origin_xy_fused_hull.points.size ());
 
     if (!worked)
     {
@@ -1118,11 +1121,20 @@ namespace gtsam {
               origin_xy_fused_hull.points.size ());
     }
 
+    // Simplify boundary
+    // pcl::PointCloud<PointT> origin_xy_fused_approx_hull;
+    // typename pcl::PointCloud<PointT>::VectorType &xy_fused_points = origin_xy_fused_hull.points;
+    // typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;    
+
+    // pcl::approximatePolygon2D<PointT> ( xy_fused_points, xy_fused_approx_points, 0.005, false, true);
+    // printf ("approximatePolygon2D: orig poly: %d new poly: %d\n", xy_fused_points.size (), xy_fused_approx_points.size ());
+
     // Rotate it back
     pcl::PointCloud<PointT> fused_rotated_back;
     Eigen::Affine3d rot_inv = lm_to_z_transform.inverse ();
     pcl::transformPointCloud (origin_xy_fused_hull, fused_rotated_back, rot_inv);
-    
+    //pcl::transformPointCloud (origin_xy_fused_approx_hull, fused_rotated_back, rot_inv);
+
     // Re-mean it
     pcl::PointCloud<PointT> fused_on_map;
     Eigen::Affine3d remean_transform = demean_transform.inverse ();

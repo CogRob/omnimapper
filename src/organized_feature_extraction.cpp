@@ -69,12 +69,12 @@ namespace omnimapper
       mps.setProjectPoints (true);
       mps.setRemoveDuplicatePoints (true);
       pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>::Ptr plane_compare (new pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>());
-      plane_compare->setAngularThreshold (pcl::deg2rad (3.0));
-      plane_compare->setDistanceThreshold (0.02, true);
+      plane_compare->setAngularThreshold (pcl::deg2rad (2.0));//3.0
+      plane_compare->setDistanceThreshold (0.01, true);//0.02, true
       mps.setComparator (plane_compare);
 
       pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
-      refine_compare->setDistanceThreshold (0.01, true);//0.0025
+      refine_compare->setDistanceThreshold (0.01, true);//0.01, true//0.0025
       mps.setRefinementComparator (refine_compare);
 
       // Set up edge detection
@@ -103,15 +103,15 @@ namespace omnimapper
     OrganizedFeatureExtraction<PointT>::cloudCallback (const CloudConstPtr& cloud)
     {
       // Store cloud
-      //boost::mutex::scoped_lock (cloud_mutex);
+      boost::mutex::scoped_lock (cloud_mutex);
       {
-        boost::lock_guard<boost::mutex> lock (cloud_mutex);
+        //boost::lock_guard<boost::mutex> lock (cloud_mutex);
         //std::cout << "OrganizedFeatureExtraction: Cloud stamp: " << cloud->header.stamp << std::endl;
         FPS_CALC ("cloud_callback");
         prev_sensor_cloud_ = cloud;
         updated_cloud_ = true;
       }
-      updated_cond_.notify_one ();
+      //updated_cond_.notify_one ();
     }
 
     // Get latest cloud from the sensor
@@ -171,28 +171,28 @@ namespace omnimapper
         //CloudConstPtr cloud;
         // Get the latest cloud from the sensor
         bool should_process = false;
-        // if (cloud_mutex.try_lock ()){
-        // //{
-        //   //boost::lock_guard<boost::mutex> lock (cloud_mutex);
-        //   //boost::mutex::scoped_lock (cloud_mutex);
-        //   should_process = updated_cloud_;
-        //   if (should_process)
-        //     stage1_cloud_ = prev_sensor_cloud_;
-        //   updated_cloud_ = false;
-        //   cloud_mutex.unlock ();
-        // }
+        if (cloud_mutex.try_lock ()){
+        //{
+          //boost::lock_guard<boost::mutex> lock (cloud_mutex);
+          //boost::mutex::scoped_lock (cloud_mutex);
+          should_process = updated_cloud_;
+          if (should_process)
+            stage1_cloud_ = prev_sensor_cloud_;
+          updated_cloud_ = false;
+          cloud_mutex.unlock ();
+        }
 
         // condition var test
-        {
-          boost::unique_lock<boost::mutex> lock (cloud_mutex);
-          while (!updated_cloud_)
-          {
-            updated_cond_.wait (lock);
-          }
-          stage1_cloud_ = prev_sensor_cloud_;
-          should_process = true;
-          updated_cloud_ = false;
-        }
+        // {
+        //   boost::unique_lock<boost::mutex> lock (cloud_mutex);
+        //   while (!updated_cloud_)
+        //   {
+        //     updated_cond_.wait (lock);
+        //   }
+        //   stage1_cloud_ = prev_sensor_cloud_;
+        //   should_process = true;
+        //   updated_cloud_ = false;
+        // }
         // end codition var test
 
         if (!should_process)
@@ -377,7 +377,7 @@ namespace omnimapper
   {
     boost::lock_guard<boost::mutex> lock (state_mutex);
 
-    printf ("Compute clusters: stage4_cloud_.use_count(): %d\n", stage4_cloud_.use_count ());
+    //printf ("Compute clusters: stage4_cloud_.use_count(): %d\n", stage4_cloud_.use_count ());
 
     if (stage4_labels_->points.size () == 0 || stage4_cloud_->points.size () == 0)
       return;
@@ -414,7 +414,7 @@ namespace omnimapper
     euclidean_cluster_comparator_->setInputCloud (stage4_cloud_);
     euclidean_cluster_comparator_->setLabels (stage4_labels_);
     euclidean_cluster_comparator_->setExcludeLabels (plane_labels);
-    euclidean_cluster_comparator_->setDistanceThreshold (0.005f, true);
+    euclidean_cluster_comparator_->setDistanceThreshold (0.01f, false);
       
     pcl::PointCloud<pcl::Label> euclidean_labels;
     std::vector<pcl::PointIndices> euclidean_label_indices;
@@ -446,7 +446,7 @@ namespace omnimapper
   template <typename PointT> void
   OrganizedFeatureExtraction<PointT>::computePlanes ()
   {
-    printf ("OrganizedFeature extraction: computePlanes: stage2_cloud_.use_count: %d\n", stage2_cloud_.use_count ());
+    // printf ("OrganizedFeature extraction: computePlanes: stage2_cloud_.use_count: %d\n", stage2_cloud_.use_count ());
     if (stage2_cloud_->points.size () == 0)
       return;
     
@@ -469,7 +469,7 @@ namespace omnimapper
     //mps.segment (stage3_regions_);
     //mps.segmentAndRefine (stage3_regions_);
     mps.segmentAndRefine (stage3_regions_, stage3_model_coefficients_, stage3_inlier_indices_, stage3_labels_, stage3_label_indices_, stage3_boundary_indices_);
-    //mps.segmentAndRefine (stage3_regions_, model_coefficients, inlier_indices, stage3_labels_, label_indices, boundary_indices);
+
     double end = pcl::getTime ();
     std::cout << "mps segment and refine took: " << double(end - start) << std::endl;
     //char time_str[2048];

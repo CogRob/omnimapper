@@ -1,6 +1,7 @@
 #pragma once
 
 #include <omnimapper/pose_plugin.h>
+#include <omnimapper/get_transform_functor.h>
 #include <pcl/io/pcd_grabber.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -50,9 +51,11 @@ namespace omnimapper
       void setRotNoise (double rot_noise) { rot_noise_ = rot_noise; }
       void setLoopClosureDistanceThreshold (double dist_thresh) { loop_closure_distance_threshold_ = dist_thresh; }
       void setSaveFullResClouds (bool save_full_res_clouds) { save_full_res_clouds_ = save_full_res_clouds; }
+      void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
 
     protected:
       OmniMapperBase* mapper_;
+      GetTransformFunctorPtr get_sensor_to_base_;
       bool initialized_;
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
       std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;

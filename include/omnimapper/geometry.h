@@ -12,7 +12,6 @@
 #include <boost/geometry/multi/multi.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 
-// We need to do this to perform geometry operations
 typedef std::vector<pcl::PointXYZRGB, Eigen::aligned_allocator<pcl::PointXYZRGB> > PointVector;
 BOOST_GEOMETRY_REGISTER_POINT_2D (pcl::PointXYZRGB, float, boost::geometry::cs::cartesian, x, y);
 BOOST_GEOMETRY_REGISTER_RING (PointVector);

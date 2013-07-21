@@ -91,4 +91,5 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
     poly_out.points[i] = pt;
   }
 
+  return (true);
 }

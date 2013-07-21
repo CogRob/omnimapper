@@ -65,9 +65,11 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     #include/omnimapper/cloud_registration_plugin.h
 					     include/omnimapper/tsdf_output_plugin.h
+					     include/omnimapper/time.h
 					     include/omnimapper/geometry.h
 					     include/omnimapper/impl/geometry.hpp
 					     src/omnimapper_base.cpp
+					     src/time.cpp
 					     src/icp_pose_plugin.cpp
 					     src/omnimapper_visualizer_pcl.cpp
 					     src/organized_feature_extraction.cpp
