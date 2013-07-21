@@ -11,8 +11,6 @@
 #include <omnimapper_ros/ros_tf_utils.h>
 #include <omnimapper_ros/get_transform_functor_tf.h>
 
-#include <cloudcv/cloud_plugin.h>
-
 #include <distortion_model/distortion_model_standalone.h>
 
 #include <pcl/point_cloud.h>
@@ -56,9 +54,6 @@ class OmniMapperROSNode
 
     // Plane Plugin
     omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin_;
-
-    // Cloud Plugin
-    CloudPlugin<PointT> cloud_plugin_;
 
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
@@ -148,6 +143,7 @@ class OmniMapperROSNode
     bool add_pose_per_cloud_;
     bool broadcast_map_to_odom_;
     bool use_distortion_model_;
+    std::string distortion_model_path_;
 
     OmniMapperROSNode ()
       : n_ ("~"),
@@ -160,7 +156,6 @@ class OmniMapperROSNode
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         error_plugin_ (&omb_),
-        cloud_plugin_(),
         fake_grabber_ (empty_files_, 1.0, false),
         organized_feature_extraction_ (fake_grabber_),
         tf_listener_ (ros::Duration (500.0))
@@ -208,6 +203,7 @@ class OmniMapperROSNode
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
       n_.param ("use_distortion_model", use_distortion_model_, true);
+      n_.param ("distortion_model_path", distortion_model_path_, std::string ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model"));
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -249,7 +245,7 @@ class OmniMapperROSNode
       // Optionally use distortion model
       if (use_distortion_model_)
       {
-        distortion_model_.load ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model");
+        distortion_model_.load (distortion_model_path_);
       }
 
       // Add the TF Pose Plugin
@@ -331,11 +327,6 @@ class OmniMapperROSNode
       {
         boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> label_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterLabelsCallback (label_vis_callback);
-
-        //boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)> cloud_callback = boost::bind (&CloudPlugin<PointT>::labelCloudCallback, &cloud_plugin_, _1, _2);
-        //organized_feature_extraction_.setClusterLabelsCallback (cloud_callback);
-
-
       }
 
       // Optionally draw clusters
