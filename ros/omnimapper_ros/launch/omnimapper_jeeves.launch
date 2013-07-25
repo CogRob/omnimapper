@@ -13,14 +13,14 @@
 	    <param name="use_error_plugin" value="false"/>
 	    <param name="use_tsdf_plugin" value="false"/>
 	    <param name="use_init_pose" value="false"/>	
-	    <param name="init_pose_from_tf" value="false"/>
+	    <param name="init_pose_from_tf" value="true"/>
       	    <param name="odom_frame_name" value="/odom"/>
-	    <param name="base_frame_name" value="/camera_rgb_optical_frame"/>
+	    <param name="base_frame_name" value="/base_link"/>
 	    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
 	    <param name="icp_leaf_size" value="0.02"/>
 	    <param name="icp_max_correspondence_distance" value="0.2"/>
-	    <param name="icp_trans_noise" value="0.05"/>
-	    <param name="icp_rot_noise" value=".05"/>
+	    <param name="icp_trans_noise" value="10.05"/>
+	    <param name="icp_rot_noise" value="10.05"/>
 	    <param name="plane_range_threshold" value="0.1"/>
 	    <param name="plane_angular_threshold" value="0.174532925"/>
 	    <param name="plane_range_noise" value="1.1"/>
@@ -28,9 +28,9 @@
 	    <param name="tf_trans_noise" value="0.05"/>
 	    <param name="tf_rot_noise" value="0.0872664626"/>
 	    <param name="tf_roll_noise" value="0.001"/>
-	    <param name="tf_pitch_noise" value="0.0872"/>
-	    <param name="tf_yaw_noise" value="0.001"/>
-	    <param name="add_pose_per_cloud" value="false"/>
+	    <param name="tf_pitch_noise" value="0.001"/>
+	    <param name="tf_yaw_noise" value="0.1"/>
+	    <param name="add_pose_per_cloud" value="true"/>
 	    <param name="broadcast_map_to_odom" value="true"/>
 	    <param name="draw_pose_array" value="true"/>
 	    <param name="draw_label_cloud" value="true"/>

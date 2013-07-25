@@ -9,15 +9,16 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
+#PCL Library
+find_package(PCL 1.7 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+
 rosbuild_init()
 include_directories(../../include)
 link_directories(../../build)
 
 include_directories(../../3rdparty/distortion_model/include)
-
-#PCL Library
-find_package(PCL 1.7 REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS})
 
 include_directories(/home/atrevor/github/cpu_tsdf/include)
 link_directories(/home/atrevor/github/cpu_tsdf/build)
@@ -48,8 +49,8 @@ target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES})
 
 rosbuild_add_executable(time_test src/time_test.cpp)
 
-rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
-target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
+#rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
+#target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
 target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam ${CLOUDCV_LIBRARIES}) 

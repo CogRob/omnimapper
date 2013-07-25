@@ -1,4 +1,5 @@
 #include <omnimapper/organized_feature_extraction.h>
+#include <omnimapper/time.h>
 #include <pcl/segmentation/plane_refinement_comparator.h>
 
 // // Boost
@@ -273,7 +274,7 @@ namespace omnimapper
 
           if (cluster_cloud_callbacks_.size () > 0)
           {
-            Time timestamp = stage4_cloud_->header.stamp.toBoost ();
+            Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
             for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
             {
               cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp);
@@ -296,7 +297,7 @@ namespace omnimapper
           {
             std::cout << "Starting planar region stamped callback" << std::endl;
             std::cout << "stage3 regions has: " << stage3_regions_.size () << std::endl;
-            Time timestamp = stage2_cloud_->header.stamp.toBoost ();
+            Time timestamp = stamp2ptime (stage2_cloud_->header.stamp);
             if (stage2_cloud_->points.size () > 200)
             {
               for (int i = 0; i < planar_region_stamped_callbacks_.size (); i++)
@@ -551,7 +552,7 @@ namespace omnimapper
 
             if (planar_region_stamped_callback_)
             {
-              Time timestamp = cloud->header.stamp.toBoost ();
+              Time timestamp = stamp2ptime (cloud->header.stamp);
               if (cloud->points.size () > 200)
                 planar_region_stamped_callback_ (regions, timestamp);
               

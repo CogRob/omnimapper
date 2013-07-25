@@ -35,20 +35,12 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
-#include_directories(/home/atrevor/github/cpu_tsdf/include)
-#link_directories(/home/atrevor/github/cpu_tsdf/build)
-
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 find_package(CPUTSDF REQUIRED)
 include_directories(${CPUTSDF_INCLUDE_DIRS})
 link_directories(${CPUTSDF_LIBRARY_DIRS})
 
-
-
-include_directories(/opt/ros/groovy/include)
 include_directories(include)
-#include_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/include)
-#link_directories(/home/atrevor/git/omnimapper/omnimapper2_ros/lib)
 
 add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/measurement_plugin.h 
@@ -82,7 +74,6 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     src/no_motion_pose_plugin.cpp
 					     src/tsdf_output_plugin.cpp)
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
-					     /opt/ros/groovy/lib/librostime.so
 					     cpu_tsdf ${CLOUDCV_LIBRARIES})
 
 #add_executable(omnimapper src/omnimapper.cpp)
@@ -104,10 +95,10 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 #target_link_libraries(isam_splice_test gtsam)
 
 add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES})
 
 add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES})
 
 add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
 target_link_libraries(organized_feature_extraction_demo omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6)

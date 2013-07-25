@@ -3,6 +3,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -135,13 +136,13 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   
   // Draw the cloud
   CloudPtr aggregate_cloud (new Cloud ());
-  aggregate_cloud->header.frame_id = "/world";
-  aggregate_cloud->header.stamp = ros::Time::now ();
+  //aggregate_cloud->header.frame_id = "/world";
+  //aggregate_cloud->header.stamp = ros::Time::now ();
   
   // Draw object cloud
   pcl::PointCloud<pcl::PointXYZRGB> aggregate_object_observation_cloud;// (new pcl::PointCloud<pcl::PointXYZRGB> ());
-  aggregate_object_observation_cloud.header.frame_id = "/world";
-  aggregate_object_observation_cloud.header.stamp = ros::Time::now ();
+  //aggregate_object_observation_cloud.header.frame_id = "/world";
+  //aggregate_object_observation_cloud.header.stamp = ros::Time::now ();
 
   geometry_msgs::PoseArray pose_array;
   pose_array.header.frame_id = "/world";
@@ -237,6 +238,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   {
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg (*aggregate_cloud, cloud_msg);
+    //pcl_conversions::moveFromPCL (*aggregate_cloud, cloud_msg);
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now ();
     map_cloud_pub_.publish (cloud_msg);
@@ -248,6 +250,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   {
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg (aggregate_object_observation_cloud, cloud_msg);
+    //pcl_conversions::moveFromPCL (aggregate_object_observation_cloud, cloud_msg);
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now ();
     object_observation_pub_.publish (cloud_msg);
@@ -324,6 +327,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     {
       sensor_msgs::PointCloud2 cloud_msg;
       pcl::toROSMsg (*plane_boundary_cloud, cloud_msg);
+      //pcl_conversions::moveFromPCL (*plane_boundary_cloud, cloud_msg);
       cloud_msg.header.frame_id = "/world";
       cloud_msg.header.stamp = ros::Time::now ();
       planar_boundary_pub_.publish (cloud_msg);
@@ -350,6 +354,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<
   {
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg (aggregate_cloud, cloud_msg);
+    //pcl_conversions::moveFromPCL (aggregate_cloud, cloud_msg);
     cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
     cloud_msg.header.stamp = ptime2rostime (t);
     segmented_plane_pub_.publish (cloud_msg);
@@ -378,8 +383,9 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback (const CloudCon
   
   sensor_msgs::PointCloud2 cloud_msg;
   pcl::toROSMsg (labeled_cloud, cloud_msg);
+  //pcl_conversions::moveFromPCL (labeled_cloud, cloud_msg);
   cloud_msg.header.frame_id = cloud->header.frame_id;
-  cloud_msg.header.stamp = cloud->header.stamp;
+  cloud_msg.header.stamp = ptime2rostime (stamp2ptime (cloud->header.stamp));
   segmented_label_cloud_pub_.publish (cloud_msg);
 }
 
@@ -431,6 +437,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<
 
   sensor_msgs::PointCloud2 cloud_msg;
   pcl::toROSMsg (aggregate_cloud, cloud_msg);
+  //moveFromPCL (aggregate_cloud, cloud_msg);
   cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
   cloud_msg.header.stamp = ptime2rostime (t);
   segmented_clusters_pub_.publish (cloud_msg);

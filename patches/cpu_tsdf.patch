@@ -1,0 +1,232 @@
+diff --git include/eigen_extensions/eigen_extensions.h include/eigen_extensions/eigen_extensions.h
+old mode 100644
+new mode 100755
+index 40d864b..6c7ca77
+--- include/eigen_extensions/eigen_extensions.h
++++ include/eigen_extensions/eigen_extensions.h
+@@ -1,19 +1,35 @@
+-/** Alex + Stephen's code */
+ #ifndef EIGEN_EXTENSIONS_H
+ #define EIGEN_EXTENSIONS_H
+ 
+ #include <Eigen/Eigen>
+-#ifndef EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+ #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+-#endif
+ #include <Eigen/Sparse>
++#define BOOST_FILESYSTEM_VERSION 2
+ #include <boost/filesystem.hpp>
+ #include <stdint.h>
+ #include <fstream>
+ #include <iostream>
++//#include <gzstream/gzstream.h>
+ 
+ namespace eigen_extensions {
+ 
++  inline void stdToEig(const std::vector<double>& std, Eigen::VectorXd* eig)
++  {
++    eig->resize(std.size());
++    for(size_t i = 0; i < std.size(); ++i)
++      eig->coeffRef(i) = std[i];
++  }
++  
++  inline double stdev(const Eigen::VectorXd& vec)
++  {
++    double mean = vec.sum() / (double)vec.rows();
++    double total = 0;
++    for(int i = 0; i < vec.rows(); ++i)
++      total += (vec.coeffRef(i) - mean) * (vec.coeffRef(i) - mean);
++    double var = total / (double)vec.rows();
++    return sqrt(var);
++  }
++  
+   template<class S, int T, int U>
+   void save(const Eigen::Matrix<S, T, U>& mat, const std::string& filename);
+ 
+@@ -97,27 +113,43 @@ namespace eigen_extensions {
+     free(buf);    
+   }
+ 
+-  template<class S, int T, int U>
+-  void save(const Eigen::Matrix<S, T, U>& mat, const std::string& filename)
+-  {
+-    assert(filename.size() > 3);
+-    assert(boost::filesystem::extension(filename).compare(".eig") == 0);
+-    std::ofstream file(filename.c_str());
+-    assert(file);
+-    serialize(mat, file);
+-    file.close();
+-  }
++  // template<class S, int T, int U>
++  // void save(const Eigen::Matrix<S, T, U>& mat, const std::string& filename)
++  // {
++  //   assert(filename.size() > 3);
++  //   if(filename.substr(filename.size() - 3, 3).compare(".gz") == 0) {
++  //     ogzstream file(filename.c_str());
++  //     assert(file);
++  //     serialize(mat, file);
++  //     file.close();
++  //   }
++  //   else { 
++  //     assert(boost::filesystem::extension(filename).compare(".eig") == 0);
++  //     std::ofstream file(filename.c_str());
++  //     assert(file);
++  //     serialize(mat, file);
++  //     file.close();
++  //   }
++  // }
+ 
+-  template<class S, int T, int U>
+-  void load(const std::string& filename, Eigen::Matrix<S, T, U>* mat)
+-  {
+-    assert(filename.size() > 3);
+-    assert(boost::filesystem::extension(filename).compare(".eig") == 0);
+-    std::ifstream file(filename.c_str());
+-    assert(file);
+-    deserialize(file, mat);
+-    file.close();
+-  }
++  // template<class S, int T, int U>
++  // void load(const std::string& filename, Eigen::Matrix<S, T, U>* mat)
++  // {
++  //   assert(filename.size() > 3);
++  //   if(filename.substr(filename.size() - 3, 3).compare(".gz") == 0) {
++  //     igzstream file(filename.c_str());
++  //     assert(file);
++  //     deserialize(file, mat);
++  //     file.close();
++  //   }
++  //   else {
++  //     assert(boost::filesystem::extension(filename).compare(".eig") == 0);
++  //     std::ifstream file(filename.c_str());
++  //     assert(file);
++  //     deserialize(file, mat);
++  //     file.close();
++  //   }
++  // }
+ 
+   template<class ScalarType, int Options, class IndexType>
+   void serialize(const Eigen::SparseMatrix<ScalarType, Options, IndexType>& mat, std::ostream& strm)
+@@ -221,10 +253,8 @@ namespace eigen_extensions {
+   void deserializeASCII(std::istream& strm, Eigen::Matrix<S, T, U>* mat)
+   {
+     // -- Read the header.
+-    std::string line = "";
+-    while(line.length() == 0) {
+-      getline(strm, line);
+-    }
++    std::string line;
++    while(line.length() == 0) getline(strm, line);
+     assert(line[0] == '%');
+     std::istringstream iss(line.substr(1));
+     int rows;
+@@ -237,19 +267,8 @@ namespace eigen_extensions {
+     for(int y = 0; y < rows; ++y) {
+       getline(strm, line);
+       std::istringstream iss(line);
+-      std::string token;
+-      std::istringstream buf;
+       for(int x = 0; x < cols; ++x) {
+-  iss >> token;
+-  if (token[0] == 'n')
+-    mat->coeffRef(y, x) = std::numeric_limits<S>::quiet_NaN();
+-  else
+-  {
+-    buf.clear();
+-    buf.str(token);
+-    buf >> mat->coeffRef(y, x);
+-  }
+-	//iss >> mat->coeffRef(y, x);
++	iss >> mat->coeffRef(y, x);
+       }
+     }
+   }
+diff --git src/lib/marching_cubes_tsdf_octree.cpp src/lib/marching_cubes_tsdf_octree.cpp
+old mode 100644
+new mode 100755
+index 716f0b2..38cdbbe
+--- src/lib/marching_cubes_tsdf_octree.cpp
++++ src/lib/marching_cubes_tsdf_octree.cpp
+@@ -7,6 +7,7 @@
+  *
+  */
+ #include <cpu_tsdf/marching_cubes_tsdf_octree.h>
++#include <pcl/conversions.h>
+ 
+ void
+ cpu_tsdf::MarchingCubesTSDFOctree::setInputTSDF (cpu_tsdf::TSDFVolumeOctree::ConstPtr tsdf_volume)
+@@ -84,13 +85,13 @@ cpu_tsdf::MarchingCubesTSDFOctree::performReconstruction (pcl::PolygonMesh &outp
+     pcl::PointCloud<pcl::PointXYZRGB> cloud_colored;
+     reconstructVoxel (root.get (), cloud, &cloud_colored);
+     pcl::transformPointCloud (cloud_colored, cloud_colored, tsdf_volume_->getGlobalTransform ());
+-    pcl::toROSMsg (cloud_colored, output.cloud);
++    pcl::toPCLPointCloud2 (cloud_colored, output.cloud);
+   }
+   else
+   {
+     reconstructVoxel (root.get (), cloud);
+     pcl::transformPointCloud (cloud, cloud, tsdf_volume_->getGlobalTransform ());
+-    pcl::toROSMsg (cloud, output.cloud);
++    pcl::toPCLPointCloud2 (cloud, output.cloud);
+   }
+ 
+   output.polygons.resize (cloud.size () / 3);
+diff --git src/prog/integrate.cpp src/prog/integrate.cpp
+old mode 100644
+new mode 100755
+index 082ccd2..e937e48
+--- src/prog/integrate.cpp
++++ src/prog/integrate.cpp
+@@ -18,6 +18,7 @@
+ #include <pcl/io/vtk_lib_io.h>
+ #include <pcl/pcl_macros.h>
+ #include <pcl/segmentation/extract_clusters.h>
++#include <pcl/conversions.h>
+ 
+ #include <boost/filesystem/convenience.hpp>
+ #include <boost/filesystem.hpp>
+@@ -39,7 +40,7 @@ meshToFaceCloud (const pcl::PolygonMesh &mesh)
+ {
+   pcl::PointCloud<pcl::PointNormal>::Ptr cloud (new pcl::PointCloud<pcl::PointNormal>);
+   pcl::PointCloud<pcl::PointXYZ> vertices;
+-  pcl::fromROSMsg (mesh.cloud, vertices);
++  pcl::fromPCLPointCloud2 (mesh.cloud, vertices);
+ 
+   for (size_t i = 0; i < mesh.polygons.size (); ++i)
+   {
+@@ -70,7 +71,7 @@ void
+ flattenVertices (pcl::PolygonMesh &mesh, float min_dist = 0.0001)
+ {
+   pcl::PointCloud<pcl::PointXYZ>::Ptr vertices (new pcl::PointCloud<pcl::PointXYZ>);
+-  pcl::fromROSMsg (mesh.cloud, *vertices);
++  pcl::fromPCLPointCloud2 (mesh.cloud, *vertices);
+   pcl::search::KdTree<pcl::PointXYZ> vert_tree (true);
+   vert_tree.setInputCloud (vertices);
+   // Find duplicates
+@@ -112,7 +113,7 @@ flattenVertices (pcl::PolygonMesh &mesh, float min_dist = 0.0001)
+     }
+   }
+   mesh.polygons.resize (face_idx);
+-  pcl::toROSMsg (vertices_new, mesh.cloud);
++  pcl::toPCLPointCloud2 (vertices_new, mesh.cloud);
+ }
+ 
+ void
+@@ -149,7 +150,7 @@ cleanupMesh (pcl::PolygonMesh &mesh, float face_dist=0.02, int min_neighbors=5)
+   }
+   // Remove all vertices with no face
+   pcl::PointCloud<pcl::PointXYZ> vertices;
+-  pcl::fromROSMsg (mesh.cloud, vertices);
++  pcl::fromPCLPointCloud2 (mesh.cloud, vertices);
+   std::vector<bool> has_face (vertices.size (), false);
+   for (size_t i = 0; i < mesh.polygons.size (); i++)
+   {
+@@ -176,7 +177,7 @@ cleanupMesh (pcl::PolygonMesh &mesh, float face_dist=0.02, int min_neighbors=5)
+     v.vertices[1] = get_new_idx[v.vertices[1]];
+     v.vertices[2] = get_new_idx[v.vertices[2]];
+   }
+-  pcl::toROSMsg (vertices_new, mesh.cloud);
++  pcl::toPCLPointCloud2 (vertices_new, mesh.cloud);
+ }
+ 
+ bool

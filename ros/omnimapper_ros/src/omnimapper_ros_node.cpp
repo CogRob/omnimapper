@@ -10,9 +10,11 @@
 #include <omnimapper_ros/tum_data_error_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
 #include <omnimapper_ros/get_transform_functor_tf.h>
+#include <omnimapper/time.h>
 
 #include <distortion_model/distortion_model_standalone.h>
 
+#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_grabber.h>
@@ -395,8 +397,9 @@ class OmniMapperROSNode
       double start_cb = pcl::getTime ();
       double start_copy = pcl::getTime ();
       CloudPtr cloud (new Cloud ());
-      pcl::fromROSMsg (*msg, *cloud);
+      pcl::fromROSMsg<PointT> (*msg, *cloud);
       double end_copy = pcl::getTime ();
+      //cloud->header.stamp = msg->header.stamp.toBoost ();
       std::cout << "cloudCallback: conversion took " << double(end_copy - start_copy) << std::endl;
       //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
       //pcl::fromROSMsg (*msg, *xyz_cloud);
@@ -426,7 +429,8 @@ class OmniMapperROSNode
       {
         double start_getpose = pcl::getTime ();
         gtsam::Symbol sym;
-        boost::posix_time::ptime header_time = cloud->header.stamp.toBoost ();
+        boost::posix_time::ptime header_time = msg->header.stamp.toBoost ();
+        std::cout << "header time: " << header_time << std::endl;
         omb_.getPoseSymbolAtTime (header_time, sym);
         double end_getpose = pcl::getTime ();
         std::cout << "cloudCallback: get_pose took " << double(end_getpose - start_getpose) << std::endl;
@@ -468,9 +472,9 @@ class OmniMapperROSNode
       }
       catch (tf::TransformException e)
       {
-        ROS_ERROR ("OmniMapperROS: Error .\n");
+        ROS_ERROR ("OmniMapperROS: Error: could not immediately get odom to base transform\n");
         odom_to_map.setIdentity ();
-//        return;
+        return;
       }
       tf::Transform map_to_odom = odom_to_map.inverse ();//tf::Transform (tf::Quaternion (odom_to_map.getRotation ()), tf::Point (odom_to_map.getOrigin ())
       tf_broadcaster_.sendTransform (tf::StampedTransform (map_to_odom, ros::Time::now (), "/world", odom_frame_name_));
