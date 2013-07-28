@@ -12,6 +12,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_icp_clouds_ (false),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
+    draw_pose_graph_ (true),
     draw_object_observation_cloud_ (true),
     draw_object_observation_bboxes_ (true)
 {
@@ -133,7 +134,8 @@ template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
   gtsam::Values current_solution = *vis_values;
-  
+  gtsam::NonlinearFactorGraph current_graph = *vis_graph;
+
   // Draw the cloud
   CloudPtr aggregate_cloud (new Cloud ());
   //aggregate_cloud->header.frame_id = "/world";
@@ -232,6 +234,56 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Publish the poses
   if (draw_pose_array_)
     pose_array_pub_.publish (pose_array);
+
+  // Draw the pose graph
+  if (draw_pose_graph_)
+  {
+    visualization_msgs::MarkerArray marker_array;
+    visualization_msgs::Marker mapper_graph;
+    mapper_graph.header.frame_id = "/world";
+    mapper_graph.header.stamp = ros::Time ();
+    mapper_graph.ns = "error_lines";
+    mapper_graph.id = 0;
+    mapper_graph.type = visualization_msgs::Marker::LINE_LIST;
+    mapper_graph.action = visualization_msgs::Marker::ADD;
+    mapper_graph.color.a = 0.5;
+    mapper_graph.color.r = 1.0;
+    mapper_graph.color.g = 0.0;
+    mapper_graph.color.b = 0.0;
+    mapper_graph.scale.x = 0.01;
+    
+    BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
+    {
+      // check for poses
+      const std::vector<gtsam::Key> keys = factor->keys ();
+      
+      // skip if there aren't two pose keys
+      if ((keys.size () == 2))
+      {
+        if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
+        {
+          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
+          gtsam::Pose3 p2 = current_solution.at<gtsam::Pose3>(keys[1]);
+          
+          geometry_msgs::Point p1_msg;
+          p1_msg.x = p1.x ();
+          p1_msg.y = p1.y ();
+          p1_msg.z = p1.z ();
+          
+          geometry_msgs::Point p2_msg;
+          p2_msg.x = p2.x ();
+          p2_msg.y = p2.y ();
+          p2_msg.z = p2.z ();
+          
+          mapper_graph.points.push_back (p1_msg);
+          mapper_graph.points.push_back (p2_msg);
+        }
+      }
+    }
+    
+    marker_array.markers.push_back (mapper_graph);
+    marker_array_pub_.publish (marker_array);
+  }
 
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)

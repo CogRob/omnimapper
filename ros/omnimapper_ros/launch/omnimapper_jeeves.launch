@@ -8,6 +8,7 @@
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
       	    <param name="use_planes" value="true"/>
 	    <param name="use_icp" value="true"/>
+	    <param name="use_objects" value="false"/>
 	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="true"/>
 	    <param name="use_error_plugin" value="false"/>
@@ -26,13 +27,13 @@
 	    <param name="plane_range_noise" value="1.1"/>
 	    <param name="plane_angular_noise" value="1.174532925"/>
 	    <param name="tf_trans_noise" value="0.05"/>
-	    <param name="tf_rot_noise" value="0.0872664626"/>
 	    <param name="tf_roll_noise" value="0.001"/>
 	    <param name="tf_pitch_noise" value="0.001"/>
 	    <param name="tf_yaw_noise" value="0.1"/>
 	    <param name="add_pose_per_cloud" value="true"/>
 	    <param name="broadcast_map_to_odom" value="true"/>
 	    <param name="draw_pose_array" value="true"/>
+	    <param name="draw_pose_graph" value="true"/>
 	    <param name="draw_label_cloud" value="true"/>
 	    <param name="draw_clusters" value="true"/>
       </node>

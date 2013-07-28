@@ -132,6 +132,7 @@ class OmniMapperROSNode
     
     // Visualization params
     bool draw_pose_array_;
+    bool draw_pose_graph_;
     bool draw_label_cloud_;
     bool draw_clusters_;
 
@@ -200,6 +201,7 @@ class OmniMapperROSNode
       n_.param ("init_qz", init_qz_, 0.0);
       n_.param ("init_qw", init_qw_, 1.0);
       n_.param ("draw_pose_array", draw_pose_array_, true);
+      n_.param ("draw_pose_graph", draw_pose_graph_, true);
       n_.param ("draw_label_cloud", draw_label_cloud_, true);
       n_.param ("use_label_cloud", use_label_cloud_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
@@ -242,7 +244,10 @@ class OmniMapperROSNode
         omb_.setInitialPose (init_pose_inv);
       }
 
-      omb_.setSuppressCommitWindow (true);
+      // Use ROS Time instead of system clock
+      omnimapper::GetTimeFunctorPtr time_functor_ptr (new omnimapper::GetROSTimeFunctor ());
+      omb_.setTimeFunctor (time_functor_ptr);
+      omb_.setSuppressCommitWindow (false);
 
       // Optionally use distortion model
       if (use_distortion_model_)
@@ -298,7 +303,7 @@ class OmniMapperROSNode
       edge_icp_plugin_.setSaveFullResClouds (false);
       edge_icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
-      // Set up the Feature Extraction
+      // Set up the Plane Plugin
       plane_plugin_.setOverwriteTimestamps (false);
       plane_plugin_.setDisableDataAssociation (false);
       plane_plugin_.setRangeThreshold (plane_range_threshold_);
@@ -308,6 +313,9 @@ class OmniMapperROSNode
       //plane_plugin_.setRangeNoise (2.2);
       plane_plugin_.setRangeNoise (plane_range_noise_);//0.2
       plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
+
+      // Set up the object Plugin
+      object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up the feature extraction
       if (use_occ_edge_icp_)
@@ -358,6 +366,7 @@ class OmniMapperROSNode
       
       // Install the visualizer
       vis_plugin_.setDrawPoseArray (draw_pose_array_);
+      vis_plugin_.setDrawPoseGraph (draw_pose_graph_);
       boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr (&vis_plugin_);
       omb_.addOutputPlugin (vis_ptr);
 
@@ -429,7 +438,7 @@ class OmniMapperROSNode
       {
         double start_getpose = pcl::getTime ();
         gtsam::Symbol sym;
-        boost::posix_time::ptime header_time = msg->header.stamp.toBoost ();
+        boost::posix_time::ptime header_time = omnimapper::stamp2ptime (cloud->header.stamp);//msg->header.stamp.toBoost ();
         std::cout << "header time: " << header_time << std::endl;
         omb_.getPoseSymbolAtTime (header_time, sym);
         double end_getpose = pcl::getTime ();

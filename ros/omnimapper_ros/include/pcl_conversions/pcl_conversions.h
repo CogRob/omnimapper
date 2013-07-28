@@ -36,6 +36,9 @@
 #ifndef PCL_CONVERSIONS_H__
 #define PCL_CONVERSIONS_H__
 
+// Note: This is a subset of the PCL conversion code from: https://github.com/ros-perception/pcl_conversions
+// The above was designed for using ROS Hydro, not ROS Groovy with PCL 1.7.
+
 #include <vector>
 
 #include <ros/ros.h>
@@ -78,8 +81,8 @@ namespace pcl_conversions {
   inline
   void fromPCL(const pcl::PCLHeader &pcl_header, std_msgs::Header &header)
   {
-    header.stamp.fromNSec (pcl_header.stamp);
-    //header.stamp.fromNSec(pcl_header.stamp * 1e3);  // Convert from us to ns
+    //header.stamp.fromNSec (pcl_header.stamp);
+    header.stamp.fromNSec(pcl_header.stamp * 1e3);  // Convert from us to ns
     header.seq = pcl_header.seq;
     header.frame_id = pcl_header.frame_id;
   }
@@ -87,8 +90,8 @@ namespace pcl_conversions {
   inline
   void toPCL(const std_msgs::Header &header, pcl::PCLHeader &pcl_header)
   {
-    pcl_header.stamp = header.stamp.toNSec ();
-    //pcl_header.stamp = header.stamp.toNSec() / 1e3;  // Convert from ns to us
+    //pcl_header.stamp = header.stamp.toNSec ();
+    pcl_header.stamp = header.stamp.toNSec() / 1e3;  // Convert from ns to us
     pcl_header.seq = header.seq;
     pcl_header.frame_id = header.frame_id;
   }

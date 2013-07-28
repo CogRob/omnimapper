@@ -3,7 +3,8 @@
 
 omnimapper::OmniMapperBase::OmniMapperBase () 
   : initialized_ (false),
-    initial_pose_ (gtsam::Pose3::identity ())
+    initial_pose_ (gtsam::Pose3::identity ()),
+    get_time_ (new GetSystemTimeFunctor ())
 {
   debug_ = true;
   // TODO: make it optional to set an arbitrary initial pose
@@ -11,8 +12,8 @@ omnimapper::OmniMapperBase::OmniMapperBase ()
   suppress_commit_window_ = false;
   largest_pose_index = 0;
   latest_committed_node = chain.begin ();
-  latest_commit_time = boost::posix_time::microsec_clock::local_time();
-  commit_window = 0.01;
+  latest_commit_time = (*get_time_)();//boost::posix_time::microsec_clock::local_time();
+  commit_window = 3.0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,13 @@ omnimapper::OmniMapperBase::setInitialPose (gtsam::Pose3& initial_pose)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+omnimapper::OmniMapperBase::setTimeFunctor (omnimapper::GetTimeFunctorPtr time_functor)
+{
+  get_time_ = time_functor;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
 omnimapper::OmniMapperBase::commitNextPoseNode ()
 {
@@ -78,6 +86,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin (); itr != chain.end (); itr++)
     {
       printf ("node: %c %d %u %d\n", itr->symbol.chr (), itr->symbol.index (), itr->time, itr->factors.size ());
+      std::cout << "stamp: " << itr->time << std::endl;
     }
   }
   
@@ -100,7 +109,8 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   // Check that enough time has elapsed
   if (!suppress_commit_window_)
   {  
-    if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
+    //if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
+    if (!(((*get_time_)() - to_commit->time) > boost::posix_time::seconds (commit_window)))
     {
       printf ("OmniMapper: commitNext -- not time to commit yet!\n");
       return (false);
@@ -186,7 +196,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   to_commit->status = omnimapper::PoseChainNode::COMMITTED;
   to_commit->factors.clear ();
   latest_committed_node++;
-  latest_commit_time = boost::posix_time::microsec_clock::local_time();
+  latest_commit_time = (*get_time_)();//boost::posix_time::microsec_clock::local_time();
   printf ("Committed!\n");
 
   if (debug_)
@@ -284,9 +294,9 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
       printf ("done initializing!\n");
   }
 
+  // If we have a pose symbol for this timestamp, just return it
   if (time_lookup.count (t) > 0)
   {
-    // If we have a pose, just return it
     sym = time_lookup[t]->symbol;
     printf ("OmniMapperBase: We have this time already, returning it\n");
     return;
@@ -295,23 +305,51 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
   {
     // If we don't have a pose yet, make one
     printf ("OmniMapperBase: Making a new entry\n");
+    // Check that the time is after the latest committed pose time, otherwise we'd need to splice it into the pose chain, which is not yet supported
+    if (t < latest_committed_node->time)
+    {
+      std::cout << "OmniMapperBase: ERROR: Pose symbol requested for timestamp earlier than latest committed stamp! Increase the commit window length, or implement pose chain splicing (not yet implemented)." << std::endl;
+      std::cout << "OmniMapperBase: requested time: " << t << std::endl;
+      std::cout << "OmniMapperBase: latest committed time: " << latest_committed_node->time << std::endl;
+      assert (false);
+    }
+
     largest_pose_index++;
     gtsam::Symbol new_sym ('x', largest_pose_index);
     sym = new_sym;
     // Add a relevant node to the chain
     omnimapper::PoseChainNode new_node (t, new_sym);
+    std::cout << "OmniMapperBase: need new symbol at: " << t << std::endl;
     // TODO: replace this with an STL search operation
-    for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.end (); itr != chain.begin (); --itr)
+    //for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.end (); itr != chain.begin (); --itr)
+    // {
+    //   if (itr->time < t)
+    //   {
+    //     //++itr;
+    //     //if (itr == chain.end ())
+    //     //  std::cout << "inserting at end of chain!" << std::endl;
+    //     //else
+    //       std::cout << "inserting prior to timestamp: " << itr->time << std::endl;
+    //     std::list<omnimapper::PoseChainNode>::iterator new_itr = chain.insert (itr, new_node);
+    //     time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
+    //     symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(new_sym, new_itr));
+    //     break;
+    //   }
+    // }
+
+    // Find the node with the previous stamp
+    std::list<omnimapper::PoseChainNode>::iterator itr = chain.end ();
+    itr--;
+    for (; itr != chain.begin (); itr--)
     {
-      if (itr->time  < t)
-      {
-        //++itr;
-        std::list<omnimapper::PoseChainNode>::iterator new_itr = chain.insert (itr, new_node);
-        time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
-        symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(new_sym, new_itr));
+      if (itr->time < t)
         break;
-      }
     }
+    itr++;
+    
+    std::list<omnimapper::PoseChainNode>::iterator new_itr = chain.insert (itr, new_node);
+    time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
+    symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(new_sym, new_itr));
     return;
   }
 }
@@ -514,55 +552,6 @@ omnimapper::OmniMapperBase::predictPose (gtsam::Symbol& pose_sym)
   return (boost::none);
 }
 
-//------------------//------------------//------------------//------------------//------------------//------------------
-//------------------//------------------//------------------//------------------//------------------//------------------
-//------------------//------------------//------------------//------------------//------------------//------------------
-//------------------//------------------//------------------//------------------//------------------//------------------
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// bool
-// omnimapper::OmniMapperBase::shouldAddPose ()
-// {
-//   if (shouldAddPoseFn == NULL)
-//   {
-//     //if (debug_)
-//     //  printf ("OmniMapperBase: using default shouldAddPose\n");
-//     return true;
-//   }
-//   else
-//   {
-//     //if (debug_)
-//     //  printf ("OmniMapperBase: using user specified shouldAddPose\n");
-//     return (shouldAddPoseFn ());
-//   }
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void
-// omnimapper::OmniMapperBase::spinOnce ()
-// {
-//   printf ("spinning...\n");
-//   // Check if we should add a new pose
-//   if (shouldAddPose ())
-//   {
-//     printf ("appending pose...\n");
-//     // Create a new pose and add pose factors
-//     gtsam::Symbol new_pose_symbol = appendPose ();
-//     // Add Feature Measurements (if applicable)
-//     addMeasurements ();
-//     // Re-optimize with this new information
-//     optimize ();
-//     // Update Visualization with new information
-//     boost::shared_ptr<gtsam::Values> vis_values (new gtsam::Values ());
-//     // Make a copy, to ensure we don't have
-//     *vis_values = getSolution ();
-//     for (int i = 0; i < output_plugins.size (); i++)
-//     {
-//       output_plugins[i]->update (vis_values);
-//     }
-//   }
-// }
-
 void
 omnimapper::OmniMapperBase::spin ()
 {
@@ -628,7 +617,7 @@ omnimapper::OmniMapperBase::getLatestPose (gtsam::Pose3& pose, Time& time)
   if (latest_committed_node == chain.begin ())
   {
     pose = gtsam::Pose3::identity ();
-    time = boost::posix_time::microsec_clock::local_time();
+    time = (*get_time_)();//boost::posix_time::microsec_clock::local_time();
     return;
   }
   pose = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
@@ -653,144 +642,3 @@ omnimapper::OmniMapperBase::updateOutputPlugins ()
   std::cout << "OmniMapperBase: updating output plugins took: " << double (end - start) << std::endl;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*void
-omnimapper::OmniMapperBase::spinOnce ()
-{
-  printf ("spinning...\n");
-  // Check if we should add a new pose
-  if (shouldAddPose ())
-  {
-    printf ("appending pose...\n");
-    // Create a new pose and add pose factors
-    gtsam::Symbol new_pose_symbol = appendPose ();
-    // Add Feature Measurements (if applicable)
-    addMeasurements ();
-    // Re-optimize with this new information
-    optimize ();
-    // Update Visualization with new information
-    boost::shared_ptr<gtsam::Values> vis_values (new gtsam::Values ());
-    // Make a copy, to ensure we don't have
-    *vis_values = getSolution ();
-    for (int i = 0; i < output_plugins.size (); i++)
-    {
-      output_plugins[i]->update (vis_values);
-    }
-  }
-  }*/
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// gtsam::Symbol
-// omnimapper::OmniMapperBase::appendPose ()
-// {
-//   // Ensure that we have at least one pose plugin
-//   if (pose_plugins.size () < 1)
-//   {
-//     printf ("OmniMapper: Error!  At least one pose plugin is required.\n");
-//   }
-
-//   // Create a new pose and add factors for the new plugin
-//   //if (current_pose_symbol.index () != 0)
-//   //{
-//     gtsam::Symbol new_symbol ('x', current_pose_symbol.index ()+1);
-//     current_pose_symbol = new_symbol;
-//     //}
-//   printf ("Appending pose with pose %d\n", current_pose_symbol.index ());
-  
-//   pose_plugins[0]->appendPose (true);
-//   // Add new pose factors for each subsequent pose plugin
-//   for (int i = 1; i < pose_plugins.size (); i++)
-//   {
-//     pose_plugins[i]->appendPose ();
-//   }
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void
-// omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym, bool& needs_initialization)
-// {
-//   // See if we have one already
-//   if (symbol_times.count (t) > 0)
-//   {
-//     sym = symbol_times[t];
-//     needs_initialization = false;
-//     return;
-//   }
-//   else if (symbol_times.size () == 0)
-//   {
-//     // If this is the first pose
-//     initializePose (t);
-//     sym = gtsam::Symbol ('x', 0);
-//     needs_initialization = false;
-//     return;
-//   }
-//   else
-//   {
-//     // Create a new symbol
-//     largest_pose_index++;
-//     gtsam::Symbol new_symbol ('x', largest_pose_index);
-//     symbol_times.insert (std::pair<Time, gtsam::Symbol>(t, new_symbol));
-//     sym = new_symbol;
-//     needs_initialization = true;
-//     return;
-//   }
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// bool
-// omnimapper::OmniMapperBase::addRelativePoseMeasurement (Time t1, Time t2, const gtsam::Pose3& relative_pose, const gtsam::SharedNoiseModel& noise_model)
-// {
-//   // TODO: check movement threshold
-//   // Find pose symbol at t1
-//   gtsam::Symbol t1_sym;
-//   bool needs_init;
-//   getPoseSymbolAtTime (t1, t1_sym,);
-//   // Find pose symbol at t2
-//   gtsam::Symbol t2_sym = getPoseSymbolAtTime (t2);
-//   // Create Between factor
-//   omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (t1_sym, t2_sym, relative_pose, noise_model));
-//   // Add it
-//   addFactor (between);
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void
-// omnimapper::OmniMapperBase::setShouldAddPoseFn (boost::function<bool()> fn)
-// {
-//   shouldAddPoseFn = fn;
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void
-// omnimapper::OmniMapperBase::initializePlugins ()
-// {
-//   bool initialized = false;
-//   while (!initialized)
-//   {
-//     bool found_not_ready = false;
-//     for (int i  = 0; i < pose_plugins.size (); i ++)
-//     {
-//       bool ready = pose_plugins[i]->addInitialPose ();
-//       if (!ready)
-//         found_not_ready = true;
-//       printf ("plugin %d: %d\n", i, ready);
-//     }
-//     if (!found_not_ready)
-//       initialized = true;
-//   }
-//   // Call optimize to put this in the current solution.
-//   optimize ();
-
-//   printf ("OmniMapperBase: Plugin Initialization Complete.\n");
-// }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// void
-// omnimapper::OmniMapperBase::addMeasurements ()
-// {
-//   // If we have no measurement plugins, do nothing
-//   if (measurement_plugins.size () == 0)
-//     return;
-//   else
-//     printf ("OmniMapper: addMeasurments is NYI!");
-// }

@@ -190,11 +190,12 @@ namespace omnimapper
     }
     else
     {
-#ifdef USE_ROS
-      current_time = current_cloud->header.stamp.toBoost ();//current_cloud_->header.stamp.toBoost ();
-#else
-      current_time = boost::posix_time::ptime( omnimapper::stamp2ptime (current_cloud->header.stamp));//(current_cloud_->header.stamp) );
-#endif //USE_ROS
+// #ifdef USE_ROS
+//       current_time = current_cloud->header.stamp.toBoost ();//current_cloud_->header.stamp.toBoost ();
+// #else
+//       current_time = boost::posix_time::ptime( omnimapper::stamp2ptime (current_cloud->header.stamp));//(current_cloud_->header.stamp) );
+// #endif //USE_ROS
+      current_time = omnimapper::stamp2ptime (current_cloud->header.stamp);
     }
 
     // Apply sensor to base transform, if we have one

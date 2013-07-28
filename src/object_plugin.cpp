@@ -8,6 +8,7 @@ namespace omnimapper
   template <typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper)
     : mapper_ (mapper),
+      get_sensor_to_base_ (GetTransformFunctorPtr ()),
       observations_ (),
       empty_ ()
   {
@@ -32,10 +33,28 @@ namespace omnimapper
     double min_points_ = 1000;
     double min_clust_centroid_ptp_dist = 0.5;
     double ptp_pt_cull_thresh_ = 0.02;
+    double min_cluster_height_ = 0.3;
 
     bool filter_points_near_planes_ = true;
 
-    printf ("Object plugin got %d clusters\n", clusters.size ());
+    std::vector<CloudPtr> clusters_base;
+    if (get_sensor_to_base_)
+    {
+      printf ("Object Plugin: Applying sensor to base transform.\n");
+      Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(t);
+      for (int i = 0; i < clusters.size (); i++)
+      {
+        CloudPtr tformed_cluster (new Cloud ());
+        pcl::transformPointCloud (*clusters[i], *tformed_cluster, sensor_to_base);
+        clusters_base.push_back (tformed_cluster);
+      }
+    }
+    else
+    {
+      clusters_base = clusters;
+    }
+
+    printf ("Object plugin got %d clusters_base\n", clusters_base.size ());
     // Get pose symbol for this timestamp
     gtsam::Symbol pose_symbol;
     mapper_->getPoseSymbolAtTime (t, pose_symbol);
@@ -49,7 +68,7 @@ namespace omnimapper
     gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = solution.filter<gtsam::Plane<PointT> >();
 
     // Save observations made from this pose
-    //observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector >(pose_symbol, clusters));
+    //observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector >(pose_symbol, clusters_base));
     CloudPtrVector filtered_observations;
 
     // Compute cluster statistics for filtering purposes
@@ -60,14 +79,14 @@ namespace omnimapper
     EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value;
     EIGEN_ALIGN16 Eigen::Vector3f eigen_vector;
     
-    for (int i = 0; i < clusters.size (); i++)
+    for (int i = 0; i < clusters_base.size (); i++)
     {
       // Detect nearby planes
       if (filter_points_near_planes_)
       {
         // See what plane (if any) is closest
         Eigen::Vector4f clust_centroid;
-        pcl::compute3DCentroid ((*(clusters[i])), clust_centroid);
+        pcl::compute3DCentroid ((*(clusters_base[i])), clust_centroid);
         PointT clust_centroid_pt;
         clust_centroid_pt.x = clust_centroid[0];
         clust_centroid_pt.y = clust_centroid[1];
@@ -101,15 +120,15 @@ namespace omnimapper
         {
           //gtsam::Plane<PointT> plane = solution.at<gtsam::Plane<PointT> > (closest_sym);
           CloudPtr filtered_clust (new Cloud());
-          for (int j = 0; j < clusters[i]->points.size (); j++)
+          for (int j = 0; j < clusters_base[i]->points.size (); j++)
           {
             bool pt_ok = true;
             
             for (int k = 0; k < nearby_symbols.size (); k++)
             {
-              double ptp_dist = fabs (nearby_coeffs[k][0] * clusters[i]->points[j].x +
-                                      nearby_coeffs[k][1] * clusters[i]->points[j].y +
-                                      nearby_coeffs[k][2] * clusters[i]->points[j].z +
+              double ptp_dist = fabs (nearby_coeffs[k][0] * clusters_base[i]->points[j].x +
+                                      nearby_coeffs[k][1] * clusters_base[i]->points[j].y +
+                                      nearby_coeffs[k][2] * clusters_base[i]->points[j].z +
                                       nearby_coeffs[k][3]);
 
               if (ptp_dist <= ptp_pt_cull_thresh_)
@@ -117,30 +136,30 @@ namespace omnimapper
               
             // if (ptp_dist >= ptp_pt_cull_thresh_)
             // {
-            //   filtered_clust->points.push_back (clusters[i]->points[j]);
+            //   filtered_clust->points.push_back (clusters_base[i]->points[j]);
             // }
             }
 
             if (pt_ok)
-              filtered_clust->points.push_back (clusters[i]->points[j]);
+              filtered_clust->points.push_back (clusters_base[i]->points[j]);
           }
-          printf ("cluster %d had %d points, filtered has %d points\n", i, clusters[i]->points.size (), 
+          printf ("cluster %d had %d points, filtered has %d points\n", i, clusters_base[i]->points.size (), 
                   filtered_clust->points.size ());
-          clusters[i] = filtered_clust;
-          printf ("cluster %d now has %d points\n", i, clusters[i]->points.size ());
+          clusters_base[i] = filtered_clust;
+          printf ("cluster %d now has %d points\n", i, clusters_base[i]->points.size ());
         }
       }
 
       // If we still have enough points, filter based on entire cluster
-      if (clusters[i]->points.size () >= min_points_)
+      if (clusters_base[i]->points.size () >= min_points_)
       {
         // Get mean and covariance matrix
-        pcl::computeMeanAndCovarianceMatrix ((*(clusters[i])), clust_cov, clust_centroid);
+        pcl::computeMeanAndCovarianceMatrix ((*(clusters_base[i])), clust_cov, clust_centroid);
         
         double dist = sqrt(clust_centroid[0] * clust_centroid[0] + clust_centroid[1] * clust_centroid[1] + clust_centroid[2] * clust_centroid[2]);
 
         // Get bounding box
-        pcl::getMinMax3D ((*(clusters[i])), min_pt, max_pt);
+        pcl::getMinMax3D ((*(clusters_base[i])), min_pt, max_pt);
         Eigen::Vector4f size = max_pt - min_pt;
         double bbox_volume = size[0] * size[1] * size[2];
         
@@ -159,17 +178,19 @@ namespace omnimapper
         
         // Clusters that are too far away suffer from too much depth discretization to be reliable
         bool dist_ok = dist < max_cluster_dist_;
+        // Clusters that are too low in the robot frame can be excluded
+        bool height_ok = clust_centroid[2] > min_cluster_height_;
         // Clusters with large bounding boxes are probably not objects of interest -- these tend to architectural features
         bool bbox_volume_ok = bbox_volume < max_bbox_volume_;
         // Clusters that have some dimension that is quite large tend to be uninteresting
         bool bbox_dims_ok = (size[0] < max_bbox_dim_) && (size[1] < max_bbox_dim_) && (size[2] < max_bbox_dim_);
         // Clusters with too low curvature are probably either planar objects that were improperly segmented, or
         // Also, if it is mostly planar, shape descriptors will not be very reliable
-        bool curvature_ok = curvature > min_curvature_;
-        
+        bool curvature_ok = curvature > min_curvature_;        
+
         printf ("centroid dist: %lf\n", dist);
-        if (dist_ok && bbox_volume_ok && bbox_dims_ok && curvature_ok)
-          filtered_observations.push_back (clusters[i]);
+        if (dist_ok && height_ok && bbox_volume_ok && bbox_dims_ok && curvature_ok)
+          filtered_observations.push_back (clusters_base[i]);
       }
       
     }

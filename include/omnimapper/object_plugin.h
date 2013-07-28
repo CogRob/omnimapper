@@ -5,6 +5,7 @@
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/organized_feature_extraction.h>
 #include <cloudcv/cloud_plugin.h>
+#include <omnimapper/get_transform_functor.h>
 
 namespace omnimapper
 {
@@ -28,8 +29,11 @@ namespace omnimapper
       
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
+      void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
+
     protected:
       OmniMapperBase* mapper_;
+      GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       CloudPlugin<PointT> cloud_plugin_;

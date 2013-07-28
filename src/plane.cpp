@@ -1122,18 +1122,18 @@ namespace gtsam {
     }
 
     // Simplify boundary
-    // pcl::PointCloud<PointT> origin_xy_fused_approx_hull;
-    // typename pcl::PointCloud<PointT>::VectorType &xy_fused_points = origin_xy_fused_hull.points;
-    // typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;    
+    pcl::PointCloud<PointT> origin_xy_fused_approx_hull;
+    typename pcl::PointCloud<PointT>::VectorType &xy_fused_points = origin_xy_fused_hull.points;
+    typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;    
 
-    // pcl::approximatePolygon2D<PointT> ( xy_fused_points, xy_fused_approx_points, 0.005, false, true);
-    // printf ("approximatePolygon2D: orig poly: %d new poly: %d\n", xy_fused_points.size (), xy_fused_approx_points.size ());
+    pcl::approximatePolygon2D<PointT> ( xy_fused_points, xy_fused_approx_points, 0.005, false, true);
+    printf ("approximatePolygon2D: orig poly: %d new poly: %d\n", xy_fused_points.size (), xy_fused_approx_points.size ());
 
     // Rotate it back
     pcl::PointCloud<PointT> fused_rotated_back;
     Eigen::Affine3d rot_inv = lm_to_z_transform.inverse ();
-    pcl::transformPointCloud (origin_xy_fused_hull, fused_rotated_back, rot_inv);
-    //pcl::transformPointCloud (origin_xy_fused_approx_hull, fused_rotated_back, rot_inv);
+    //pcl::transformPointCloud (origin_xy_fused_hull, fused_rotated_back, rot_inv);
+    pcl::transformPointCloud (origin_xy_fused_approx_hull, fused_rotated_back, rot_inv);
 
     // Re-mean it
     pcl::PointCloud<PointT> fused_on_map;

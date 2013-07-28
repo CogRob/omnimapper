@@ -121,6 +121,8 @@ namespace omnimapper
       std::map<Time, std::list<omnimapper::PoseChainNode>::iterator> time_lookup;
       // For fast lookups, we keep a map of symbols to nodes too
       std::map<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator> symbol_lookup;
+      // A source of time
+      GetTimeFunctorPtr get_time_;
 
       // Mutex to protect the state
       boost::mutex omnimapper_mutex_;
@@ -164,6 +166,10 @@ namespace omnimapper
       /** \brief Sets the initial pose, to be initialized at the timestamp of the first recieved message.  Has no effect if called when already initialized. */
       void
       setInitialPose (gtsam::Pose3& init_pose);
+
+      /** \brief Sets a time fucntor to use for getting the current time. */
+      void
+      setTimeFunctor (omnimapper::GetTimeFunctorPtr time_functor);
 
       /** \brief Initialize plugins. */
       //void
