@@ -4,7 +4,6 @@
 #include <pcl/point_types.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/organized_feature_extraction.h>
-#include <cloudcv/cloud_plugin.h>
 
 namespace omnimapper
 {
@@ -32,6 +31,5 @@ namespace omnimapper
       OmniMapperBase* mapper_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
-      CloudPlugin<PointT> cloud_plugin_;
   };
 }
