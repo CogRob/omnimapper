@@ -4,8 +4,7 @@
    <include file="$(find openni_launch)/launch/openni.launch">
    	    <arg name="load_driver" value="false" />
    </include>
-
-      <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
+      <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen"  >
       	    <param name="use_planes" value="true"/>
 	    <param name="use_icp" value="true"/>
 	    <param name="use_occ_edge_icp" value="false"/>

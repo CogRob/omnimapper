@@ -12,6 +12,7 @@
   <depend package="tf"/>
   <depend package="visualization_msgs"/>
   <depend package="geometry_msgs"/>
+  <depend package="cloudcv_ros" />
   <export>
     <cpp cflags="-I${prefix}/include -I${prefix}/cfg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lomnimapper_ros"/>
   </export>

@@ -13,6 +13,7 @@ namespace omnimapper
   template <typename PointT>
   class ObjectPlugin
   {
+
     typedef typename pcl::PointCloud<PointT> Cloud;
     typedef typename Cloud::Ptr CloudPtr;
     typedef typename Cloud::ConstPtr CloudConstPtr;
@@ -23,13 +24,20 @@ namespace omnimapper
       ObjectPlugin (omnimapper::OmniMapperBase* mapper);
       ~ObjectPlugin ();
       
-      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);  
-      
+      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
+
+      void setObjectCallback(
+			boost::function<
+					void(gtsam::Symbol, boost::optional<gtsam::Pose3>,
+							std::vector<CloudPtr>, omnimapper::Time t)>& fn);
+
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
     protected:
+      bool cloud_cv_flag_;
       OmniMapperBase* mapper_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
+      boost::function<void(gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t)> cloud_cv_callback_;
   };
 }
