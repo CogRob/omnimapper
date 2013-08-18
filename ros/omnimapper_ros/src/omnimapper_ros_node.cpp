@@ -29,6 +29,9 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
+#include <cloudcv_ros/cloudcv_viz.h>
+
+
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
@@ -64,6 +67,9 @@ class OmniMapperROSNode
 
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
+
+    // CloudCV Plugin
+    CloudViz<PointT> cloud_vis_plugin_;
 
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
@@ -181,6 +187,7 @@ class OmniMapperROSNode
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
         object_plugin_ (&omb_),
+        cloud_vis_plugin_(),
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         bag_error_plugin_ (&omb_),
@@ -238,7 +245,7 @@ class OmniMapperROSNode
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
       n_.param ("use_distortion_model", use_distortion_model_, true);
       n_.param ("use_rgbd_sensor_base_tf_functor", use_rgbd_sensor_base_tf_functor_, true);
-      n_.param ("distortion_model_path", distortion_model_path_, std::string ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model"));
+      n_.param ("distortion_model_path", distortion_model_path_, std::string ("/home/siddharth/kinect/distortion_model/new_distortion_model"));
       n_.param ("evaluation_mode", evaluation_mode_, false);
       n_.param ("evaluation_pcd_path", evaluation_pcd_path_, std::string (""));
       n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
@@ -392,13 +399,23 @@ class OmniMapperROSNode
       {
         boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> cluster_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback, &vis_plugin_, _1, _2);
         organized_feature_extraction_.setClusterCloudCallback (cluster_vis_callback);
+
+        //gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t
+
+
       }
+
 
       // Optionally use labels
       if (use_objects_)
       {
         boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2);
         organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
+
+        boost::function<void(gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t)> object_vis_callback = boost::bind (&CloudViz<PointT>::update, &cloud_vis_plugin_, _1, _2, _3, _4);
+        object_plugin_.setObjectCallback(object_vis_callback);
+       // 	object_plugin_.test();
+
       }
 
       // Set the ICP Plugin on the visualizer

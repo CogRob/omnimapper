@@ -20,8 +20,8 @@ link_directories(../../build)
 
 include_directories(../../3rdparty/distortion_model/include)
 
-include_directories(/home/atrevor/github/cpu_tsdf/include)
-link_directories(/home/atrevor/github/cpu_tsdf/build)
+include_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/include)
+link_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/build)
 
 #find_package(cloudcv REQUIRED)
 #include_directories(${CLOUDCV_INCLUDE_DIRS})

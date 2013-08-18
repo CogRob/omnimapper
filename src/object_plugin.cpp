@@ -18,9 +18,20 @@ namespace omnimapper
   
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT>
-  ObjectPlugin<PointT>::~ObjectPlugin ()
-  {
-  }
+      ObjectPlugin<PointT>::~ObjectPlugin ()
+      {
+      }
+
+
+
+template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback(
+		boost::function<
+				void(gtsam::Symbol, boost::optional<gtsam::Pose3>,
+						std::vector<CloudPtr>, omnimapper::Time t)>& fn) {
+      cloud_cv_callback_ = fn;
+	cloud_cv_flag_ = true;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void
@@ -198,6 +209,11 @@ namespace omnimapper
 
     std::cout << "Size of filtered observations: " << filtered_observations.size() << std::endl;
     observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol, filtered_observations));
+
+    if(cloud_cv_flag_){
+    	std::cout << "Inside Object Plugin" << std::endl;
+      cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
+    }
 
   }
 
