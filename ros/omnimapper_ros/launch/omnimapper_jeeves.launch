@@ -8,7 +8,7 @@
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
       	    <param name="use_planes" value="true"/>
 	    <param name="use_icp" value="true"/>
-	    <param name="use_objects" value="false"/>
+	    <param name="use_objects" value="true"/>
 	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="true"/>
 	    <param name="use_error_plugin" value="false"/>
@@ -20,12 +20,12 @@
 	    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
 	    <param name="icp_leaf_size" value="0.02"/>
 	    <param name="icp_max_correspondence_distance" value="0.2"/>
-	    <param name="icp_trans_noise" value="10.05"/>
-	    <param name="icp_rot_noise" value="10.05"/>
+	    <param name="icp_trans_noise" value="0.05"/>
+	    <param name="icp_rot_noise" value="0.05"/>
 	    <param name="plane_range_threshold" value="0.1"/>
 	    <param name="plane_angular_threshold" value="0.174532925"/>
-	    <param name="plane_range_noise" value="1.1"/>
-	    <param name="plane_angular_noise" value="1.174532925"/>
+	    <param name="plane_range_noise" value="0.1"/>
+	    <param name="plane_angular_noise" value="0.174532925"/>
 	    <param name="tf_trans_noise" value="0.05"/>
 	    <param name="tf_roll_noise" value="0.001"/>
 	    <param name="tf_pitch_noise" value="0.001"/>

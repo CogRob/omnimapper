@@ -3,11 +3,13 @@
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/plane_plugin.h>
 #include <omnimapper/object_plugin.h>
+#include <omnimapper/no_motion_pose_plugin.h>
 #include <omnimapper/tsdf_output_plugin.h>
 #include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
 #include <omnimapper_ros/OutputMapTSDF.h>
 #include <omnimapper_ros/tum_data_error_plugin.h>
+#include <omnimapper_ros/error_evaluation_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
 #include <omnimapper_ros/get_transform_functor_tf.h>
 #include <omnimapper/time.h>
@@ -48,6 +50,9 @@ class OmniMapperROSNode
     // TF Pose Plugin
     omnimapper::TFPosePlugin tf_plugin_;
 
+    // No Motion Pose Plugin
+    omnimapper::NoMotionPosePlugin no_motion_plugin_;
+
     // ICP Plugin
     omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin_;
 
@@ -67,7 +72,9 @@ class OmniMapperROSNode
     omnimapper::TSDFOutputPlugin<PointT> tsdf_plugin_;
 
     // Benchmark Data Analysis
-    omnimapper::TUMDataErrorPlugin error_plugin_;
+    omnimapper::TUMDataErrorPlugin bag_error_plugin_;
+
+    omnimapper::ErrorEvaluationPlugin eval_plugin_;
 
     // Distortion Model
     DistortionModelStandalone distortion_model_;
@@ -93,10 +100,12 @@ class OmniMapperROSNode
     bool use_icp_;
     bool use_occ_edge_icp_;
     bool use_tf_;
+    bool use_no_motion_;
 
     // ROS Params
     std::string odom_frame_name_;
     std::string base_frame_name_;
+    std::string rgbd_frame_name_;
     std::string cloud_topic_name_;
 
     bool init_pose_from_tf_;
@@ -109,12 +118,14 @@ class OmniMapperROSNode
     double icp_max_correspondence_distance_;
     double icp_trans_noise_;
     double icp_rot_noise_;
+    bool icp_add_identity_on_fail_;
 
     // Occluding Edge ICP Params
     double occ_edge_trans_noise_;
     double occ_edge_rot_noise_;
     double occ_edge_score_thresh_;
     double occ_edge_max_correspondence_dist_;
+    bool occ_edge_add_identity_on_fail_;
 
     // Plane Plugin Params
     double plane_range_threshold_;
@@ -146,19 +157,34 @@ class OmniMapperROSNode
     bool add_pose_per_cloud_;
     bool broadcast_map_to_odom_;
     bool use_distortion_model_;
+    bool use_rgbd_sensor_base_tf_functor_;
     std::string distortion_model_path_;
+
+    // Evaluation Mode
+    bool evaluation_mode_;
+    std::string evaluation_pcd_path_;
+    std::vector<std::string> evaluation_pcd_files_;
+    int evaluation_file_idx_;
+    // Note: we require the associated_txt path because the PCD format does not include timestamps.
+    // We instead load the timestamps from this file.
+    std::string evaluation_associated_txt_path_;
+    std::string evaluation_ground_truth_txt_path_;
+    std::string evaluation_output_trajectory_txt_path_;
+    ros::Timer eval_timer_;
 
     OmniMapperROSNode ()
       : n_ ("~"),
         omb_ (),
         tf_plugin_ (&omb_),
+        no_motion_plugin_ (&omb_),
         icp_plugin_ (&omb_),
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
         object_plugin_ (&omb_),
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
-        error_plugin_ (&omb_),
+        bag_error_plugin_ (&omb_),
+        eval_plugin_ (&omb_),
         fake_grabber_ (empty_files_, 1.0, false),
         organized_feature_extraction_ (fake_grabber_),
         tf_listener_ (ros::Duration (500.0))
@@ -171,17 +197,21 @@ class OmniMapperROSNode
       n_.param ("use_tf", use_tf_, true);
       n_.param ("use_tsdf_plugin", use_tsdf_plugin_, true);
       n_.param ("use_error_plugin", use_error_plugin_, false);
+      n_.param ("use_no_motion", use_no_motion_, false);
       n_.param ("odom_frame_name", odom_frame_name_, std::string ("/odom"));
       n_.param ("base_frame_name", base_frame_name_, std::string ("/camera_depth_optical_frame"));
       n_.param ("cloud_topic_name", cloud_topic_name_, std::string ("/throttled_points"));
+      n_.param ("rgbd_frame_name", rgbd_frame_name_, std::string ("/camera_rgb_optical_frame"));
       n_.param ("icp_leaf_size", icp_leaf_size_, 0.05);
       n_.param ("icp_max_correspondence_distance", icp_max_correspondence_distance_, 0.5);
       n_.param ("icp_trans_noise", icp_trans_noise_, 0.1);
       n_.param ("icp_rot_noise", icp_rot_noise_, 0.1);
+      n_.param ("icp_add_identity_on_fail", icp_add_identity_on_fail_, false);
       n_.param ("occ_edge_trans_noise", occ_edge_trans_noise_, 0.1);
       n_.param ("occ_edge_rot_noise", occ_edge_rot_noise_, 0.1);
       n_.param ("occ_edge_score_thresh", occ_edge_score_thresh_, 0.1);
       n_.param ("occ_edge_max_correspondence_dist", occ_edge_max_correspondence_dist_, 0.1);
+      n_.param ("occ_edge_add_identity_on_fail", occ_edge_add_identity_on_fail_, false);
       n_.param ("plane_range_threshold", plane_range_threshold_, 0.6);
       n_.param ("plane_angular_threshold", plane_angular_threshold_, pcl::deg2rad (10.0));
       n_.param ("plane_range_noise", plane_range_noise_, 0.2);
@@ -207,7 +237,13 @@ class OmniMapperROSNode
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
       n_.param ("use_distortion_model", use_distortion_model_, true);
+      n_.param ("use_rgbd_sensor_base_tf_functor", use_rgbd_sensor_base_tf_functor_, true);
       n_.param ("distortion_model_path", distortion_model_path_, std::string ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model"));
+      n_.param ("evaluation_mode", evaluation_mode_, false);
+      n_.param ("evaluation_pcd_path", evaluation_pcd_path_, std::string (""));
+      n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
+      n_.param ("evaluation_ground_truth_txt_path", evaluation_ground_truth_txt_path_, std::string (""));
+      n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -269,15 +305,27 @@ class OmniMapperROSNode
         omb_.addPosePlugin (tf_plugin_ptr);
       }
 
+      // Add the No Motion Plugin (null motion model)
+      if (use_no_motion_)
+      {
+        boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr (&no_motion_plugin_);
+        omb_.addPosePlugin (no_motion_ptr);
+      }
+
       // Set up a sensor_to_base functor, for plugins to use
       //omnimapper::GetTransformFunctorTF rgbd_to_base (std::string ("/camera_rgb_optical_frame"), std::string ("/base_link"));
       //omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (&rgbd_to_base);
-      omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (new omnimapper::GetTransformFunctorTF (std::string ("/camera_rgb_optical_frame"), std::string ("/base_link")));
+      omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (new omnimapper::GetTransformFunctorTF (rgbd_frame_name_, base_frame_name_));
+      // Optionally disable this, if we don't have TF available
+      if (!use_rgbd_sensor_base_tf_functor_)
+      {
+        rgbd_to_base_ptr = omnimapper::GetTransformFunctorPtr (new omnimapper::GetTransformFunctorIdentity ());
+      }
 
       // Set up an ICP Plugin
       icp_plugin_.setUseGICP (true);
       icp_plugin_.setOverwriteTimestamps (false);
-      icp_plugin_.setAddIdentityOnFailure (false);
+      icp_plugin_.setAddIdentityOnFailure (icp_add_identity_on_fail_);
       icp_plugin_.setShouldDownsample (true);
       icp_plugin_.setLeafSize (icp_leaf_size_);//0.02
       icp_plugin_.setMaxCorrespondenceDistance (icp_max_correspondence_distance_);
@@ -292,13 +340,13 @@ class OmniMapperROSNode
       // Set up edge ICP plugin
       edge_icp_plugin_.setUseGICP (false);
       edge_icp_plugin_.setOverwriteTimestamps (false);
-      edge_icp_plugin_.setAddIdentityOnFailure (false);
+      edge_icp_plugin_.setAddIdentityOnFailure (occ_edge_add_identity_on_fail_);
       edge_icp_plugin_.setShouldDownsample (false);
       edge_icp_plugin_.setMaxCorrespondenceDistance (occ_edge_max_correspondence_dist_);
       edge_icp_plugin_.setScoreThreshold (occ_edge_score_thresh_);
       edge_icp_plugin_.setTransNoise (occ_edge_trans_noise_);//10.1
       edge_icp_plugin_.setRotNoise (occ_edge_rot_noise_);//10.1
-      edge_icp_plugin_.setAddLoopClosures (true);
+      edge_icp_plugin_.setAddLoopClosures (false);
       edge_icp_plugin_.setLoopClosureDistanceThreshold (0.15);
       edge_icp_plugin_.setSaveFullResClouds (false);
       edge_icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
@@ -381,7 +429,7 @@ class OmniMapperROSNode
       // Set up the error Plugin
       if (use_error_plugin_)
       {
-        boost::shared_ptr<omnimapper::OutputPlugin> error_plugin_ptr (&error_plugin_);
+        boost::shared_ptr<omnimapper::OutputPlugin> error_plugin_ptr (&bag_error_plugin_);
         omb_.addOutputPlugin (error_plugin_ptr);
       }
 
@@ -397,6 +445,33 @@ class OmniMapperROSNode
       // if (use_planes_)
       //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
       
+      // If evaluation mode, start a timer to check on things, and load the files
+      if (evaluation_mode_)
+      {
+        // Set up the error evaluation plugin
+        eval_plugin_.loadAssociatedFile (evaluation_associated_txt_path_);
+        eval_plugin_.loadGroundTruthFile (evaluation_ground_truth_txt_path_);
+
+        boost::shared_ptr<omnimapper::OutputPlugin> eval_plugin_ptr (&eval_plugin_);
+        omb_.addOutputPlugin (eval_plugin_ptr);
+
+        // Initialize pose to start in the same coord system as the ground truth
+        gtsam::Pose3 gt_init = eval_plugin_.getInitialPose ();
+        omb_.setInitialPose (gt_init);
+
+        evaluation_file_idx_ = 0;
+        boost::filesystem::directory_iterator end_itr;
+        for (boost::filesystem::directory_iterator itr (evaluation_pcd_path_); itr != end_itr; ++itr)
+        {
+          if (itr->path ().extension () == ".pcd")
+            evaluation_pcd_files_.push_back (itr->path ().string ());
+        }
+        sort (evaluation_pcd_files_.begin (), evaluation_pcd_files_.end ());
+        ROS_INFO ("OmniMapper: Loaded %d files for evaluation\n", evaluation_pcd_files_.size ());
+
+        eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
+      }
+      
     }
 
     void
@@ -408,6 +483,8 @@ class OmniMapperROSNode
       CloudPtr cloud (new Cloud ());
       pcl::fromROSMsg<PointT> (*msg, *cloud);
       double end_copy = pcl::getTime ();
+      omnimapper::Time cloud_stamp = omnimapper::stamp2ptime (cloud->header.stamp);
+      std::cout << "OmniMapperRos: Got cloud from: " << cloud_stamp << std::endl;
       //cloud->header.stamp = msg->header.stamp.toBoost ();
       std::cout << "cloudCallback: conversion took " << double(end_copy - start_copy) << std::endl;
       //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
@@ -425,7 +502,7 @@ class OmniMapperROSNode
 
       if (use_icp_)
       {
-        printf ("Calling ICP Plugin!\n");
+        std::cout << "Calling ICP Plugin with stamp: " << omnimapper::stamp2ptime (cloud->header.stamp) << std::endl;
         icp_plugin_.cloudCallback (cloud);
       }
       
@@ -461,6 +538,46 @@ class OmniMapperROSNode
       printf ("TSDF Service call, calling tsdf plugin\n");
       tsdf_plugin_.generateTSDF ();
       return (true);
+    }
+
+    void
+    evalTimerCallback (const ros::TimerEvent& e)
+    {
+      ROS_INFO ("In timer callback!\n");
+      
+      // Check if everything is done processing
+      bool ready = true;
+      if (use_icp_ && !icp_plugin_.ready ())
+        ready = false;
+      
+      if (ready && evaluation_file_idx_ < evaluation_pcd_files_.size ())
+      {
+        // Load next file
+        CloudPtr cloud (new Cloud ());
+        pcl::io::loadPCDFile (evaluation_pcd_files_[evaluation_file_idx_], *cloud);
+        ROS_INFO ("Processing cloud %d with %d points\n", evaluation_file_idx_, cloud->points.size ());
+
+        // Convert it
+        sensor_msgs::PointCloud2Ptr cloud_msg (new sensor_msgs::PointCloud2 ());
+        // We have to get the timestamp from associated.txt (parsed by eval plugin) since PCD doesn't include timestamps...
+        cloud->header.stamp = eval_plugin_.getStampFromIndex (evaluation_file_idx_);
+        pcl::toROSMsg (*cloud, *cloud_msg);
+
+        evaluation_file_idx_++;
+
+        sensor_msgs::PointCloud2ConstPtr cloud_msg_ptr (cloud_msg);
+        cloudCallback (cloud_msg_ptr);
+      }
+      else
+        ROS_INFO ("Plugins not yet ready.\n");
+
+      // Write the trajectory if we're finished
+      if (evaluation_file_idx_ == evaluation_pcd_files_.size ())
+      {
+        gtsam::Values solution = omb_.getSolution ();
+        eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
+        exit (0);
+      }
     }
 
     void

@@ -10,40 +10,11 @@
 namespace omnimapper 
 {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // template <typename PointT>
-  // ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber& grabber) :
-  //   mapper_ (mapper),
-  //   initialized_ (false),
-  //   grabber_ (grabber),
-  //   have_new_cloud_ (false),
-  //   first_ (true),
-  //   downsample_ (true),
-  //   leaf_size_ (0.05f),
-  //   score_threshold_ (0.5),
-  //   debug_ (true),
-  //   overwrite_timestamps_ (true),
-  //   icp_max_correspondence_distance_ (3.5),
-  //   previous_sym_ (gtsam::Symbol ('x', 0)),
-  //   previous2_sym_ (gtsam::Symbol ('x', 0)),
-  //   previous3_sym_ (gtsam::Symbol ('x', 0)),
-  //   use_gicp_ (true),
-  //   add_identity_on_failure_ (false),
-  //   add_multiple_links_ (false),
-  //   add_loop_closures_ (false),
-  //   paused_ (false)
-  // {
-  //   have_new_cloud_ = false;
-  //   boost::function<void (const CloudConstPtr&)> f = boost::bind (&ICPPoseMeasurementPlugin<PointT>::cloudCallback, this, _1);
-  //   boost::signals2::connection c = grabber_.registerCallback(f);
-  //   grabber_.start ();
-  //   first_ = true;
-  // }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT>
   ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper) :
     mapper_ (mapper),
     get_sensor_to_base_ (GetTransformFunctorPtr ()),
+    last_processed_time_ (),
     initialized_ (false),
     have_new_cloud_ (false),
     first_ (true),
@@ -211,7 +182,7 @@ namespace omnimapper
       printf ("ICPPosePlugin: No sensor to base transform exists!\n");
     }
 
-
+    std::cout << "ICP Plugin: Getting symbol for current time: " << current_time << std::endl;
     mapper_->getPoseSymbolAtTime (current_time, current_sym);
     //std::cout << "stamp time: " << current_cloud_->header.stamp << " converted time: " << current_time << std::endl;
     printf ("ICP Plugin: current symbol: %d, inserting cloud\n", current_sym.index ());
@@ -246,15 +217,15 @@ namespace omnimapper
     {
       if (clouds_.size () >= 3)
       {
-        // boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
-        // prev2_icp_thread.join ();
-        //printf ("PREV 2 COMPLETE!\n");
+        boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+        prev2_icp_thread.join ();
+        printf ("PREV 2 COMPLETE!\n");
       }
       if (clouds_.size () >= 4)
       {
-        // boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
-        // prev3_icp_thread.join ();
-        //printf ("PREV 3 COMPLETE!\n");
+        boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
+        prev3_icp_thread.join ();
+        printf ("PREV 3 COMPLETE!\n");
       }
     }
 
@@ -265,7 +236,7 @@ namespace omnimapper
     }
     
     // Wait for latest one to complete, at least
-    latest_icp_thread.join ();    
+    latest_icp_thread.join ();
       
     // Note that we're done
     {
@@ -274,6 +245,7 @@ namespace omnimapper
       previous3_sym_ = previous2_sym_;
       previous2_sym_ = previous_sym_;
       previous_sym_ = current_sym;
+      last_processed_time_ = current_time;
     }
 
     if (debug_)
@@ -486,7 +458,15 @@ namespace omnimapper
   ICPPoseMeasurementPlugin<PointT>::ready ()
   {
     boost::mutex::scoped_lock (current_cloud_mutex_);
-    return (have_new_cloud_);
+    return (!have_new_cloud_);
+  }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> omnimapper::Time
+  ICPPoseMeasurementPlugin<PointT>::getLastProcessedTime ()
+  {
+    boost::mutex::scoped_lock (current_cloud_mutex_);
+    return (last_processed_time_);
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

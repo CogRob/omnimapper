@@ -52,10 +52,12 @@ namespace omnimapper
       void setLoopClosureDistanceThreshold (double dist_thresh) { loop_closure_distance_threshold_ = dist_thresh; }
       void setSaveFullResClouds (bool save_full_res_clouds) { save_full_res_clouds_ = save_full_res_clouds; }
       void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
+      omnimapper::Time getLastProcessedTime ();
 
     protected:
       OmniMapperBase* mapper_;
       GetTransformFunctorPtr get_sensor_to_base_;
+      omnimapper::Time last_processed_time_;
       bool initialized_;
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
       std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;

@@ -16,8 +16,6 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_object_observation_cloud_ (true),
     draw_object_observation_bboxes_ (true)
 {
-  //tf::Transform
-
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
   map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("map_cloud", 0);

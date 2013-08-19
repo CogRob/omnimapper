@@ -82,7 +82,8 @@ namespace omnimapper
       oed.setDepthDisconThreshold (0.04f);
       oed.setMaxSearchNeighbors (100);
       oed.setEdgeType (oed.EDGELABEL_NAN_BOUNDARY | oed.EDGELABEL_OCCLUDING | oed.EDGELABEL_OCCLUDED);
-      
+      //oed.setEdgeType (oed.EDGELABEL_RGB_CANNY);
+
       // Set up Grabber
       boost::function<void (const CloudConstPtr&)> f = boost::bind (&OrganizedFeatureExtraction::cloudCallback, this, _1);
       boost::signals2::connection c = grabber_.registerCallback (f);
@@ -274,10 +275,13 @@ namespace omnimapper
 
           if (cluster_cloud_callbacks_.size () > 0)
           {
-            Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
-            for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
+            if (stage5_clusters_.size () > 0)
             {
-              cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp);
+              Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
+              for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
+              {
+                cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp);
+              }
             }
           }
 
@@ -290,7 +294,8 @@ namespace omnimapper
           
           if (occluding_edge_callback_)
           {
-            occluding_edge_callback_ (stage3_occluding_cloud_);
+            if (stage3_occluding_cloud_->points.size () > 200)
+              occluding_edge_callback_ (stage3_occluding_cloud_);
           }
 
           if (planar_region_stamped_callbacks_.size () > 0)
@@ -337,9 +342,16 @@ namespace omnimapper
             boost::mutex::scoped_lock lock (cloud_mutex);
             stage4_regions_ = stage3_regions_;
             stage3_regions_.clear ();
+            std::cout << "stage1 stamp: " << stage1_cloud_->header.stamp << std::endl;
+            std::cout << "stage2 stamp: " << stage2_cloud_->header.stamp << std::endl;
+            std::cout << "stage3 stamp: " << stage3_cloud_->header.stamp << std::endl;
             stage4_cloud_.swap (stage3_cloud_);
             stage3_cloud_.swap (stage2_cloud_);
             stage2_cloud_.swap (stage1_cloud_);
+            std::cout << "stage1 stamp after: " << stage1_cloud_->header.stamp << std::endl;
+            std::cout << "stage2 stamp after: " << stage2_cloud_->header.stamp << std::endl;
+            std::cout << "stage3 stamp after: " << stage3_cloud_->header.stamp << std::endl;
+            std::cout << "stage4 stamp after: " << stage4_cloud_->header.stamp << std::endl;
             stage2_normals_ = stage1_normals_;
             //stage4_labels_.swap (stage3_labels_);
             stage4_labels_ = stage3_labels_;
@@ -490,10 +502,13 @@ namespace omnimapper
   {
     if (stage2_cloud_->points.size () == 0)
       return;
-
+    
+    double edge_start = pcl::getTime ();
       pcl::PointCloud<pcl::Label> labels;
       std::vector<pcl::PointIndices> label_indices;
       oed.compute (labels, label_indices);
+      double edge_end = pcl::getTime ();
+      std::cout << "edges took: " << double (edge_end - edge_start) << std::endl;
       stage3_occluding_cloud_ = CloudPtr(new Cloud ());
       pcl::copyPointCloud (*stage2_cloud_, label_indices[1], *stage3_occluding_cloud_);
     }

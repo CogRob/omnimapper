@@ -8,6 +8,7 @@
 
 namespace omnimapper
 {
+  /** \brief TUMDataError plugin is for doing an evaluation using the TUM Bag files, rather than PCDs.  See ErrorEvaluationPlugin for the plugin used for experiments.*/
   class TUMDataErrorPlugin : public omnimapper::OutputPlugin
   {
     public:
