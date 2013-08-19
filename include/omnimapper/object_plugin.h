@@ -36,6 +36,5 @@ namespace omnimapper
       GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
-      CloudPlugin<PointT> cloud_plugin_;
   };
 }

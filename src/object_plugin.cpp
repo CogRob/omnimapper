@@ -196,9 +196,9 @@ namespace omnimapper
     }
     
 
+    std::cout << "Size of filtered observations: " << filtered_observations.size() << std::endl;
     observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol, filtered_observations));
 
-    cloud_plugin_.callCloudCV(pose_symbol, cloud_pose, filtered_observations, t);
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -18,10 +18,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 #set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 
-find_package(cloudcv REQUIRED)
-include_directories(${CLOUDCV_INCLUDE_DIRS})
-link_directories(${CLOUDCV_LIBRARY_DIRS})
-
 
 # Eigen (required)
 find_package(Eigen REQUIRED)
@@ -42,7 +38,7 @@ link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 include_directories(include)
 
-add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
+set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/measurement_plugin.h 
 					     include/omnimapper/pose_plugin.h
 					     include/omnimapper/icp_pose_plugin.h
@@ -60,6 +56,8 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     include/omnimapper/time.h
 					     include/omnimapper/geometry.h
 					     include/omnimapper/impl/geometry.hpp
+                         )
+set(srcs
 					     src/omnimapper_base.cpp
 					     src/time.cpp
 					     src/icp_pose_plugin.cpp
@@ -73,11 +71,20 @@ add_library(omnimapper SHARED include/omnimapper/omnimapper_base.h
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp
 					     src/tsdf_output_plugin.cpp)
+
+add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
-					     cpu_tsdf ${CLOUDCV_LIBRARIES})
+					     cpu_tsdf)
+
+install(TARGETS omnimapper DESTINATION lib)
+install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
+
+configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper omnimapper)
+
 
 #add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
 #target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
