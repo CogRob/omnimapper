@@ -14,7 +14,7 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 project(omnimapper)
 
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 #set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 
@@ -79,8 +79,8 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
 
-#configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
-#install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
+configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper omnimapper)

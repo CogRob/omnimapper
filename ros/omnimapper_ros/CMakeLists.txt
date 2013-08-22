@@ -23,8 +23,8 @@ include_directories(../../3rdparty/distortion_model/include)
 include_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/include)
 link_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/build)
 
-#find_package(cloudcv REQUIRED)
-#include_directories(${CLOUDCV_INCLUDE_DIRS})
+find_package(cloudcv REQUIRED)
+include_directories(${CLOUDCV_INCLUDE_DIRS})
 #link_directories(${CLOUDCV_LIB_DIRS})
 
 #set the default path for built executables to the "bin" directory
