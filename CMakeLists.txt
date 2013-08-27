@@ -53,6 +53,7 @@ set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/plane_factor.h
 					     include/omnimapper/plane_plugin.h
 					     include/omnimapper/object_plugin.h
+					     include/omnimapper/object.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     #include/omnimapper/cloud_registration_plugin.h
@@ -68,6 +69,7 @@ set(srcs
 					     src/omnimapper_visualizer_pcl.cpp
 					     src/organized_feature_extraction.cpp
 					     src/plane.cpp
+                         src/object.cpp
 					     src/plane_factor.cpp
 					     src/plane_plugin.cpp
 					     src/object_plugin.cpp

@@ -5,6 +5,7 @@
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper/get_transform_functor.h>
+#include <omnimapper/object.h>
 
 #include <cloudcv/temporal_segmentation.h>
 #include <cloudcv/feature_matches.h>
@@ -58,7 +59,7 @@ namespace omnimapper
       boost::shared_ptr<FeatureMatches<pcl::SHOT1344> > correspondence_estimator;
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
-
-      int max_object_size;
+      std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
+      int max_object_size, max_current_size;
   };
 }

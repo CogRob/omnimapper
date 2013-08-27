@@ -11,7 +11,9 @@ namespace omnimapper
       get_sensor_to_base_ (GetTransformFunctorPtr ()),
       observations_ (),
       empty_ (),
-      temporal_segmentation_(mapper)
+      temporal_segmentation_(mapper),
+      max_object_size(0),
+      max_current_size(0)
   {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
@@ -80,7 +82,8 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 			"/home/siddharth/kinect/object_templates/");
 
 	int max_segment = correspondence_estimator->loadMapping("/home/siddharth/kinect/mapping.txt");
-	max_object_size = max_segment;
+	max_object_size = max_segment +1;
+	max_current_size = max_object_size;
 	std::cout << "Size of max_segment " << max_segment+1 << std::endl;
 	temporal_segmentation_.setActiveLabelIndices(max_segment+1);
 
@@ -155,123 +158,167 @@ void ObjectPlugin<PointT>::loadRepresentations() {
         PointT clust_centroid_pt;
         clust_centroid_pt.x = clust_centroid[0];
         clust_centroid_pt.y = clust_centroid[1];
-        clust_centroid_pt.z = clust_centroid[2];
+			clust_centroid_pt.z = clust_centroid[2];
 
-        bool found_nearby_plane = false;
-        //gtsam::Symbol closest_sym;
-        std::vector<gtsam::Symbol> nearby_symbols;
-        std::vector<Eigen::Vector4f> nearby_coeffs;
-        BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
-        {
-          Cloud boundary_cloud = key_value.value.hull ();
-          double ptp_dist = fabs (key_value.value.a () * clust_centroid[0] + 
-                                  key_value.value.b () * clust_centroid[1] +
-                                  key_value.value.c () * clust_centroid[2] + key_value.value.d ());
-          bool pt_in_poly = pcl::isPointIn2DPolygon (clust_centroid_pt, boundary_cloud);
-          if (pt_in_poly && (ptp_dist < min_clust_centroid_ptp_dist))
-          {
-            found_nearby_plane = true;
-            //closest_sym = key_value.key;
-            nearby_symbols.push_back (key_value.key);
-            nearby_coeffs.push_back (Eigen::Vector4f (key_value.value.a (),
-                                                      key_value.value.b (),
-                                                      key_value.value.c (),
-                                                      key_value.value.d ()));
-          }
-        }
+			bool found_nearby_plane = false;
+			//gtsam::Symbol closest_sym;
+			std::vector<gtsam::Symbol> nearby_symbols;
+			std::vector<Eigen::Vector4f> nearby_coeffs;
+			BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
+			{
+				Cloud boundary_cloud = key_value.value.hull ();
+				double ptp_dist = fabs (key_value.value.a () * clust_centroid[0] +
+						key_value.value.b () * clust_centroid[1] +
+						key_value.value.c () * clust_centroid[2] + key_value.value.d ());
+				bool pt_in_poly = pcl::isPointIn2DPolygon (clust_centroid_pt, boundary_cloud);
+				if (pt_in_poly && (ptp_dist < min_clust_centroid_ptp_dist))
+				{
+					found_nearby_plane = true;
+					//closest_sym = key_value.key;
+					nearby_symbols.push_back (key_value.key);
+					nearby_coeffs.push_back (Eigen::Vector4f (key_value.value.a (),
+									key_value.value.b (),
+									key_value.value.c (),
+									key_value.value.d ()));
+				}
+			}
 
-        // If we found a nearby plane, remove points that are very close to it
-        if (found_nearby_plane)
-        {
-          //gtsam::Plane<PointT> plane = solution.at<gtsam::Plane<PointT> > (closest_sym);
-          CloudPtr filtered_clust (new Cloud());
-          for (int j = 0; j < clusters_base[i]->points.size (); j++)
-          {
-            bool pt_ok = true;
-            
-            for (int k = 0; k < nearby_symbols.size (); k++)
-            {
-              double ptp_dist = fabs (nearby_coeffs[k][0] * clusters_base[i]->points[j].x +
-                                      nearby_coeffs[k][1] * clusters_base[i]->points[j].y +
-                                      nearby_coeffs[k][2] * clusters_base[i]->points[j].z +
-                                      nearby_coeffs[k][3]);
+			// If we found a nearby plane, remove points that are very close to it
+			if (found_nearby_plane) {
+				//gtsam::Plane<PointT> plane = solution.at<gtsam::Plane<PointT> > (closest_sym);
+				CloudPtr filtered_clust(new Cloud());
+				for (int j = 0; j < clusters_base[i]->points.size(); j++) {
+					bool pt_ok = true;
 
-              if (ptp_dist <= ptp_pt_cull_thresh_)
-                pt_ok = false;
-              
-            // if (ptp_dist >= ptp_pt_cull_thresh_)
-            // {
-            //   filtered_clust->points.push_back (clusters_base[i]->points[j]);
-            // }
-            }
+					for (int k = 0; k < nearby_symbols.size(); k++) {
+						double ptp_dist = fabs(
+								nearby_coeffs[k][0]
+										* clusters_base[i]->points[j].x
+										+ nearby_coeffs[k][1]
+												* clusters_base[i]->points[j].y
+										+ nearby_coeffs[k][2]
+												* clusters_base[i]->points[j].z
+										+ nearby_coeffs[k][3]);
 
-            if (pt_ok)
-              filtered_clust->points.push_back (clusters_base[i]->points[j]);
-          }
-          printf ("cluster %d had %d points, filtered has %d points\n", i, clusters_base[i]->points.size (), 
-                  filtered_clust->points.size ());
-          clusters_base[i] = filtered_clust;
-          printf ("cluster %d now has %d points\n", i, clusters_base[i]->points.size ());
-        }
-      }
+						if (ptp_dist <= ptp_pt_cull_thresh_)
+							pt_ok = false;
 
-      // If we still have enough points, filter based on entire cluster
-      if (clusters_base[i]->points.size () >= min_points_)
-      {
-        // Get mean and covariance matrix
-        pcl::computeMeanAndCovarianceMatrix ((*(clusters_base[i])), clust_cov, clust_centroid);
-        
-        double dist = sqrt(clust_centroid[0] * clust_centroid[0] + clust_centroid[1] * clust_centroid[1] + clust_centroid[2] * clust_centroid[2]);
+						// if (ptp_dist >= ptp_pt_cull_thresh_)
+						// {
+						//   filtered_clust->points.push_back (clusters_base[i]->points[j]);
+						// }
+					}
 
-        // Get bounding box
-        pcl::getMinMax3D ((*(clusters_base[i])), min_pt, max_pt);
-        Eigen::Vector4f size = max_pt - min_pt;
-        double bbox_volume = size[0] * size[1] * size[2];
-        
-        // Get curvature
-        pcl::eigen33 (clust_cov, eigen_value, eigen_vector);
-        double eig_sum = clust_cov.coeff (0) + clust_cov (4) + clust_cov (8);
-        double curvature = 0;
-        if (eig_sum != 0)
-          curvature = fabsf (eigen_value / eig_sum);
-        
-        printf ("Cluster %d:\n", i);
-        printf ("  Dist: %lf\n", dist);
-        printf ("  Volume: %lf\n", bbox_volume);
-        printf ("  Dims: %lf, %lf, %lf\n", size[0], size[1], size[2]);
-        printf ("  Curvature: %lf\n", curvature);
-        
-        // Clusters that are too far away suffer from too much depth discretization to be reliable
-        bool dist_ok = dist < max_cluster_dist_;
-        // Clusters that are too low in the robot frame can be excluded
-        bool height_ok = clust_centroid[2] > min_cluster_height_;
-        // Clusters with large bounding boxes are probably not objects of interest -- these tend to architectural features
-        bool bbox_volume_ok = bbox_volume < max_bbox_volume_;
-        // Clusters that have some dimension that is quite large tend to be uninteresting
-        bool bbox_dims_ok = (size[0] < max_bbox_dim_) && (size[1] < max_bbox_dim_) && (size[2] < max_bbox_dim_);
-        // Clusters with too low curvature are probably either planar objects that were improperly segmented, or
-        // Also, if it is mostly planar, shape descriptors will not be very reliable
-        bool curvature_ok = curvature > min_curvature_;        
+					if (pt_ok)
+						filtered_clust->points.push_back(
+								clusters_base[i]->points[j]);
+				}
+				printf("cluster %d had %d points, filtered has %d points\n", i,
+						clusters_base[i]->points.size(),
+						filtered_clust->points.size());
+				clusters_base[i] = filtered_clust;
+				printf("cluster %d now has %d points\n", i,
+						clusters_base[i]->points.size());
+			}
+		}
 
-        printf ("centroid dist: %lf\n", dist);
-        if (dist_ok && height_ok && bbox_volume_ok && bbox_dims_ok && curvature_ok)
-          filtered_observations.push_back (clusters_base[i]);
-      }
-      
-    }
-    
+		// If we still have enough points, filter based on entire cluster
+		if (clusters_base[i]->points.size() >= min_points_) {
+			// Get mean and covariance matrix
+			pcl::computeMeanAndCovarianceMatrix((*(clusters_base[i])),
+					clust_cov, clust_centroid);
 
-    std::cout << "Size of filtered observations: " << filtered_observations.size() << std::endl;
-    observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol, filtered_observations));
+			double dist = sqrt(
+					clust_centroid[0] * clust_centroid[0]
+							+ clust_centroid[1] * clust_centroid[1]
+							+ clust_centroid[2] * clust_centroid[2]);
 
-	if (cloud_pose) {
+			// Get bounding box
+			pcl::getMinMax3D((*(clusters_base[i])), min_pt, max_pt);
+			Eigen::Vector4f size = max_pt - min_pt;
+			double bbox_volume = size[0] * size[1] * size[2];
+
+			// Get curvature
+			pcl::eigen33(clust_cov, eigen_value, eigen_vector);
+			double eig_sum = clust_cov.coeff(0) + clust_cov(4) + clust_cov(8);
+			double curvature = 0;
+			if (eig_sum != 0)
+				curvature = fabsf(eigen_value / eig_sum);
+
+			printf("Cluster %d:\n", i);
+			printf("  Dist: %lf\n", dist);
+			printf("  Volume: %lf\n", bbox_volume);
+			printf("  Dims: %lf, %lf, %lf\n", size[0], size[1], size[2]);
+			printf("  Curvature: %lf\n", curvature);
+
+			// Clusters that are too far away suffer from too much depth discretization to be reliable
+			bool dist_ok = dist < max_cluster_dist_;
+			// Clusters that are too low in the robot frame can be excluded
+			bool height_ok = clust_centroid[2] > min_cluster_height_;
+			// Clusters with large bounding boxes are probably not objects of interest -- these tend to architectural features
+			bool bbox_volume_ok = bbox_volume < max_bbox_volume_;
+			// Clusters that have some dimension that is quite large tend to be uninteresting
+			bool bbox_dims_ok = (size[0] < max_bbox_dim_)
+					&& (size[1] < max_bbox_dim_) && (size[2] < max_bbox_dim_);
+			// Clusters with too low curvature are probably either planar objects that were improperly segmented, or
+			// Also, if it is mostly planar, shape descriptors will not be very reliable
+			bool curvature_ok = curvature > min_curvature_;
+
+			printf("centroid dist: %lf\n", dist);
+			if (dist_ok && height_ok && bbox_volume_ok && bbox_dims_ok
+					&& curvature_ok)
+				filtered_observations.push_back(clusters_base[i]);
+		}
+
+	}
+
+	std::cout << "Size of filtered observations: "
+			<< filtered_observations.size() << std::endl;
+	observations_.insert(
+			std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol,
+					filtered_observations));
+
+	if (cloud_pose && filtered_observations.size() != 0) {
 
 		temporal_segmentation_.predictLabels(filtered_observations, *cloud_pose,
 				pose_symbol);
 		CloudPtrVector matched_cloud = temporal_segmentation_.final_map_cloud;
 		CloudPtrVector final_cloud = temporal_segmentation_.observations_.at(
 				pose_symbol);
+
+		for (int obj_cnt = 0; obj_cnt < final_cloud.size(); obj_cnt++) {
+			if (final_cloud[obj_cnt]->points.size() == 0)
+				continue;
+
+			CloudPtr map_cloud(new Cloud());
+			gtsam::Symbol best_symbol = gtsam::Symbol('o', obj_cnt); //plane_filtered.size ());
+
+			if (max_current_size <= obj_cnt) {
+				// create new object
+				gtsam::Object<PointT> new_object;
+
+				//add observation
+
+				// increase the count
+				max_current_size = obj_cnt + 1;
+
+				new_object.addObservation(pose_symbol, final_cloud[obj_cnt]);
+				object_map.insert(
+						std::pair<gtsam::Symbol, gtsam::Object<PointT> >(
+								best_symbol, new_object));
+				//mapper_->addNewValue(best_symbol, new_object);
+			} else {
+
+				object_map.at(best_symbol).addObservation(pose_symbol,
+						final_cloud[obj_cnt]);
+
+			}
+
+		}
+		//std::cout << "Size of final cloud " <<
 		//temporal_segmentation_.
+
+		//new_object
 
 		if (cloud_cv_flag_) {
 			std::cout << "Inside Object Plugin" << std::endl;
@@ -284,7 +331,7 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 		}
 	}
 
-  }
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> typename omnimapper::ObjectPlugin<PointT>::CloudPtrVector
