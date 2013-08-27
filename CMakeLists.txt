@@ -31,6 +31,10 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
+find_package(cloudcv REQUIRED)
+include_directories(${CLOUDCV_INCLUDE_DIRS})
+#link_directories(${CLOUDCV_LIB_DIRS})
+
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 find_package(CPUTSDF REQUIRED)
 include_directories(${CPUTSDF_INCLUDE_DIRS})
@@ -74,13 +78,13 @@ set(srcs
 
 add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
-					     cpu_tsdf)
+					     cpu_tsdf ${CLOUDCV_LIBRARIES})
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
 
-#configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
-#install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
+configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
 
 #add_executable(omnimapper src/omnimapper.cpp)
 #target_link_libraries(omnimapper omnimapper)

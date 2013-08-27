@@ -4,8 +4,10 @@
 #include <pcl/point_types.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/organized_feature_extraction.h>
-#include <cloudcv/cloud_plugin.h>
 #include <omnimapper/get_transform_functor.h>
+
+#include <cloudcv/temporal_segmentation.h>
+#include <cloudcv/feature_matches.h>
 
 namespace omnimapper
 {
@@ -28,14 +30,19 @@ namespace omnimapper
       
       void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
 
-      void setObjectCallback(
+	void setObjectCallback(
 			boost::function<
-					void(gtsam::Symbol, boost::optional<gtsam::Pose3>,
-							std::vector<CloudPtr>, omnimapper::Time t)>& fn);
+					void(std::vector<CloudPtr>, std::map<int, int>,
+							std::map<int, std::map<int, int> >, int,
+							omnimapper::Time)>& fn);
 
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
       void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
+
+      // The object descriptors stored in the database is loaded
+      void loadRepresentations();
+
 
     protected:
       bool cloud_cv_flag_;
@@ -43,6 +50,15 @@ namespace omnimapper
       GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
-      boost::function<void(gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t)> cloud_cv_callback_;
+      boost::function<void(std::vector<CloudPtr>, std::map<int, int>,
+				std::map<int, std::map<int, int> >, int,
+				omnimapper::Time)> cloud_cv_callback_;
+
+      TemporalSegmentation<PointT> temporal_segmentation_;
+      boost::shared_ptr<FeatureMatches<pcl::SHOT1344> > correspondence_estimator;
+      std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
+      std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
+
+      int max_object_size;
   };
 }

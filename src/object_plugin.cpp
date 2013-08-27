@@ -10,10 +10,13 @@ namespace omnimapper
     : mapper_ (mapper),
       get_sensor_to_base_ (GetTransformFunctorPtr ()),
       observations_ (),
-      empty_ ()
+      empty_ (),
+      temporal_segmentation_(mapper)
   {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
+
+    loadRepresentations();
   }
   
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,14 +25,65 @@ namespace omnimapper
       {
       }
 
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback(
 		boost::function<
-				void(gtsam::Symbol, boost::optional<gtsam::Pose3>,
-						std::vector<CloudPtr>, omnimapper::Time t)>& fn) {
-      cloud_cv_callback_ = fn;
+				void(std::vector<CloudPtr>, std::map<int, int>,
+						std::map<int, std::map<int, int> >, int, omnimapper::Time)>& fn) {
+	cloud_cv_callback_ = fn;
 	cloud_cv_flag_ = true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<typename PointT>
+void ObjectPlugin<PointT>::loadRepresentations() {
+
+
+	std::cout << "Inside loadDesc" << std::endl;
+	pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D = new pcl::SIFTKeypoint<
+			PointT, pcl::PointXYZI>;
+	sift3D->setScales(0.01f, 3, 2);
+	sift3D->setMinimumContrast(0.0);
+
+	//pcl::UniformSampling<PointT>* uniform_sampling_ = new pcl::UniformSampling<PointT>;
+	//uniform_sampling_->setRadiusSearch(0.01f);
+
+	boost::shared_ptr<pcl::Keypoint<PointT, pcl::PointXYZI> > keypoint_detector;
+	keypoint_detector.reset(sift3D);
+
+	/* and descriptors */
+
+	/*
+	 pcl::Feature<PointT, pcl::FPFHSignature33>::Ptr feature_extractor (new pcl::FPFHEstimationOMP<PointT, pcl::Normal, pcl::FPFHSignature33>);
+	 feature_extractor->setSearchMethod (pcl::search::Search<PointT>::Ptr (new pcl::search::KdTree<PointT>));
+	 feature_extractor->setRadiusSearch (0.05);
+	 pcl::PointCloud<pcl::FPFHSignature33>::Ptr features(new pcl::PointCloud<pcl::FPFHSignature33>);
+	 */
+
+	pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>* shot =
+			new pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>;
+	shot->setRadiusSearch(0.04);
+	typename pcl::Feature<PointT, pcl::SHOT1344>::Ptr feature_extractor(shot);
+	pcl::PointCloud<pcl::SHOT1344>::Ptr features(
+			new pcl::PointCloud<pcl::SHOT1344>);
+
+	/* initialize correspondence estimator */
+	//correspondence_estimator.reset(new FeatureMatches<pcl::FPFHSignature33>(keypoint_detector, feature_extractor));
+	correspondence_estimator.reset(
+			new FeatureMatches<pcl::SHOT1344>(keypoint_detector,
+					feature_extractor));
+
+	std::cout << "Descriptor Loaded " << std::endl;
+	/* load object descriptors */
+
+	correspondence_estimator->loadDatabase(
+			"/home/siddharth/kinect/object_templates/");
+
+	int max_segment = correspondence_estimator->loadMapping("/home/siddharth/kinect/mapping.txt");
+	max_object_size = max_segment;
+	std::cout << "Size of max_segment " << max_segment+1 << std::endl;
+	temporal_segmentation_.setActiveLabelIndices(max_segment+1);
+
 }
 
 
@@ -210,10 +264,25 @@ template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback(
     std::cout << "Size of filtered observations: " << filtered_observations.size() << std::endl;
     observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol, filtered_observations));
 
-    if(cloud_cv_flag_){
-    	std::cout << "Inside Object Plugin" << std::endl;
-      cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
-    }
+	if (cloud_pose) {
+
+		temporal_segmentation_.predictLabels(filtered_observations, *cloud_pose,
+				pose_symbol);
+		CloudPtrVector matched_cloud = temporal_segmentation_.final_map_cloud;
+		CloudPtrVector final_cloud = temporal_segmentation_.observations_.at(
+				pose_symbol);
+		//temporal_segmentation_.
+
+		if (cloud_cv_flag_) {
+			std::cout << "Inside Object Plugin" << std::endl;
+			cloud_cv_callback_(temporal_segmentation_.final_map_cloud,
+					temporal_segmentation_.final_count,
+					correspondence_estimator->segment_object, max_object_size,
+					t);
+
+			//cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
+		}
+	}
 
   }
 

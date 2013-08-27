@@ -187,7 +187,7 @@ class OmniMapperROSNode
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
         object_plugin_ (&omb_),
-        cloud_vis_plugin_(),
+        cloud_vis_plugin_(&omb_),
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         bag_error_plugin_ (&omb_),
@@ -412,7 +412,7 @@ class OmniMapperROSNode
         boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2);
         organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
 
-        boost::function<void(gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t)> object_vis_callback = boost::bind (&CloudViz<PointT>::update, &cloud_vis_plugin_, _1, _2, _3, _4);
+        boost::function<void(std::vector<CloudPtr>, std::map<int, int>, std::map < int, std::map<int, int> >, int, omnimapper::Time)> object_vis_callback = boost::bind (&CloudViz<PointT>::callViz, &cloud_vis_plugin_, _1, _2, _3, _4, _5);
         object_plugin_.setObjectCallback(object_vis_callback);
        // 	object_plugin_.test();
 
