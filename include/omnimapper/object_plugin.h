@@ -43,6 +43,9 @@ namespace omnimapper
 
       // The object descriptors stored in the database is loaded
       void loadRepresentations();
+      void recognizeObject(gtsam::Object<PointT> object, int id);
+      float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
+		Eigen::Vector4f maxB);
 
 
     protected:
@@ -60,6 +63,7 @@ namespace omnimapper
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
       std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
+      std::map<gtsam::Symbol, int > training_map;
       int max_object_size, max_current_size;
   };
 }

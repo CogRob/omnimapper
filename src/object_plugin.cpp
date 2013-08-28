@@ -2,6 +2,9 @@
 #include <omnimapper/plane.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 namespace omnimapper
 {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,6 +92,94 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename PointT>
+void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id) {
+
+
+		std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+
+		std::cout << "Object " << id << " seen in " << cluster.size() << " frames" << std::endl;
+		typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
+
+		Cloud transformed_cloud_opt_;
+		for(it = cluster.begin(); it!= cluster.end(); it++){
+
+			gtsam::Symbol sym = it->first;
+			CloudPtr cloud = it->second;
+			boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
+			if (cloud_pose) {
+				CloudPtr map_cloud(new Cloud());
+				gtsam::Pose3 new_pose = *cloud_pose;
+	            Eigen::Matrix4f map_transform = new_pose.matrix().cast<float>();
+	            pcl::transformPointCloud(*cloud, *map_cloud, map_transform);
+	            transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
+			}
+		}
+
+		std::string output_file = "/home/siddharth/kinect/object_models/" + boost::lexical_cast<std::string>(id) +".pcd";
+		pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
+
+		std::pair<int, int> obj = correspondence_estimator->matchToDatabase(
+							transformed_cloud_opt_.makeShared(), id);
+
+		if (obj.first == -2) {
+			std::cout << "Didn't find a lot of features " << std::endl;
+
+		} else if (obj.first == -1) {
+			std::cout << "Didn't match to anything" << std::endl;
+
+		} else {
+			std::cout << "Segment " << id << " matched to " << obj.first << std::endl;
+			std::cout << "Matched with the same label" << std::endl;
+			//Eigen::Vector4f min_pt, max_pt;
+		//	std::string label_name = "cube_"
+		//			+ boost::lexical_cast<std::string>(i);
+
+		//	pcl::getMinMax3D(cluster, min_pt, max_pt);
+		//	vis_->addCube(min_pt[0], max_pt[0], min_pt[1], max_pt[1],
+		//			min_pt[2], max_pt[2], 1.0, 1.0, 1.0, label_name);
+
+		}
+
+		// store the camera poses with the object representation
+		//matchDesc(transformed_cloud_opt_);
+        correspondence_estimator->saveMapping("/home/siddharth/kinect/mapping.txt");
+
+    return;
+
+}
+
+template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
+		Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
+		Eigen::Vector4f maxB) {
+
+	float minX = minA[0];
+	float minY = minA[1];
+	float minZ = minA[2];
+	float maxX = maxA[0];
+	float maxY = maxA[1];
+	float maxZ = maxA[2];
+
+	float minX1 = minB[0];
+	float minY1 = minB[1];
+	float minZ1 = minB[2];
+	float maxX1 = maxB[0];
+	float maxY1 = maxB[1];
+	float maxZ1 = maxB[2];
+
+	float inter_area = MAX(MIN(maxX,maxX1)-MAX(minX,minX1),0)
+			* MAX(MIN(maxY,maxY1)-MAX(minY,minY1),0)
+			* MAX(MIN(maxZ,maxZ1)-MAX(minZ,minZ1),0);
+
+	float areaA = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
+	float areaB = (maxX1 - minX1) * (maxY1 - minY1) * (maxZ1 - minZ1);
+
+	float jaccard_index = inter_area / (areaA + areaB - inter_area);
+
+	return jaccard_index;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void
@@ -280,7 +371,7 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 
 	if (cloud_pose && filtered_observations.size() != 0) {
 
-		temporal_segmentation_.predictLabels(filtered_observations, *cloud_pose,
+		CloudPtrVector final_label = temporal_segmentation_.predictLabels(filtered_observations, *cloud_pose,
 				pose_symbol);
 		CloudPtrVector matched_cloud = temporal_segmentation_.final_map_cloud;
 		CloudPtrVector final_cloud = temporal_segmentation_.observations_.at(
@@ -315,10 +406,62 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 			}
 
 		}
-		//std::cout << "Size of final cloud " <<
-		//temporal_segmentation_.
 
-		//new_object
+		// train or recognize an object if it is out of the active zone
+		Cloud active_cloud;
+		for(int obj_cnt =0; obj_cnt < final_label.size(); obj_cnt++){
+			if(final_label[obj_cnt]->points.size()!=0)
+			active_cloud += *final_label[obj_cnt];
+		}
+		Eigen::Vector4f min_curr_cloud;
+		Eigen::Vector4f max_curr_cloud;
+		pcl::getMinMax3D(active_cloud, min_curr_cloud, max_curr_cloud);
+
+		std::cout << "Min Point Current Cloud " << min_curr_cloud << " Max: "
+				<< max_curr_cloud << std::endl;
+
+		Eigen::Vector4f min_curr_obj;
+		Eigen::Vector4f max_curr_obj;
+
+
+		for (int obj_cnt = 0; obj_cnt < matched_cloud.size(); obj_cnt++) {
+			std::cout << "Size of object " << obj_cnt << " is "
+					<< matched_cloud[obj_cnt]->points.size() << std::endl;
+			gtsam::Symbol obj_symbol = gtsam::Symbol('o', obj_cnt);
+			if (matched_cloud[obj_cnt]->points.size() != 0) {
+				// if the bounding box containing the current frame
+				// does not intersect with the given object then train the object
+				pcl::getMinMax3D(*matched_cloud[obj_cnt], min_curr_obj,
+						max_curr_obj);
+				std::cout << "Min Point Current object " << min_curr_obj
+						<< " Max: " << max_curr_obj << std::endl;
+				float intersection = computeIntersection(min_curr_obj,
+						max_curr_obj, min_curr_cloud, max_curr_cloud);
+
+				std::cout << "Intersection of object " << obj_cnt << " is: "
+						<< intersection << std::endl;
+				if (intersection == 0 && training_map[obj_symbol] == 0) {
+					std::cout << "Intersection of object " << obj_cnt
+							<< " is zero with the cloud" << std::endl;
+					recognizeObject(object_map.at(obj_symbol), obj_cnt);
+					training_map[obj_symbol] =1;
+
+				//	std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
+				} else if(intersection!=0){
+
+					if (training_map.find(obj_symbol) == training_map.end()) {
+						training_map.insert(
+								std::pair<gtsam::Symbol, int>(obj_symbol, 0));
+					} else {
+						training_map[obj_symbol] = 0;
+					}
+
+				//	std::cout << "Retraining object " << obj_cnt << std::endl;
+				}
+
+			}
+
+		}
 
 		if (cloud_cv_flag_) {
 			std::cout << "Inside Object Plugin" << std::endl;
