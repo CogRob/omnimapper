@@ -34,7 +34,7 @@ namespace omnimapper
 	void setObjectCallback(
 			boost::function<
 					void(std::vector<CloudPtr>, std::map<int, int>,
-							std::map<int, std::map<int, int> >, int,
+							std::map<int, std::map<int, int> >, std::map<int, PoseVector>, int,
 							omnimapper::Time)>& fn);
 
       CloudPtrVector getObservations (gtsam::Symbol sym);
@@ -44,9 +44,12 @@ namespace omnimapper
       // The object descriptors stored in the database is loaded
       void loadRepresentations();
       void recognizeObject(gtsam::Object<PointT> object, int id);
+      void objectRecognitionLoop();
       float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
 		Eigen::Vector4f maxB);
 
+      gtsam::Symbol popFromQueue();
+      void pushIntoQueue(gtsam::Symbol sym);
 
     protected:
       bool cloud_cv_flag_;
@@ -55,7 +58,7 @@ namespace omnimapper
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       boost::function<void(std::vector<CloudPtr>, std::map<int, int>,
-				std::map<int, std::map<int, int> >, int,
+				std::map<int, std::map<int, int> >, std::map<int, PoseVector>, int,
 				omnimapper::Time)> cloud_cv_callback_;
 
       TemporalSegmentation<PointT> temporal_segmentation_;
@@ -64,6 +67,9 @@ namespace omnimapper
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
       std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
       std::map<gtsam::Symbol, int > training_map;
+      std::queue<gtsam::Symbol> train_queue;
       int max_object_size, max_current_size;
+
+       boost::mutex recog_mutex;
   };
 }

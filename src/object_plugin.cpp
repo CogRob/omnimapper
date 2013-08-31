@@ -22,6 +22,9 @@ namespace omnimapper
     printf ("Size: %d\n", observations_.size ());
 
     loadRepresentations();
+        
+        boost::thread object_recognition_thread (&ObjectPlugin<PointT>::objectRecognitionLoop, this);
+
   }
   
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +37,7 @@ namespace omnimapper
 template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback(
 		boost::function<
 				void(std::vector<CloudPtr>, std::map<int, int>,
-						std::map<int, std::map<int, int> >, int, omnimapper::Time)>& fn) {
+						std::map<int, std::map<int, int> >, std::map<int, PoseVector>, int, omnimapper::Time)>& fn) {
 	cloud_cv_callback_ = fn;
 	cloud_cv_flag_ = true;
 }
@@ -81,10 +84,9 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 	std::cout << "Descriptor Loaded " << std::endl;
 	/* load object descriptors */
 
-	correspondence_estimator->loadDatabase(
-			"/home/siddharth/kinect/object_templates/");
+	int max_segment = correspondence_estimator->loadDatabase(
+			"/home/siddharth/kinect/");
 
-	int max_segment = correspondence_estimator->loadMapping("/home/siddharth/kinect/mapping.txt");
 	max_object_size = max_segment +1;
 	max_current_size = max_object_size;
 	std::cout << "Size of max_segment " << max_segment+1 << std::endl;
@@ -99,6 +101,9 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
 
 
 		std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+
+		std::vector<gtsam::Pose3> pose_array;
+
 
 		std::cout << "Object " << id << " seen in " << cluster.size() << " frames" << std::endl;
 		typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
@@ -115,6 +120,7 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
 	            Eigen::Matrix4f map_transform = new_pose.matrix().cast<float>();
 	            pcl::transformPointCloud(*cloud, *map_cloud, map_transform);
 	            transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
+	            pose_array.push_back(new_pose);
 			}
 		}
 
@@ -122,7 +128,7 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
 		pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
 
 		std::pair<int, int> obj = correspondence_estimator->matchToDatabase(
-							transformed_cloud_opt_.makeShared(), id);
+							transformed_cloud_opt_.makeShared(), pose_array, id);
 
 		if (obj.first == -2) {
 			std::cout << "Didn't find a lot of features " << std::endl;
@@ -131,15 +137,11 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
 			std::cout << "Didn't match to anything" << std::endl;
 
 		} else {
-			std::cout << "Segment " << id << " matched to " << obj.first << std::endl;
+			std::cout << "Object " << id << " matched to " << obj.first << std::endl;
 			std::cout << "Matched with the same label" << std::endl;
-			//Eigen::Vector4f min_pt, max_pt;
-		//	std::string label_name = "cube_"
-		//			+ boost::lexical_cast<std::string>(i);
 
-		//	pcl::getMinMax3D(cluster, min_pt, max_pt);
-		//	vis_->addCube(min_pt[0], max_pt[0], min_pt[1], max_pt[1],
-		//			min_pt[2], max_pt[2], 1.0, 1.0, 1.0, label_name);
+            // find the poses this object is visible from
+
 
 		}
 
@@ -150,6 +152,47 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
     return;
 
 }
+
+
+template<typename PointT>
+gtsam::Symbol ObjectPlugin<PointT>::popFromQueue(){
+	boost::mutex::scoped_lock (recog_mutex);
+	gtsam::Symbol sym = train_queue.front();
+			train_queue.pop();
+
+			return sym;
+}
+
+
+template<typename PointT>
+void ObjectPlugin<PointT>::pushIntoQueue(gtsam::Symbol sym){
+	boost::mutex::scoped_lock (recog_mutex);
+	train_queue.push(sym);
+	return;
+}
+
+template<typename PointT>
+void ObjectPlugin<PointT>::objectRecognitionLoop() {
+
+	std::map<gtsam::Symbol, int>::iterator it;
+	while (1) {
+		while (!train_queue.empty()) {
+
+			gtsam::Symbol sym = popFromQueue();
+
+			sym.print("Training Object: ");
+			std::cout << "Symbol index: " << sym.index() << std::endl;
+			std::cout << "#Objects in Queue: " << train_queue.size() << std::endl;
+			recognizeObject(object_map.at(sym), sym.index());
+
+        }
+        boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+
+
+	}
+
+}
+
 
 template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 		Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
@@ -371,8 +414,12 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 
 	if (cloud_pose && filtered_observations.size() != 0) {
 
-		CloudPtrVector final_label = temporal_segmentation_.predictLabels(filtered_observations, *cloud_pose,
-				pose_symbol);
+		/* Perform temporal segmentation on every new frame and match it to the
+		 * existing set of objects
+		 */
+		double seg_start = pcl::getTime();
+		CloudPtrVector final_label = temporal_segmentation_.predictLabels(
+				filtered_observations, *cloud_pose, pose_symbol);
 		CloudPtrVector matched_cloud = temporal_segmentation_.final_map_cloud;
 		CloudPtrVector final_cloud = temporal_segmentation_.observations_.at(
 				pose_symbol);
@@ -406,12 +453,26 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 			}
 
 		}
+		double seg_end = pcl::getTime();
+		std::cout << "Segmentation took: " << double(seg_end - seg_start) << std::endl;
+
+		//////////////////////////////////////////////////////////////////////
+		// Segmentation Ends
+		//////////////////////////////////////////////////////////////////////
+
+
+		/*
+		 * Find a set of objects from the segments
+		 * for which the recognition will be called
+		 */
+
+		double start = pcl::getTime();
 
 		// train or recognize an object if it is out of the active zone
 		Cloud active_cloud;
-		for(int obj_cnt =0; obj_cnt < final_label.size(); obj_cnt++){
-			if(final_label[obj_cnt]->points.size()!=0)
-			active_cloud += *final_label[obj_cnt];
+		for (int obj_cnt = 0; obj_cnt < final_label.size(); obj_cnt++) {
+			if (final_label[obj_cnt]->points.size() != 0)
+				active_cloud += *final_label[obj_cnt];
 		}
 		Eigen::Vector4f min_curr_cloud;
 		Eigen::Vector4f max_curr_cloud;
@@ -422,7 +483,6 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 
 		Eigen::Vector4f min_curr_obj;
 		Eigen::Vector4f max_curr_obj;
-
 
 		for (int obj_cnt = 0; obj_cnt < matched_cloud.size(); obj_cnt++) {
 			std::cout << "Size of object " << obj_cnt << " is "
@@ -443,11 +503,14 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 				if (intersection == 0 && training_map[obj_symbol] == 0) {
 					std::cout << "Intersection of object " << obj_cnt
 							<< " is zero with the cloud" << std::endl;
-					recognizeObject(object_map.at(obj_symbol), obj_cnt);
-					training_map[obj_symbol] =1;
+				//	recognizeObject(object_map.at(obj_symbol), obj_cnt);
+					training_map[obj_symbol] = 1;
+					obj_symbol.print("Object symbol pushed: ");
+					pushIntoQueue(obj_symbol);
 
-				//	std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
-				} else if(intersection!=0){
+					//	std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
+				} else if (intersection != 0) {
+					//recognizeObject(object_map.at(obj_symbol), obj_cnt);
 
 					if (training_map.find(obj_symbol) == training_map.end()) {
 						training_map.insert(
@@ -456,22 +519,39 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 						training_map[obj_symbol] = 0;
 					}
 
-				//	std::cout << "Retraining object " << obj_cnt << std::endl;
+					//	std::cout << "Retraining object " << obj_cnt << std::endl;
 				}
 
 			}
 
 		}
+		double end = pcl::getTime();
+	    std::cout << "Find objects took: " << double(end - start) << std::endl;
+
+
+
+		//////////////////////////////////////////////////////////////////////
+		// Objects estimated
+		//////////////////////////////////////////////////////////////////////
+
+
+		/*
+		 * Visualize
+		 */
+		double vis_start = pcl::getTime();
 
 		if (cloud_cv_flag_) {
 			std::cout << "Inside Object Plugin" << std::endl;
 			cloud_cv_callback_(temporal_segmentation_.final_map_cloud,
 					temporal_segmentation_.final_count,
-					correspondence_estimator->segment_object, max_object_size,
-					t);
+					correspondence_estimator->segment_object,
+					correspondence_estimator->pose_map, max_object_size, t);
 
 			//cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
 		}
+		double vis_end = pcl::getTime();
+		std::cout << "Visualizations took: " << double(vis_end - vis_start) << std::endl;
+
 	}
 
 }
