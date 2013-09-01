@@ -61,7 +61,7 @@ namespace omnimapper
 				std::map<int, std::map<int, int> >, std::map<int, PoseVector>, int,
 				omnimapper::Time)> cloud_cv_callback_;
 
-      TemporalSegmentation<PointT> temporal_segmentation_;
+      boost::shared_ptr<TemporalSegmentation<PointT> > temporal_segmentation_;
       boost::shared_ptr<FeatureMatches<pcl::SHOT1344> > correspondence_estimator;
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;

@@ -14,7 +14,6 @@ namespace omnimapper
       get_sensor_to_base_ (GetTransformFunctorPtr ()),
       observations_ (),
       empty_ (),
-      temporal_segmentation_(mapper),
       max_object_size(0),
       max_current_size(0)
   {
@@ -22,7 +21,11 @@ namespace omnimapper
     printf ("Size: %d\n", observations_.size ());
 
     loadRepresentations();
-        
+        std::cout << "Loaded representations " << std::endl;
+        temporal_segmentation_.reset(new TemporalSegmentation<PointT>(mapper));
+    	temporal_segmentation_->setActiveLabelIndices(max_object_size);
+    	std::cout << "Active label indices set" << std::endl;
+
         boost::thread object_recognition_thread (&ObjectPlugin<PointT>::objectRecognitionLoop, this);
 
   }
@@ -90,7 +93,6 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 	max_object_size = max_segment +1;
 	max_current_size = max_object_size;
 	std::cout << "Size of max_segment " << max_segment+1 << std::endl;
-	temporal_segmentation_.setActiveLabelIndices(max_segment+1);
 
 }
 
@@ -418,10 +420,10 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 		 * existing set of objects
 		 */
 		double seg_start = pcl::getTime();
-		CloudPtrVector final_label = temporal_segmentation_.predictLabels(
+		CloudPtrVector final_label = temporal_segmentation_->predictLabels(
 				filtered_observations, *cloud_pose, pose_symbol);
-		CloudPtrVector matched_cloud = temporal_segmentation_.final_map_cloud;
-		CloudPtrVector final_cloud = temporal_segmentation_.observations_.at(
+		CloudPtrVector matched_cloud = temporal_segmentation_->final_map_cloud;
+		CloudPtrVector final_cloud = temporal_segmentation_->observations_.at(
 				pose_symbol);
 
 		for (int obj_cnt = 0; obj_cnt < final_cloud.size(); obj_cnt++) {
@@ -542,8 +544,8 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 
 		if (cloud_cv_flag_) {
 			std::cout << "Inside Object Plugin" << std::endl;
-			cloud_cv_callback_(temporal_segmentation_.final_map_cloud,
-					temporal_segmentation_.final_count,
+			cloud_cv_callback_(temporal_segmentation_->final_map_cloud,
+					temporal_segmentation_->final_count,
 					correspondence_estimator->segment_object,
 					correspondence_estimator->pose_map, max_object_size, t);
 
