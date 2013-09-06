@@ -1,5 +1,6 @@
 #include <omnimapper_ros_csm/csm_visualizer.h>
 #include <geometry_msgs/PoseArray.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 template <typename LScanT>
 omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -19,7 +20,8 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz (omnimapper::OmniMapper
 
 template <typename LScanT> void
 omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
-{
+{	
+
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
   
@@ -29,8 +31,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
   aggregate_cloud->header.frame_id = "/world";
-  aggregate_cloud->header.stamp = ros::Time::now ();
-  
+
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -55,8 +56,10 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
 
     if (draw_map_) 
     {
+
       // Draw the scans too
       sensor_msgs::PointCloud2 cloud_msg = csm_plugin_->getPC2 (key_symbol);
+    
       if (cloud_msg.width > 0)
       {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -64,6 +67,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
         pcl::PointCloud<pcl::PointXYZ>::Ptr map_cloud (new pcl::PointCloud<pcl::PointXYZ>);
         Eigen::Matrix4f map_tform = sam_pose.matrix ().cast<float>();
         pcl::transformPointCloud (*cloud, *map_cloud, map_tform);
+
         (*aggregate_cloud) += (*map_cloud);
       }
     }
@@ -72,7 +76,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
   
   pose_array_pub_.publish (pose_array);
   
-  if (draw_map_)
+  if (draw_map_ && aggregate_cloud->points.size()>0)
   {
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg (*aggregate_cloud, cloud_msg);
@@ -97,6 +101,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
   mapper_graph.color.b = 0.0;
   mapper_graph.scale.x = 0.01;
 
+
   BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
   {
     // check for poses
@@ -105,8 +110,10 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
     // skip if there aren't two pose keys
     if ((keys.size () == 2))
     {
+
       if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
       {
+
         gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
         gtsam::Pose3 p2 = current_solution.at<gtsam::Pose3>(keys[1]);
 
