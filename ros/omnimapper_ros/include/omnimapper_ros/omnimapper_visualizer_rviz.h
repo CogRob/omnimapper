@@ -32,7 +32,7 @@ namespace omnimapper
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
       void drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx);
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
-      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
+      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t,  boost::optional<std::vector<pcl::PointIndices> > );
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
       void setObjectPlugin (boost::shared_ptr<omnimapper::ObjectPlugin<PointT> >& object_plugin) { object_plugin_ = object_plugin; }
       bool drawObjectObservationCloud (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);

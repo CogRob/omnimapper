@@ -440,7 +440,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback (const CloudCon
 }
 
 template <typename PointT> void
-omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t)
+omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t,  boost::optional<std::vector<pcl::PointIndices> > indices)
 {
   printf ("Omnimappervisualizerrviz: Got %d clusters\n", clusters.size ());
   

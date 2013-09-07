@@ -87,6 +87,7 @@ class OrganizedFeatureExtraction
     std::vector<pcl::PointIndices> stage4_label_indices_;
     std::vector<pcl::PointIndices> stage4_boundary_indices_;
     std::vector<CloudPtr> stage5_clusters_;
+    std::vector<pcl::PointIndices> stage5_cluster_indices_;
     boost::mutex cloud_mutex;
 
     // Most recently processed cloud
@@ -134,7 +135,10 @@ class OrganizedFeatureExtraction
     boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)> region_cloud_callback_;    
     
     // Cluster Cloud Callback
-    std::vector<boost::function<void(std::vector<CloudPtr>, Time t)> > cluster_cloud_callbacks_;
+    std::vector<boost::function<void(std::vector<CloudPtr>, Time t, boost::optional<std::vector<pcl::PointIndices> > )> > cluster_cloud_callbacks_;
+
+    // Cluster Cloud Indices Callback
+    std::vector<boost::function<void(std::vector<CloudPtr>, std::vector<pcl::PointIndices>, Time t)> > cluster_cloud_indices_callbacks_;
 
     // Threads
     boost::thread vis_thread;
@@ -165,7 +169,7 @@ class OrganizedFeatureExtraction
     void setLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
     void setClusterLabelsCallback (boost::function<void (const CloudConstPtr&, const LabelCloudConstPtr&)>& fn);
     void setRegionCloudCallback (boost::function<void(const CloudConstPtr&, std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
-    void setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time)> fn);
+    void setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time,  boost::optional<std::vector<pcl::PointIndices> > )> fn);
     
 };
 

@@ -99,6 +99,125 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template<typename PointT>
+void ObjectPlugin<PointT>::generateObjectModel(gtsam::Object<PointT> object, int id)
+{
+printf ("starting generateTSDF\n");
+// Make a TSDF
+cpu_tsdf::TSDFVolumeOctree::Ptr tsdf (new cpu_tsdf::TSDFVolumeOctree);
+//tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
+//tsdf->setGridSize (30.0, 30.0, 30.0);
+tsdf->setGridSize (300.0, 300.0, 300.0);
+tsdf->setResolution (1024, 1024, 1024);
+//tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
+//tsdf->setResolution (4096, 4096, 4096);
+Eigen::Affine3d tsdf_center = Eigen::Affine3d::Identity (); // Optionally offset the center
+tsdf->setGlobalTransform (tsdf_center);
+//tsdf->setDepthTruncationLimits ();
+//tsdf->setDepthTruncationLimits (0.3, 10.0);
+//tsdf->setWeightTruncationLimit (100.0);
+tsdf->reset (); // Initialize it to be empty
+
+std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+std::map<gtsam::Symbol, pcl::PointIndices> indices = object.indices_;
+
+typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
+
+	Cloud transformed_cloud_opt_;
+	for (it = cluster.begin(); it != cluster.end(); it++) {
+
+		gtsam::Symbol sym = it->first;
+		CloudPtr cloud = it->second;
+
+		std::cout << "Inside the loop: " << cloud->points.size() << std::endl;
+		boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
+
+		if (cloud_pose) {
+			CloudPtr map_cloud(new Cloud());
+			map_cloud->width = 640;
+			map_cloud->height = 480;
+			map_cloud->resize(map_cloud->width*map_cloud->height);
+
+			for(int i=0; i< map_cloud->width*map_cloud->height; i++){
+				std::cout << i << std::endl;
+				PointT invalid_pt;
+				invalid_pt.x = std::numeric_limits<float>::quiet_NaN();
+				invalid_pt.y = std::numeric_limits<float>::quiet_NaN();
+				invalid_pt.z = std::numeric_limits<float>::quiet_NaN();
+				invalid_pt.r = 1; invalid_pt.g = 0; invalid_pt.b = 0; invalid_pt.a=1;
+				map_cloud->points[i] = invalid_pt;
+
+			}
+
+			pcl::PointIndices clust_indices = indices.at(sym);
+			std::cout << "Size of clust indices " << clust_indices.indices.size() << std::endl;
+			for(int i=0; i< clust_indices.indices.size(); i++)
+				map_cloud->points[clust_indices.indices[i]] = cloud->points[i];
+
+			gtsam::Pose3 sam_pose = *cloud_pose;
+
+			Eigen::Matrix4f map_tform = sam_pose.matrix().cast<float>();
+			Eigen::Affine3d tform;
+			gtsam::Quaternion sam_quat = sam_pose.rotation().toQuaternion();
+			tform = Eigen::Quaterniond(sam_quat.w(), sam_quat.x(), sam_quat.y(),
+					sam_quat.z());
+			//tform.translation() = Eigen::Vector3d(0,0,0);
+			tform.translation() = Eigen::Vector3d(sam_pose.x(), sam_pose.y(),
+					sam_pose.z());
+			//Eigen::Affine3d tform_inv = tform.inverse();
+			//pcl::transformPointCloud (*frame_cloud, *map_cloud, map_tform);
+			//Eigen::Affine3d tform (Eigen::Quaterniond(sam_quat[0],sam_quat[1],sam_quat[2],sam_quat[3]), Eigen::Vector3d (sam_pose.x (), sam_pose.y (), sam_pose.z ()));
+
+			pcl::PointCloud<pcl::Normal> empty_normals;
+			pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+			ne.setNormalEstimationMethod(ne.COVARIANCE_MATRIX);
+			ne.setMaxDepthChangeFactor(0.02f);
+			ne.setNormalSmoothingSize(20.0f);
+			ne.setDepthDependentSmoothing(true);
+			//ne.setRadiusSearch (0.1);
+			//ne.setInputCloud (frame_cloud);
+			//ne.compute (empty_normals);
+			//empty_normals.resize (frame_cloud->points.size ());
+
+			printf("Cloud has: %d normals has: %d\n",
+					cloud->points.size(), empty_normals.points.size());
+
+			if (cloud->points.size() > 0){
+				std::cout << "Cloud integrated " << std::endl;
+				tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal>(*map_cloud,
+						empty_normals, tform); // Integrate the cloud
+				std::cout << "Integration done" << std::endl;
+				break;
+			}
+
+		}
+	}
+
+std::string vol_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".vol";
+tsdf->save (vol_file); // Save it?
+
+// Maching Cubes
+cpu_tsdf::MarchingCubesTSDFOctree mc;
+mc.setInputTSDF (tsdf);
+mc.setColorByConfidence (true);
+mc.setColorByRGB (false);
+mc.setMinWeight (0.1);
+pcl::PolygonMesh mesh;
+mc.reconstruct (mesh);
+
+std::string output_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".ply";
+pcl::io::savePLYFileBinary (output_file, mesh);
+
+// Render from xo
+Eigen::Affine3d init_pose = Eigen::Affine3d::Identity ();
+pcl::PointCloud<pcl::PointNormal>::Ptr raytraced = tsdf->renderView (init_pose);
+std::string render_file = "/home/siddharth/kinect/tsdf_models/rendered_" + boost::lexical_cast<std::string>(id) +".pcd";
+
+pcl::io::savePCDFileBinary (render_file, *raytraced);
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<typename PointT>
 void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id) {
 
 
@@ -128,6 +247,8 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT> object, int id)
 
 		std::string output_file = "/home/siddharth/kinect/object_models/" + boost::lexical_cast<std::string>(id) +".pcd";
 		pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
+
+		generateObjectModel(object, id);
 
 		std::pair<int, int> obj = correspondence_estimator->matchToDatabase(
 							transformed_cloud_opt_.makeShared(), pose_array, id);
@@ -228,7 +349,7 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template <typename PointT> void
-  ObjectPlugin<PointT>::clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t)
+  ObjectPlugin<PointT>::clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> > indices)
   {
     double max_cluster_dist_ = 3.0;
     double max_bbox_volume_ = 1.0;
@@ -242,6 +363,8 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
     bool filter_points_near_planes_ = true;
 
     std::vector<CloudPtr> clusters_base;
+
+
     if (get_sensor_to_base_)
     {
       printf ("Object Plugin: Applying sensor to base transform.\n");
@@ -257,6 +380,10 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
     {
       clusters_base = clusters;
     }
+
+    std::vector<pcl::PointIndices> indices_base(clusters_base.size());
+
+
 
     printf ("Object plugin got %d clusters_base\n", clusters_base.size ());
     // Get pose symbol for this timestamp
@@ -274,6 +401,7 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
     // Save observations made from this pose
     //observations_.insert (std::pair<gtsam::Symbol, CloudPtrVector >(pose_symbol, clusters_base));
     CloudPtrVector filtered_observations;
+    std::vector<pcl::PointIndices> filtered_observation_indices;
 
     // Compute cluster statistics for filtering purposes
     Eigen::Matrix3f clust_cov;
@@ -323,6 +451,7 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 			if (found_nearby_plane) {
 				//gtsam::Plane<PointT> plane = solution.at<gtsam::Plane<PointT> > (closest_sym);
 				CloudPtr filtered_clust(new Cloud());
+				pcl::PointIndices filtered_indices;
 				for (int j = 0; j < clusters_base[i]->points.size(); j++) {
 					bool pt_ok = true;
 
@@ -345,14 +474,17 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 						// }
 					}
 
-					if (pt_ok)
+					if (pt_ok){
 						filtered_clust->points.push_back(
 								clusters_base[i]->points[j]);
+						filtered_indices.indices.push_back((*indices)[i].indices[j]);
+					}
 				}
 				printf("cluster %d had %d points, filtered has %d points\n", i,
 						clusters_base[i]->points.size(),
 						filtered_clust->points.size());
 				clusters_base[i] = filtered_clust;
+				indices_base[i] = filtered_indices;
 				printf("cluster %d now has %d points\n", i,
 						clusters_base[i]->points.size());
 			}
@@ -404,6 +536,7 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 			if (dist_ok && height_ok && bbox_volume_ok && bbox_dims_ok
 					&& curvature_ok)
 				filtered_observations.push_back(clusters_base[i]);
+				filtered_observation_indices.push_back(indices_base[i]);
 		}
 
 	}
@@ -413,6 +546,12 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 	observations_.insert(
 			std::pair<gtsam::Symbol, CloudPtrVector>(pose_symbol,
 					filtered_observations));
+
+	observation_indices_.insert(
+				std::pair<gtsam::Symbol, std::vector<pcl::PointIndices> >(pose_symbol,
+						filtered_observation_indices));
+
+
 
 	if (cloud_pose && filtered_observations.size() != 0) {
 
@@ -442,15 +581,17 @@ template<typename PointT> float ObjectPlugin<PointT>::computeIntersection(
 				// increase the count
 				max_current_size = obj_cnt + 1;
 
-				new_object.addObservation(pose_symbol, final_cloud[obj_cnt]);
+				int old_label = temporal_segmentation_->back_label_.at(obj_cnt);
+				new_object.addObservation(pose_symbol, final_cloud[obj_cnt], filtered_observation_indices[old_label]);
 				object_map.insert(
 						std::pair<gtsam::Symbol, gtsam::Object<PointT> >(
 								best_symbol, new_object));
 				//mapper_->addNewValue(best_symbol, new_object);
 			} else {
 
+				int old_label = temporal_segmentation_->back_label_.at(obj_cnt);
 				object_map.at(best_symbol).addObservation(pose_symbol,
-						final_cloud[obj_cnt]);
+						final_cloud[obj_cnt], filtered_observation_indices[old_label]);
 
 			}
 

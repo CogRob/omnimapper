@@ -10,6 +10,15 @@
 #include <cloudcv/temporal_segmentation.h>
 #include <cloudcv/feature_matches.h>
 
+#include <cpu_tsdf/tsdf_volume_octree.h>
+#include <cpu_tsdf/marching_cubes_tsdf_octree.h>
+
+#include <pcl/features/integral_image_normal.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+
+
 namespace omnimapper
 {
   /** \brief ObjectPlugin keeps track of objects, both recognized and unrecognized, and optionally localizes from objects flagged as stationary.
@@ -29,7 +38,7 @@ namespace omnimapper
       ObjectPlugin (omnimapper::OmniMapperBase* mapper);
       ~ObjectPlugin ();
       
-      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
+      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> >);
 
 	void setObjectCallback(
 			boost::function<
@@ -50,6 +59,7 @@ namespace omnimapper
 
       gtsam::Symbol popFromQueue();
       void pushIntoQueue(gtsam::Symbol sym);
+      void generateObjectModel(gtsam::Object<PointT> object, int id);
 
     protected:
       bool cloud_cv_flag_;
@@ -57,6 +67,8 @@ namespace omnimapper
       GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
+      std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
+
       boost::function<void(std::vector<CloudPtr>, std::map<int, int>,
 				std::map<int, std::map<int, int> >, std::map<int, PoseVector>, int,
 				omnimapper::Time)> cloud_cv_callback_;
