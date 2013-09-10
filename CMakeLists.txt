@@ -51,6 +51,7 @@ set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/organized_feature_extraction.h
 					     include/omnimapper/plane.h
 					     include/omnimapper/plane_factor.h
+					     include/omnimapper/landmark_factor.h
 					     include/omnimapper/plane_plugin.h
 					     include/omnimapper/object_plugin.h
 					     include/omnimapper/object.h

@@ -11,7 +11,7 @@
 	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="true"/>
 	    <param name="use_error_plugin" value="false"/>
-	    <param name="use_tsdf_plugin" value="false"/>
+	    <param name="use_tsdf_plugin" value="true"/>
 	    <param name="use_init_pose" value="false"/>	
 	    <param name="init_pose_from_tf" value="true"/>
       	    <param name="odom_frame_name" value="/odom"/>

@@ -6,9 +6,11 @@
 #include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper/get_transform_functor.h>
 #include <omnimapper/object.h>
+#include <omnimapper/landmark_factor.h>
 
 #include <cloudcv/temporal_segmentation.h>
 #include <cloudcv/feature_matches.h>
+#include <cloudcv/discover_objects.h>
 
 #include <cpu_tsdf/tsdf_volume_octree.h>
 #include <cpu_tsdf/marching_cubes_tsdf_octree.h>
@@ -52,14 +54,18 @@ namespace omnimapper
 
       // The object descriptors stored in the database is loaded
       void loadRepresentations();
-      void recognizeObject(gtsam::Object<PointT> object, int id);
+      void recognizeObject(gtsam::Object<PointT>& object, int id);
       void objectRecognitionLoop();
+      void objectDiscoveryLoop();
       float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
 		Eigen::Vector4f maxB);
 
       gtsam::Symbol popFromQueue();
       void pushIntoQueue(gtsam::Symbol sym);
-      void generateObjectModel(gtsam::Object<PointT> object, int id);
+      void generateObjectModel(gtsam::Object<PointT> object,
+			Eigen::Vector4f obj_centroid, int id);
+      void reconstructSurface(CloudPtr cloud, int id);
+
 
     protected:
       bool cloud_cv_flag_;
@@ -75,13 +81,17 @@ namespace omnimapper
 
       boost::shared_ptr<TemporalSegmentation<PointT> > temporal_segmentation_;
       boost::shared_ptr<FeatureMatches<pcl::SHOT1344> > correspondence_estimator;
+      ProcessCloud<pcl::PointXYZRGBA> process_cloud;
+
+
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
       std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
       std::map<gtsam::Symbol, int > training_map;
       std::queue<gtsam::Symbol> train_queue;
       int max_object_size, max_current_size;
-
+      cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
        boost::mutex recog_mutex;
+
   };
 }

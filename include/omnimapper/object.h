@@ -25,6 +25,7 @@ public:
 	// constructor
 	Object();
 
+	gtsam::Symbol sym;
 	// list of observations
 	std::map<gtsam::Symbol, CloudPtr> clusters_;
 	std::map<gtsam::Symbol, pcl::PointIndices> indices_;
