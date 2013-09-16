@@ -57,8 +57,24 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 	boost::shared_ptr<pcl::Keypoint<PointT, pcl::PointXYZI> > keypoint_detector;
 	keypoint_detector.reset(sift3D);
 
+
+	/*
+	 typename pcl::Feature<PointT, pcl::VFHSignature308>::Ptr feature_extractor (new pcl::CVFHEstimation<PointT, pcl::Normal, pcl::VFHSignature308>);
+	 feature_extractor->setSearchMethod (typename pcl::search::Search<PointT>::Ptr (new pcl::search::KdTree<PointT>));
+	 //feature_extractor->setRadiusSearch (0.05);
+	 typename pcl::PointCloud<pcl::VFHSignature308>::Ptr features(new pcl::PointCloud<pcl::VFHSignature308>);
+*/
 	/* and descriptors */
 
+	// PFHRGB
+	/*
+	 typename pcl::Feature<PointT, pcl::PFHRGBSignature250>::Ptr feature_extractor (new pcl::PFHRGBEstimation<PointT, pcl::Normal, pcl::PFHRGBSignature250>);
+	 feature_extractor->setSearchMethod (typename pcl::search::Search<PointT>::Ptr (new pcl::search::KdTree<PointT>));
+	 feature_extractor->setRadiusSearch (0.05);
+	 typename pcl::PointCloud<pcl::PFHRGBSignature250>::Ptr features(new pcl::PointCloud<pcl::PFHRGBSignature250>);
+	*/
+
+	 // FPFH
 	/*
 	 pcl::Feature<PointT, pcl::FPFHSignature33>::Ptr feature_extractor (new pcl::FPFHEstimationOMP<PointT, pcl::Normal, pcl::FPFHSignature33>);
 	 feature_extractor->setSearchMethod (pcl::search::Search<PointT>::Ptr (new pcl::search::KdTree<PointT>));
@@ -66,15 +82,21 @@ void ObjectPlugin<PointT>::loadRepresentations() {
 	 pcl::PointCloud<pcl::FPFHSignature33>::Ptr features(new pcl::PointCloud<pcl::FPFHSignature33>);
 	 */
 
-	pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>* shot =
+	 // SHOT
+
+	 pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>* shot =
 			new pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>;
 	shot->setRadiusSearch(0.1);
 	typename pcl::Feature<PointT, pcl::SHOT1344>::Ptr feature_extractor(shot);
 	pcl::PointCloud<pcl::SHOT1344>::Ptr features(
 			new pcl::PointCloud<pcl::SHOT1344>);
 
+
+
+
 	/* initialize correspondence estimator */
 	//correspondence_estimator.reset(new FeatureMatches<pcl::FPFHSignature33>(keypoint_detector, feature_extractor));
+
 	correspondence_estimator.reset(
 			new FeatureMatches<pcl::SHOT1344>(keypoint_detector,
 					feature_extractor));
@@ -310,10 +332,20 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT>& object,
 	typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
 
 	Cloud transformed_cloud_opt_;
+
+
+
+	gtsam::Symbol obj_symbol = gtsam::Symbol('o', id);
+	gtsam::SharedDiagonal measurement_noise;
+	measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
+			gtsam::Vector_(3, 0.5, 0.5, 0.5));
+
+
 	for (it = cluster.begin(); it != cluster.end(); it++) {
 
 		gtsam::Symbol sym = it->first;
 		CloudPtr cloud = it->second;
+
 		boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
 		if (cloud_pose) {
 			CloudPtr map_cloud(new Cloud());
@@ -323,14 +355,95 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT>& object,
 			pcl::transformPointCloud(*cloud, *map_cloud, map_transform);
 			transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
 			pose_array.push_back(new_pose);
+
 		}
 	}
+
 
 	Eigen::Vector4f obj_centroid;
 	pcl::compute3DCentroid(transformed_cloud_opt_, obj_centroid);
 	std::cout << "Object " << id << " centroid is " << obj_centroid[0] << " "
 			<< obj_centroid[1] << " " << obj_centroid[2] << std::endl;
 
+	gtsam::Point3 object_centroid_pt(obj_centroid[0], obj_centroid[1],
+			obj_centroid[2]);
+
+
+
+	int just_added =0;
+	if (!mapper_->getSolution().exists(obj_symbol) && !object.landmark) {
+		obj_symbol.print("Added object");
+		std::cout << "Adding new object value" << std::endl;
+		mapper_->addNewValue(obj_symbol, object_centroid_pt);
+		object.landmark = true;
+		just_added=1;
+	}
+
+	for (it = cluster.begin(); it != cluster.end(); it++) {
+		gtsam::Symbol sym = it->first;
+		CloudPtr cloud = it->second;
+
+		boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
+		if (cloud_pose) {
+			gtsam::Pose3 new_pose = *cloud_pose;
+			Eigen::Vector4f measurement_centroid;
+			pcl::compute3DCentroid(*cloud, measurement_centroid);
+			const gtsam::Point3 measurement_pt(measurement_centroid[0],
+					measurement_centroid[1], measurement_centroid[2]);
+
+			if (object.factor_flag.at(sym) == -1) {
+				object.factor_flag.at(sym) = 1;
+			} else {
+				continue;
+			}
+
+
+			omnimapper::OmniMapperBase::NonlinearFactorPtr object_factor(
+					new gtsam::LandmarkTransformFactor<gtsam::Pose3,
+							gtsam::Point3>(sym, obj_symbol,
+							measurement_pt, measurement_noise));
+			mapper_->addFactor(object_factor);
+			obj_symbol.print("Added factor for ");
+		}
+	}
+
+	/*
+	 * Compute marginals of existing objects
+	 */
+
+    gtsam::Matrix3 covariance_mat = gtsam::zeros(3, 3);
+    int covSize =0;
+
+	gtsam::NonlinearFactorGraph graph = mapper_->getGraph();
+	gtsam::Values solution = mapper_->getSolution();
+	gtsam::Marginals marginals(graph, solution);
+	graph.print("Objects\n");
+	if (solution.exists(obj_symbol)) {
+		try{
+		obj_symbol.print("Finding marginal covariance for");
+		gtsam::Matrix mat = marginals.marginalCovariance(obj_symbol);
+		std::cout << "Marginal computed" << std::endl;
+		covariance_mat += mat;
+		}
+		catch(std::out_of_range){
+			std::cout << "Out of range: " << std::endl;
+			std::cout << "Do solution exists: " << solution.exists(obj_symbol) << std::endl;
+		//	graph.print("Out of range error:");
+
+			covariance_mat(0, 0) = 0.001;
+			covariance_mat(1, 1) = 0.001;
+			covariance_mat(2, 2) = 0.001;
+		//	return;
+		}
+
+	}
+	else {
+		covariance_mat(0, 0) = 0.001;
+		covariance_mat(1, 1) = 0.001;
+		covariance_mat(2, 2) = 0.001;
+		std::cout << "Covariance is " << covariance_mat << std::endl;
+	//	return;
+	}
 	//   reconstructSurface(transformed_cloud_opt_.makeShared(), id);
 	/*
 	 const gtsam::Rot3 rot;
@@ -342,28 +455,19 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT>& object,
 	 pcl::transformPointCloud(transformed_cloud_opt_, transformed_cloud_opt_,
 	 map_tform);
 	 */
-	gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1],
-			obj_centroid[2]);
-	gtsam::Symbol object_symbol = object.sym;
-
-	if(!object.landmark){
-	mapper_->addNewValue(object_symbol, centroid_pt);
-	object.landmark=true;
-		}
-	else{
-		mapper_->updateValue(object_symbol, centroid_pt);
-	}
 
 
 
+	std::cout << "Saving new model" << std::endl;
 	std::string output_file = "/home/siddharth/kinect/object_models/"
 			+ boost::lexical_cast<std::string>(id) + ".pcd";
 	pcl::io::savePCDFileASCII(output_file, transformed_cloud_opt_);
-
+std::cout << "Model saved" << std::endl;
+	//std::cout << "PCD file saved"
 	//generateObjectModel(object, obj_centroid, id);
 
 	std::pair<int, int> obj = correspondence_estimator->matchToDatabase(
-			transformed_cloud_opt_.makeShared(), pose_array, id);
+			transformed_cloud_opt_.makeShared(), pose_array, id, covariance_mat);
 
 	if (obj.first == -2) {
 		std::cout << "Didn't find a lot of features " << std::endl;
@@ -382,29 +486,73 @@ void ObjectPlugin<PointT>::recognizeObject(gtsam::Object<PointT>& object,
 			std::string input_file = "/home/siddharth/kinect/object_models/"
 					+ boost::lexical_cast<std::string>(obj.first) + ".pcd";
 			pcl::io::loadPCDFile<PointT>(input_file, matched_cloud);
+
 			Eigen::Vector4f matched_centroid;
 			pcl::compute3DCentroid(matched_cloud, matched_centroid);
-			const gtsam::Point3 matched_centroid_pt(matched_centroid[0],
+			gtsam::Point3 matched_centroid_pt(matched_centroid[0],
 					matched_centroid[1], matched_centroid[2]);
 
+			gtsam::Point3 zero_pt(0,0,0);
+			gtsam::Symbol object_symbol = object.sym;
 			gtsam::SharedDiagonal measurement_noise;
 			measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
-					gtsam::Vector_(3, 0.1, 0.1, 0.1));
+					gtsam::Vector_(3, 0.5, 0.5, 0.5));
 
-			for (it = cluster.begin(); it != cluster.end(); it++) {
 
-				gtsam::Symbol pose_sym = it->first;
+			gtsam::Symbol match_symbol = gtsam::Symbol('o', obj.first); // matching object symbol
 
-				omnimapper::OmniMapperBase::NonlinearFactorPtr object_factor(
-						new gtsam::LandmarkTransformFactor<gtsam::Pose3,
-								gtsam::Point3>(pose_sym, object_symbol,
-								matched_centroid_pt, measurement_noise));
-				mapper_->addFactor(object_factor);
-				printf("Adding factor!\n");
-			}
+					if (!mapper_->getSolution().exists(match_symbol)) {
+						mapper_->addNewValue(match_symbol, matched_centroid_pt);
+					}
+
+
+
+					omnimapper::OmniMapperBase::NonlinearFactorPtr object_object_factor(
+							new gtsam::BetweenFactor<gtsam::Point3>(obj_symbol, match_symbol,
+									zero_pt, measurement_noise));
+					mapper_->addFactor(object_object_factor);
+
+
 
 		}
-		// find the poses this object is visible from
+		else if (obj.first >= max_object_size && obj.first != id)// check if the matching object is the same object
+		{
+
+			// loop closure detection
+
+			Cloud matched_cloud;
+			std::string input_file = "/home/siddharth/kinect/object_models/"
+					+ boost::lexical_cast<std::string>(obj.first) + ".pcd";
+			pcl::io::loadPCDFile < PointT > (input_file, matched_cloud);
+
+			Eigen::Vector4f matched_centroid;
+			pcl::compute3DCentroid(matched_cloud, matched_centroid);
+			gtsam::Point3 matched_centroid_pt(matched_centroid[0],
+					matched_centroid[1], matched_centroid[2]);
+			gtsam::Point3 zero_pt(0,0,0);
+			gtsam::Symbol object_symbol = object.sym;
+			gtsam::SharedDiagonal measurement_noise;
+			measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
+					gtsam::Vector_(3, 0.5, 0.5, 0.5));
+
+			gtsam::Symbol match_symbol = gtsam::Symbol('o', obj.first); // matching object symbol
+			match_symbol.print("object matched\n");
+
+			if (!mapper_->getSolution().exists(match_symbol)) {
+				std::cout << "Adding new value" << std::endl;
+				mapper_->addNewValue(match_symbol, matched_centroid_pt);
+			}
+
+			// add between factor
+			std::cout << "Adding inbetween factor" << std::endl;
+			omnimapper::OmniMapperBase::NonlinearFactorPtr object_object_factor(
+					new gtsam::BetweenFactor<gtsam::Point3>(obj_symbol, match_symbol,
+							zero_pt, measurement_noise));
+			mapper_->addFactor(object_object_factor);
+
+
+
+		}
 
 	}
 
@@ -553,10 +701,8 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 	Eigen::Vector4f clust_centroid = Eigen::Vector4f::Zero();
 	Eigen::Vector4f min_pt;
 	Eigen::Vector4f max_pt;
-	EIGEN_ALIGN16 Eigen::Vector3f::Scalar
-	eigen_value;
-	EIGEN_ALIGN16 Eigen::Vector3f
-	eigen_vector;
+	EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value;
+	EIGEN_ALIGN16 Eigen::Vector3f eigen_vector;
 
 	for (int i = 0; i < clusters_base.size(); i++) {
 		// Detect nearby planes
@@ -720,6 +866,8 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 
 	if (cloud_pose && filtered_observations.size() != 0) {
 
+
+
 		/* Perform temporal segmentation on every new frame and match it to the
 		 * existing set of objects
 		 */
@@ -750,6 +898,7 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 				new_object.sym = best_symbol;
 				new_object.addObservation(pose_symbol, final_cloud[obj_cnt],
 						filtered_observation_indices[old_label]);
+				new_object.factor_flag.insert(std::pair<gtsam::Symbol, int>(pose_symbol, -1));
 				object_map.insert(
 						std::pair<gtsam::Symbol, gtsam::Object<PointT> >(
 								best_symbol, new_object));
@@ -760,7 +909,7 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 				object_map.at(best_symbol).addObservation(pose_symbol,
 						final_cloud[obj_cnt],
 						filtered_observation_indices[old_label]);
-
+				object_map.at(best_symbol).factor_flag.insert(std::pair<gtsam::Symbol, int>(pose_symbol, -1));
 			}
 
 		}
@@ -821,7 +970,8 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 
 					//	std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
 				} else if (intersection != 0) {
-					//recognizeObject(object_map.at(obj_symbol), obj_cnt);
+
+				//	pushIntoQueue(obj_symbol);
 
 					if (training_map.find(obj_symbol) == training_map.end()) {
 						training_map.insert(
@@ -862,6 +1012,13 @@ template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback(
 				<< std::endl;
 
 	}
+
+}
+
+template<typename PointT>
+void ObjectPlugin<PointT>::update(boost::shared_ptr<gtsam::Values>& vis_values,
+			boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
+{
 
 }
 

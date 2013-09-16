@@ -435,6 +435,7 @@ class OmniMapperROSNode
       boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr (&vis_plugin_);
       omb_.addOutputPlugin (vis_ptr);
 
+
       // Set up the TSDF Plugin
       if (use_tsdf_plugin_)
       {

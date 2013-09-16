@@ -52,19 +52,23 @@ namespace omnimapper
 
       void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
 
-      // The object descriptors stored in the database is loaded
-      void loadRepresentations();
-      void recognizeObject(gtsam::Object<PointT>& object, int id);
-      void objectRecognitionLoop();
-      void objectDiscoveryLoop();
-      float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
-		Eigen::Vector4f maxB);
+	// The object descriptors stored in the database is loaded
+	void loadRepresentations();
+	void recognizeObject(gtsam::Object<PointT>& object, int id);
+	void objectRecognitionLoop();
+	void objectDiscoveryLoop();
+	float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA,
+			Eigen::Vector4f minB, Eigen::Vector4f maxB);
 
-      gtsam::Symbol popFromQueue();
-      void pushIntoQueue(gtsam::Symbol sym);
-      void generateObjectModel(gtsam::Object<PointT> object,
+	gtsam::Symbol popFromQueue();
+	void pushIntoQueue(gtsam::Symbol sym);
+	void generateObjectModel(gtsam::Object<PointT> object,
 			Eigen::Vector4f obj_centroid, int id);
-      void reconstructSurface(CloudPtr cloud, int id);
+	void reconstructSurface(CloudPtr cloud, int id);
+
+	void update(boost::shared_ptr<gtsam::Values>& vis_values,
+			boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
+
 
 
     protected:
@@ -87,6 +91,8 @@ namespace omnimapper
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
       std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
+      std::map<gtsam::Symbol, gtsam::Symbol > omnimapper_graph;
+
       std::map<gtsam::Symbol, int > training_map;
       std::queue<gtsam::Symbol> train_queue;
       int max_object_size, max_current_size;

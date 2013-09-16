@@ -234,6 +234,7 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   // Find the pose keys related to this factor, adding this to the latest one
   const std::vector<gtsam::Key> keys = new_factor->keys ();
+
   int latest_pose_idx = -1;
   Time latest_pose_time = boost::posix_time::neg_infin; // Probably nobody has data earlier than this?
   printf ("addFactor: starting to look at keys\n");
@@ -248,6 +249,12 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
         latest_pose_time = symbol_lookup[keys[i]]->time ;
       }
     }
+    else if (gtsam::symbolChr (keys[i]) == 'o' && i==0)
+      {
+    	std::cout << "Adding object between factor" << std::endl;
+    	new_factors.push_back(new_factor);
+
+      }
   }
   
   // Add this factor to the pose chain at the latest pose
@@ -360,6 +367,26 @@ omnimapper::OmniMapperBase::getTimeAtPoseSymbol (gtsam::Symbol& sym, Time& t)
 {
   //boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   t = symbol_lookup[sym]->time;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+gtsam::NonlinearFactorGraph
+omnimapper::OmniMapperBase::getGraph ()
+{
+  //boost::mutex::scoped_lock (omnimapper_mutex_);
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  return (current_graph);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+gtsam::NonlinearFactorGraph
+omnimapper::OmniMapperBase::getGraphAndUncommitted ()
+{
+  //boost::mutex::scoped_lock (omnimapper_mutex_);
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  gtsam::NonlinearFactorGraph graph = current_graph;
+  graph.push_back(new_factors.begin(), new_factors.end());
+  return (graph);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

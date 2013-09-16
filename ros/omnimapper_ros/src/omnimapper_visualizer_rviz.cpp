@@ -4,6 +4,7 @@
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <tf2/LinearMath/btMatrix3x3.h>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -14,7 +15,9 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_pose_array_ (true),
     draw_pose_graph_ (true),
     draw_object_observation_cloud_ (true),
-    draw_object_observation_bboxes_ (true)
+    draw_object_observation_bboxes_ (true),
+    draw_pose_marginals_(true)
+
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -35,6 +38,9 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 
   draw_object_observation_cloud_srv_ = nh_.advertiseService ("draw_object_observations", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud, this);
+
+  pose_covariances_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/pose_covariances", 0);
+
 
 }
 
@@ -153,7 +159,16 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
   int obj_id = 0;
   
+  gtsam::Values::ConstFiltered<gtsam::Point3> object_filtered = current_solution.filter<gtsam::Point3>();
+  BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Point3>::KeyValuePair& key_value, object_filtered)
+   {
+
+   }
+
+
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
+  gtsam::Values::ConstFiltered<gtsam::Point3> point_filtered = current_solution.filter<gtsam::Point3>();
+
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
     geometry_msgs::Pose pose;
@@ -250,6 +265,33 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     mapper_graph.color.b = 0.0;
     mapper_graph.scale.x = 0.01;
     
+    visualization_msgs::Marker object_graph;
+    object_graph.header.frame_id = "/world";
+    object_graph.header.stamp = ros::Time ();
+    object_graph.ns = "object_lines";
+    object_graph.id = 0;
+    object_graph.type = visualization_msgs::Marker::LINE_LIST;
+    object_graph.action = visualization_msgs::Marker::ADD;
+    object_graph.color.a = 0.5;
+    object_graph.color.r = 0.0;
+    object_graph.color.g = 1.0;
+    object_graph.color.b = 0.0;
+    object_graph.scale.x = 0.01;
+
+    visualization_msgs::Marker object_object_graph;
+    object_object_graph.header.frame_id = "/world";
+    object_object_graph.header.stamp = ros::Time ();
+    object_object_graph.ns = "object_object_lines";
+    object_object_graph.id = 0;
+    object_object_graph.type = visualization_msgs::Marker::LINE_LIST;
+    object_object_graph.action = visualization_msgs::Marker::ADD;
+    object_object_graph.color.a = 1.0;
+    object_object_graph.color.r = 1.0;
+    object_object_graph.color.g = 0.0;
+    object_object_graph.color.b = 0.0;
+    object_object_graph.scale.x = 0.01;
+
+
     BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
     {
       // check for poses
@@ -276,12 +318,168 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
           mapper_graph.points.push_back (p1_msg);
           mapper_graph.points.push_back (p2_msg);
         }
+
+
+        if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'o'))
+        {
+          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
+          gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+
+          p1.print("Current Pose:\n");
+          p2.print("Current Object:\n");
+          geometry_msgs::Point p1_msg;
+          p1_msg.x = p1.x ();
+          p1_msg.y = p1.y ();
+          p1_msg.z = p1.z ();
+
+          geometry_msgs::Point p2_msg;
+          p2_msg.x = p2.x ();
+          p2_msg.y = p2.y ();
+          p2_msg.z = p2.z ();
+
+          object_graph.points.push_back (p1_msg);
+          object_graph.points.push_back (p2_msg);
+        }
+
+        if ((gtsam::symbolChr (keys[0]) == 'o') && (gtsam::symbolChr (keys[1]) == 'o'))
+            {
+              gtsam::Point3 p1 = current_solution.at<gtsam::Point3>(keys[0]);
+              gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+
+              p1.print("Object1:\n");
+              p2.print("Object2:\n");
+              geometry_msgs::Point p1_msg;
+              p1_msg.x = p1.x ();
+              p1_msg.y = p1.y ();
+              p1_msg.z = p1.z ();
+
+              geometry_msgs::Point p2_msg;
+              p2_msg.x = p2.x ();
+              p2_msg.y = p2.y ();
+              p2_msg.z = p2.z ();
+
+              object_object_graph.points.push_back (p1_msg);
+              object_object_graph.points.push_back (p2_msg);
+            }
       }
     }
     
     marker_array.markers.push_back (mapper_graph);
+    marker_array.markers.push_back (object_graph);
+   // marker_array.markers.push_back (object_object_graph);
     marker_array_pub_.publish (marker_array);
   }
+
+  // Optionally draw the pose marginals
+   if (draw_pose_marginals_)
+   {
+     gtsam::Marginals marginals (*vis_graph, *vis_values);
+
+     visualization_msgs::MarkerArray pose_cov_markers;
+
+		BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+		{
+			try
+			{
+				geometry_msgs::Pose pose;
+
+				gtsam::Symbol key_symbol (key_value.key);
+				gtsam::Pose3 sam_pose = key_value.value;
+				gtsam::Rot3 rot = sam_pose.rotation ();
+
+				gtsam::Matrix pose_cov = marginals.marginalCovariance (key_symbol);
+				gtsam::Matrix u, v;
+				gtsam::Vector s;
+				gtsam::svd (pose_cov, u, s, v);
+
+				btMatrix3x3 btm (u (0,0), u (0,1), u (0,2),
+						u (1,0), u (1,1), u (1,2),
+						u (2,0), u (2,1), u (2,2));
+				btQuaternion btq;
+				btm.getRotation (btq);
+
+				visualization_msgs::Marker pose_cov_marker;
+				pose_cov_marker.header.frame_id = "/world";
+				pose_cov_marker.header.stamp = ros::Time::now ();
+				pose_cov_marker.type = visualization_msgs::Marker::SPHERE;
+				pose_cov_marker.action = visualization_msgs::Marker::ADD;
+				pose_cov_marker.ns = "pose_covariances";
+				pose_cov_marker.id = key_symbol.index ();
+				pose_cov_marker.color.r = 0.0f;
+				pose_cov_marker.color.g = 0.0f;
+				pose_cov_marker.color.b = 1.0f;
+				pose_cov_marker.color.a = 0.05;
+				pose_cov_marker.pose.position.x = sam_pose.x ();
+				pose_cov_marker.pose.position.y = sam_pose.y ();
+				pose_cov_marker.pose.position.z = sam_pose.z ();
+				pose_cov_marker.pose.orientation.x = btq.x ();
+				pose_cov_marker.pose.orientation.y = btq.y ();
+				pose_cov_marker.pose.orientation.z = btq.z ();
+				pose_cov_marker.pose.orientation.w = btq.w ();
+				pose_cov_marker.scale.x = sqrt (s[0]);
+				pose_cov_marker.scale.y = sqrt (s[1]);
+				pose_cov_marker.scale.z = sqrt (s[2]);
+				//pose_cov_markers.markers.push_back (pose_cov_marker);
+			}
+			catch(std::out_of_range) {
+
+			}
+
+		}
+
+		BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Point3>::KeyValuePair& key_value, point_filtered)
+     {
+    	 try{
+       geometry_msgs::Pose pose;
+
+       gtsam::Symbol key_symbol (key_value.key);
+       gtsam::Point3 sam_point = key_value.value;
+       //gtsam::Rot3 rot = sam_pose.rotation ();
+
+       gtsam::Matrix pose_cov = marginals.marginalCovariance (key_symbol);
+       gtsam::Matrix u, v;
+       gtsam::Vector s;
+       gtsam::svd (pose_cov, u, s, v);
+
+       btMatrix3x3 btm (u (0,0), u (0,1), u (0,2),
+                        u (1,0), u (1,1), u (1,2),
+                        u (2,0), u (2,1), u (2,2));
+       btQuaternion btq;
+       btm.getRotation (btq);
+
+       visualization_msgs::Marker pose_cov_marker;
+       pose_cov_marker.header.frame_id = "/world";
+       pose_cov_marker.header.stamp = ros::Time::now ();
+       pose_cov_marker.type = visualization_msgs::Marker::SPHERE;
+       pose_cov_marker.action = visualization_msgs::Marker::ADD;
+       pose_cov_marker.ns = "pose_covariances";
+       pose_cov_marker.id = key_symbol.index ();
+       pose_cov_marker.color.r = 0.0f;
+       pose_cov_marker.color.g = 0.0f;
+       pose_cov_marker.color.b = 1.0f;
+       pose_cov_marker.pose.position.x = sam_point.x ();
+       pose_cov_marker.color.a = 0.05;
+       pose_cov_marker.pose.position.y = sam_point.y ();
+       pose_cov_marker.pose.position.z = sam_point.z ();
+       pose_cov_marker.pose.orientation.x = 0.0f;
+       pose_cov_marker.pose.orientation.y = 0.0f;
+       pose_cov_marker.pose.orientation.z = 0.0f;
+       pose_cov_marker.pose.orientation.w = 0.0f;
+       pose_cov_marker.scale.x = sqrt (s[0]);
+       pose_cov_marker.scale.y = sqrt (s[1]);
+       pose_cov_marker.scale.z = sqrt (s[2]);
+       pose_cov_markers.markers.push_back (pose_cov_marker);
+    	 }
+    	 catch(std::out_of_range){
+
+    	 }
+
+     }
+
+
+     pose_covariances_pub_.publish(pose_cov_markers);
+
+   }
 
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)

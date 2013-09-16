@@ -195,6 +195,16 @@ namespace omnimapper
       gtsam::Values 
       getSolution ();
 
+      /** \brief Returs the most recent graph */
+      gtsam::NonlinearFactorGraph
+      getGraph ();
+
+      /** \brief Returs the most recent graph augmented with any pending uncommitted graph*/
+      gtsam::NonlinearFactorGraph
+      getGraphAndUncommitted ();
+
+
+
       /** \brief Returns the most recent solution augmented with any pending uncommitted values */
       gtsam::Values
       getSolutionAndUncommitted ();

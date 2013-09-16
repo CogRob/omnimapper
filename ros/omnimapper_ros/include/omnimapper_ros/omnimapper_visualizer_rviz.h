@@ -59,6 +59,9 @@ namespace omnimapper
       // Publisher for visualization marker arrays
       ros::Publisher marker_array_pub_;
 
+
+      ros::Publisher pose_covariances_pub_;
+
       // Publishers for segmentation results of planes
       ros::Publisher segmented_plane_pub_;
       ros::Publisher segmented_label_cloud_pub_;
@@ -88,6 +91,8 @@ namespace omnimapper
       bool draw_object_observation_cloud_;
 
       bool draw_object_observation_bboxes_;
+
+      bool draw_pose_marginals_;
 
   };
 }

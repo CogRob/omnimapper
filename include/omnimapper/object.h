@@ -29,6 +29,7 @@ public:
 	// list of observations
 	std::map<gtsam::Symbol, CloudPtr> clusters_;
 	std::map<gtsam::Symbol, pcl::PointIndices> indices_;
+	std::map<gtsam::Symbol, int> factor_flag;
 	// optional label
 	std::string name;
 
