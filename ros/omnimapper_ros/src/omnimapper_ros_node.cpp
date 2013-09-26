@@ -12,6 +12,8 @@
 #include <omnimapper_ros/error_evaluation_plugin.h>
 #include <omnimapper_ros/ros_tf_utils.h>
 #include <omnimapper_ros/get_transform_functor_tf.h>
+#include <omnimapper_ros/canonical_scan_matcher_plugin.h>
+#include <omnimapper_ros/csm_visualizer.h>
 #include <omnimapper/time.h>
 
 #include <distortion_model/distortion_model_standalone.h>
@@ -36,6 +38,9 @@ typedef Cloud::ConstPtr CloudConstPtr;
 typedef pcl::PointCloud<pcl::Label> LabelCloud;
 typedef typename LabelCloud::Ptr LabelCloudPtr;
 typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
+
+//typedef boost::shared_ptr<sensor_msgs::LaserScan> lscanPtr;
+//typedef sensor_msgs::LaserScan lscan;
 
 template <typename PointT> 
 class OmniMapperROSNode
@@ -65,8 +70,14 @@ class OmniMapperROSNode
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
 
+    //CSM Plugin
+    omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan> csm_plugin_;
+
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
+
+    // CSM Visualization
+    omnimapper::CSMVisualizerRViz<sensor_msgs::LaserScan> csm_vis_plugin_;
 
     // TSDF Plugin
     omnimapper::TSDFOutputPlugin<PointT> tsdf_plugin_;
@@ -91,12 +102,14 @@ class OmniMapperROSNode
 
     // Subscribers
     ros::Subscriber pointcloud_sub_;
+    ros::Subscriber laserScan_sub_;
 
     ros::ServiceServer generate_tsdf_srv_;
 
     // Mapper config
     bool use_planes_;
     bool use_objects_;
+    bool use_csm_;
     bool use_icp_;
     bool use_occ_edge_icp_;
     bool use_tf_;
@@ -181,7 +194,9 @@ class OmniMapperROSNode
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
         object_plugin_ (&omb_),
+        csm_plugin_ (&omb_),
         vis_plugin_ (&omb_),
+        csm_vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         bag_error_plugin_ (&omb_),
         eval_plugin_ (&omb_),
@@ -192,6 +207,7 @@ class OmniMapperROSNode
       // Load some params
       n_.param ("use_planes", use_planes_, true);
       n_.param ("use_objects", use_objects_, true);
+      n_.param ("use_csm", use_csm_, true);
       n_.param ("use_icp", use_icp_, true);
       n_.param ("use_occ_edge_icp", use_occ_edge_icp_, true);
       n_.param ("use_tf", use_tf_, true);
@@ -401,6 +417,22 @@ class OmniMapperROSNode
         organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
       }
 
+      // Canonical Scan Matcher
+      if (use_csm_)
+      {
+        // Subscribe to laser scan
+        laserScan_sub_ = n_.subscribe ("/scan", 1, &OmniMapperROSNode::laserScanCallback, this);
+
+        boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan> > csm_ptr (&csm_plugin_);
+        csm_vis_plugin_.setCSMPlugin (csm_ptr);
+
+        // Install the visualizer
+        boost::shared_ptr<omnimapper::OutputPlugin> csm_vis_ptr (&csm_vis_plugin_);
+        omb_.addOutputPlugin (csm_vis_ptr);
+
+        boost::thread csm_thread(&omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan>::spin, &csm_plugin_);
+      }
+
       // Set the ICP Plugin on the visualizer
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr (&icp_plugin_);
       vis_plugin_.setICPPlugin (icp_ptr);
@@ -532,6 +564,24 @@ class OmniMapperROSNode
       std::cout << "cloudCallback: cb took: " << double (end_cb - start_cb) << std::endl;
     }
     
+    void
+    laserScanCallback (const sensor_msgs::LaserScanConstPtr& msg)
+    {
+      ROS_INFO ("OmniMapperROS got a cloud.");
+      //CloudPtr cloud (new Cloud ());
+      //pcl::fromROSMsg (*msg, *cloud);
+      //icp_plugin_.cloudCallback (cloud);
+      //boost::shared_ptr<sensor_msgs::LaserScan> lscanPtr1 (new sensor_msgs::LaserScan);
+
+      gtsam::Symbol sym;
+      boost::posix_time::ptime header_time = msg->header.stamp.toBoost ();
+      omb_.getPoseSymbolAtTime (header_time, sym);
+
+      boost::shared_ptr<sensor_msgs::LaserScan> lscanPtr1 (new sensor_msgs::LaserScan(*msg));
+      csm_plugin_.laserScanCallback (lscanPtr1);
+      publishMapToOdom ();
+    }
+
     bool
     generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req, omnimapper_ros::OutputMapTSDF::Response &res)
     {
@@ -543,18 +593,26 @@ class OmniMapperROSNode
     void
     evalTimerCallback (const ros::TimerEvent& e)
     {
-      ROS_INFO ("In timer callback!\n");
+      double cb_start = pcl::getTime ();
+      ROS_INFO ("In timer callback at %lf!\n", cb_start);
       
       // Check if everything is done processing
       bool ready = true;
       if (use_icp_ && !icp_plugin_.ready ())
+        ready = false;
+
+      if (use_occ_edge_icp_ && !edge_icp_plugin_.ready ())
         ready = false;
       
       if (ready && evaluation_file_idx_ < evaluation_pcd_files_.size ())
       {
         // Load next file
         CloudPtr cloud (new Cloud ());
+        double load_start = pcl::getTime ();
         pcl::io::loadPCDFile (evaluation_pcd_files_[evaluation_file_idx_], *cloud);
+        double load_end = pcl::getTime ();
+        std::cout << "Loading took: " << double(load_end - load_start) << std::endl;
+        
         ROS_INFO ("Processing cloud %d with %d points\n", evaluation_file_idx_, cloud->points.size ());
 
         // Convert it
@@ -578,6 +636,9 @@ class OmniMapperROSNode
         eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
         exit (0);
       }
+      
+      double cb_end = pcl::getTime ();
+      std::cout << "Timer callback took: " << double(cb_end - cb_start) << std::endl;
     }
 
     void

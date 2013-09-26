@@ -6,6 +6,7 @@
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/time.h>
 
 namespace omnimapper 
 {
@@ -109,6 +110,8 @@ namespace omnimapper
       return false;
     }
     
+    double spin_start = pcl::getTime ();
+
     // Get a shared_ptr to the latest cloud
     CloudConstPtr current_cloud;// (new Cloud ());
     {
@@ -248,6 +251,9 @@ namespace omnimapper
       last_processed_time_ = current_time;
     }
 
+    double spin_end = pcl::getTime ();
+    std::cout << "ICP Plugin took " << double(spin_end - spin_start) << std::endl;
+
     if (debug_)
       printf ("ICPPoseMeasurementPlugin: Added a pose!\n");
     return (true);
@@ -350,6 +356,8 @@ namespace omnimapper
   {
     printf ("Starting icp... Cloud1: %d Cloud2: %d\n", cloud1->points.size (), cloud2->points.size ());
     std::cout << "Cloud1 stamp: " << cloud1->header.stamp << " Cloud2 stamp: " << cloud2->header.stamp << std::endl;
+    if (cloud1->points.size () < 200 || cloud2->points.size () < 200)
+        return (false);
     //pcl::IterativeClosestPointNonLinear<PointT, PointT> icp;
     //pcl::IterativeClosestPoint<PointT, PointT> icp;
     if (use_gicp_)

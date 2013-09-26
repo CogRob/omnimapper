@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
+SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_C_FLAGS_RELEASE "-O3")
+
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
 #  Debug          : w/ debug symbols, w/o optimization
@@ -37,14 +41,19 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 rosbuild_gensrv()
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
-rosbuild_add_library(${PROJECT_NAME} src/ros_time_utils.cpp src/ros_tf_utils.cpp src/tf_pose_plugin.cpp src/omnimapper_visualizer_rviz.cpp src/tum_data_error_plugin.cpp src/get_transform_functor_tf.cpp src/error_evaluation_plugin.cpp)
+
+rosbuild_add_library(${PROJECT_NAME} 
+				     src/ros_time_utils.cpp 
+				     src/ros_tf_utils.cpp 
+				     src/tf_pose_plugin.cpp 
+				     src/omnimapper_visualizer_rviz.cpp 
+				     src/tum_data_error_plugin.cpp 
+				     src/get_transform_functor_tf.cpp 
+				     src/error_evaluation_plugin.cpp
+				     src/canonical_scan_matcher_plugin.cpp
+				      src/canonical_scan.cpp
+				       src/csm_math_functions.cpp 
+				       src/csm_visualizer.cpp)
 target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES})
 
 rosbuild_add_executable(time_test src/time_test.cpp)

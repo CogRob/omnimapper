@@ -4,6 +4,7 @@
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
 #include <pcl_conversions/pcl_conversions.h>
+//#include <btMatrix3x3.h>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -14,7 +15,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_pose_array_ (true),
     draw_pose_graph_ (true),
     draw_object_observation_cloud_ (true),
-    draw_object_observation_bboxes_ (true)
+    draw_object_observation_bboxes_ (true),
+    draw_pose_marginals_ (false)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -135,7 +137,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
   // Draw the cloud
-  CloudPtr aggregate_cloud (new Cloud ());
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+  //CloudPtr aggregate_cloud (new Cloud ());
   //aggregate_cloud->header.frame_id = "/world";
   //aggregate_cloud->header.stamp = ros::Time::now ();
   
@@ -190,7 +193,12 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
       pcl::transformPointCloud (*frame_cloud, *map_cloud, map_tform);
       sprintf (frame_name, "x_%d", key_symbol.index ());
       printf ("name: x_%d\n",key_symbol.index ());
-      (*aggregate_cloud) += (*map_cloud);
+
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_map_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+      copyPointCloud (*map_cloud, *rgb_map_cloud);
+
+      //(*aggregate_cloud) += (*map_cloud);
+      (*aggregate_cloud) += (*rgb_map_cloud);
     }
     
     // Optionally draw object observations
@@ -206,12 +214,12 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
         // Get the cluster
         pcl::copyPointCloud ((*(obs_clouds[i])), cluster);
 
-        for (int j = 0; j < cluster.points.size (); j++)
-        {
-          cluster.points[j].r = (cluster.points[j].r + red[i%6]) / 2;
-          cluster.points[j].g = (cluster.points[j].g + grn[i%6]) / 2;
-          cluster.points[j].b = (cluster.points[j].b + blu[i%6]) / 2;
-        }
+        // for (int j = 0; j < cluster.points.size (); j++)
+        // {
+        //   cluster.points[j].r = (cluster.points[j].r + red[i%6]) / 2;
+        //   cluster.points[j].g = (cluster.points[j].g + grn[i%6]) / 2;
+        //   cluster.points[j].b = (cluster.points[j].b + blu[i%6]) / 2;
+        // }
 
         // Move it to the map frame
         pcl::transformPointCloud (cluster, cluster, map_tform);
@@ -283,6 +291,64 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     marker_array_pub_.publish (marker_array);
   }
 
+  // Optionally draw the pose marginals
+  if (draw_pose_marginals_)
+  {
+    gtsam::Marginals marginals (*vis_graph, *vis_values);
+    
+    visualization_msgs::MarkerArray pose_cov_markers;
+
+    BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+    {
+      geometry_msgs::Pose pose;
+      
+      gtsam::Symbol key_symbol (key_value.key);
+      gtsam::Pose3 sam_pose = key_value.value;
+      gtsam::Rot3 rot = sam_pose.rotation ();
+      
+      gtsam::Matrix pose_cov = marginals.marginalCovariance (key_symbol);
+      gtsam::Matrix u, v;
+      gtsam::Vector s;
+      gtsam::svd (pose_cov, u, s, v);
+      
+      // btMatrix3x3 btm (u (0,0), u (0,1), u (0,2),
+      //                  u (1,0), u (1,1), u (1,2),
+      //                  u (2,0), u (2,1), u (2,2));
+      // btQuaternion btq;
+      // btm.getRotation (btq);
+
+      gtsam::Matrix rot_sub = gtsam::sub (u, 0, 3, 0, 3);
+
+      gtsam::Rot3 rot3 (rot_sub);
+      gtsam::Vector quat = rot3.quaternion ();
+      
+      visualization_msgs::Marker pose_cov_marker;
+      pose_cov_marker.header.frame_id = "/world";
+      pose_cov_marker.header.stamp = ros::Time::now ();
+      pose_cov_marker.type = visualization_msgs::Marker::SPHERE;
+      pose_cov_marker.action = visualization_msgs::Marker::ADD;
+      pose_cov_marker.ns = "pose_covariances";
+      pose_cov_marker.id = key_symbol.index ();
+      pose_cov_marker.color.r = 0.0f;
+      pose_cov_marker.color.g = 0.0f;
+      pose_cov_marker.color.b = 1.0f;
+      pose_cov_marker.color.a = 0.3;
+      pose_cov_marker.pose.position.x = sam_pose.x ();
+      pose_cov_marker.pose.position.x = sam_pose.y ();
+      pose_cov_marker.pose.position.x = sam_pose.z ();
+      pose_cov_marker.pose.orientation.x = quat[1];//btq.x ();
+      pose_cov_marker.pose.orientation.y = quat[2];//btq.y ();
+      pose_cov_marker.pose.orientation.z = quat[3];//btq.z ();
+      pose_cov_marker.pose.orientation.w = quat[0];//btq.w ();
+      pose_cov_marker.scale.x = sqrt (s[0]);
+      pose_cov_marker.scale.y = sqrt (s[1]);
+      pose_cov_marker.scale.z = sqrt (s[2]);
+      pose_cov_markers.markers.push_back (pose_cov_marker);
+      
+    }
+    
+  }
+  
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)
   {

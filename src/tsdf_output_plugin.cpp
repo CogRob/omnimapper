@@ -55,34 +55,42 @@ omnimapper::TSDFOutputPlugin<PointT>::TSDFOutputPlugin (omnimapper::OmniMapperBa
 template <typename PointT> void
 omnimapper::TSDFOutputPlugin<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
+  printf ("tsdf_plugin: updating latest solution!\n");
+  
   latest_solution_ = vis_values;
 }
 
 template <typename PointT> void
 omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
 {
-  printf ("starting generateTSDF\n");
+  printf ("tsdf_plugin: starting generateTSDF\n");
   // Make a TSDF
   cpu_tsdf::TSDFVolumeOctree::Ptr tsdf (new cpu_tsdf::TSDFVolumeOctree);
+  printf ("tsdf_plugin: created TSDFVolumeOctree\n");
   //tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
   //tsdf->setGridSize (30.0, 30.0, 30.0);
   tsdf->setGridSize (3.0, 3.0, 3.0);
-  tsdf->setResolution (1024, 1024, 1024);
+  //tsdf->setResolution (1024, 1024, 1024);
   //tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
   //tsdf->setResolution (4096, 4096, 4096);
+  tsdf->setGridSize (3000, 3000, 3000);
   Eigen::Affine3d tsdf_center = Eigen::Affine3d::Identity (); // Optionally offset the center
   tsdf->setGlobalTransform (tsdf_center);
   //tsdf->setDepthTruncationLimits ();
-  tsdf->setDepthTruncationLimits (0.3, 5.0);
-  tsdf->setWeightTruncationLimit (100.0);
+  //tsdf->setDepthTruncationLimits (0.3, 5.0);
+  //tsdf->setWeightTruncationLimit (100.0);
+  tsdf->setIntegrateColor (true);
   tsdf->reset (); // Initialize it to be empty
 
-  printf ("getting poses\n");
+  printf ("tsdf_plugin: initialized to empty\n");
+  
+
+  printf ("tsdf_plugin: getting poses\n");
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = latest_solution_->filter<gtsam::Pose3>();
   int pose_num = 0;
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
-    printf ("Adding cloud %d...\n", ++pose_num);
+    printf ("tsdf_plugin: Adding cloud %d...\n", ++pose_num);
     gtsam::Symbol key_symbol (key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
 
@@ -128,8 +136,8 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
   // Maching Cubes
   cpu_tsdf::MarchingCubesTSDFOctree mc;
   mc.setInputTSDF (tsdf);
-  mc.setColorByConfidence (true);
-  mc.setColorByRGB (false);
+  mc.setColorByConfidence (false);
+  mc.setColorByRGB (true);
   mc.setMinWeight (0.1);
   pcl::PolygonMesh mesh;
   mc.reconstruct (mesh);

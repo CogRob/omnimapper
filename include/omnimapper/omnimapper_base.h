@@ -167,7 +167,7 @@ namespace omnimapper
       void
       setInitialPose (gtsam::Pose3& init_pose);
 
-      /** \brief Sets a time fucntor to use for getting the current time. */
+      /** \brief Sets a time functor to use for getting the current time. */
       void
       setTimeFunctor (omnimapper::GetTimeFunctorPtr time_functor);
 

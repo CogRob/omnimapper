@@ -89,5 +89,7 @@ namespace omnimapper
 
       bool draw_object_observation_bboxes_;
 
+      bool draw_pose_marginals_;
+
   };
 }
