@@ -31,9 +31,6 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
-find_package(cloudcv REQUIRED)
-include_directories(${CLOUDCV_INCLUDE_DIRS})
-#link_directories(${CLOUDCV_LIB_DIRS})
 
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 find_package(CPUTSDF REQUIRED)
@@ -55,6 +52,9 @@ set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/plane_plugin.h
 					     include/omnimapper/object_plugin.h
 					     include/omnimapper/object.h
+					     include/omnimapper/object_segment_propagation.h
+					     include/omnimapper/object_recognition.h
+					     include/omnimapper/object_discovery.h
 					     include/omnimapper/transform_helpers.h
 					     include/omnimapper/no_motion_pose_plugin.h
 					     #include/omnimapper/cloud_registration_plugin.h
@@ -74,6 +74,9 @@ set(srcs
 					     src/plane_factor.cpp
 					     src/plane_plugin.cpp
 					     src/object_plugin.cpp
+                         src/object_segment_propagation.cpp
+                         src/object_recognition.cpp
+                         src/object_discovery.cpp
 					     #src/cloud_registration_plugin.cpp
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp
@@ -97,9 +100,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION sha
 #target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 
-#add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-#target_link_libraries(omnimapper_handheld omnimapper
-#${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
+target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
 
 #add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
 #target_link_libraries(omnimapper_handheld_pcd omnimapper

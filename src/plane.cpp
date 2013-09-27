@@ -164,6 +164,7 @@ namespace gtsam {
     : a_(a), b_(b), c_(c), d_(d), 
       hull_(hull), 
 #ifndef KILL_INLIERS
+
       inliers_(inliers), 
 #endif
       concave_(concave)
@@ -205,14 +206,12 @@ namespace gtsam {
 	       double c, double d,
 	       const pcl::PointCloud<PointT>& hull,
 	       const pcl::PointCloud<PointT>& inliers,
-	       const Eigen::Vector4f& centroid,
-	       const std_msgs::Header header)
+	       const Eigen::Vector4f& centroid)
     : a_(a), b_(b), c_(c), d_(d),
       hull_(hull),
       inliers_(inliers),
-      centroid_(centroid),
-      header_(header)
-  {
+      centroid_(centroid)
+      {
     concave_ = false;
   }
 
@@ -220,13 +219,11 @@ namespace gtsam {
   Plane<PointT>::Plane(double a, double b,
 	       double c, double d,
 	       const pcl::PointCloud<PointT>& hull,
-	       const pcl::PointCloud<PointT>& inliers,
-	       const std_msgs::Header header)
+	       const pcl::PointCloud<PointT>& inliers)
     : a_(a), b_(b), c_(c), d_(d),
       hull_(hull),
-      inliers_(inliers),
-      header_(header)
-  {
+      inliers_(inliers)
+   {
     concave_ = false;
   }
 
@@ -625,7 +622,6 @@ namespace gtsam {
     //tf::Transform posemap = Pose3ToTransform(pose);
     Eigen::Affine3f posemap = pose3ToTransform(pose);
     pcl::transformPointCloud(plane.hull_,meas_hull_in_map,posemap);
-    meas_hull_in_map.header.frame_id = "/map";
 
     pcl::PointCloud<PointT> meas_hull_on_map;
     pcl::ProjectInliers<PointT> proj1;

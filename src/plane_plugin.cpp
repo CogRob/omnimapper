@@ -40,7 +40,6 @@ namespace omnimapper
       std::vector<PointT, Eigen::aligned_allocator<PointT> > border = regions[i].getContour ();
       border_cloud.points = border;
       pcl::PointCloud<PointT> empty_inliers;
-      std_msgs::Header empty_header;
 
       // Make a Plane      
       if (use_transform)
@@ -67,13 +66,13 @@ namespace omnimapper
                 model_base[0], model_base[1], model_base[2], model_base[3]);
         pcl::PointCloud<PointT> border_base;
         pcl::transformPointCloud (border_cloud, border_base, sensor_to_base);
-        gtsam::Plane<PointT> plane (model_base[0], model_base[1], model_base[2], model_base[3], border_base, empty_inliers, centroid4f_base, empty_header);
+        gtsam::Plane<PointT> plane (model_base[0], model_base[1], model_base[2], model_base[3], border_base, empty_inliers, centroid4f_base);
         plane_measurements.push_back (plane);
       }
       else 
       { 
 
-      gtsam::Plane<PointT> plane (model[0], model[1], model[2], model[3], border_cloud, empty_inliers, centroid4f, empty_header);
+      gtsam::Plane<PointT> plane (model[0], model[1], model[2], model[3], border_cloud, empty_inliers, centroid4f);
       plane_measurements.push_back (plane);
       }
     }

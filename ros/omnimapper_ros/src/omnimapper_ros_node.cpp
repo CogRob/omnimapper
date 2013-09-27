@@ -139,6 +139,9 @@ class OmniMapperROSNode
     double plane_range_noise_;
     double plane_angular_noise_;
 
+    // Object Plugin Params
+    std::string object_database_location_;
+
     // Labelled Cloud Plugin Params
     bool use_label_cloud_;
 
@@ -251,6 +254,8 @@ class OmniMapperROSNode
       n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
       n_.param ("evaluation_ground_truth_txt_path", evaluation_ground_truth_txt_path_, std::string (""));
       n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
+      n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
+
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -371,7 +376,7 @@ class OmniMapperROSNode
 
       // Set up the object Plugin
       object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
-
+      object_plugin_.setObjectDatabaseLocation (object_database_location_);
       // Set up the feature extraction
       if (use_occ_edge_icp_)
       {

@@ -5,7 +5,7 @@
    	    <arg name="load_driver" value="false" />
    </include>
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen"  >
-      	    <param name="use_planes" value="true"/>
+      	    <param name="use_planes" value="false"/>
 	    <param name="use_icp" value="true"/>
 	    <param name="use_objects" value="true"/>
 	    <param name="use_occ_edge_icp" value="false"/>
@@ -35,6 +35,12 @@
 	    <param name="draw_pose_graph" value="true"/>
 	    <param name="draw_label_cloud" value="true"/>
 	    <param name="draw_clusters" value="true"/>
+	    <param name="evaluation_mode" value="false"/>
+	    <param name="evaluation_pcd_path" value="true"/>
+	    <param name="evaluation_associated_txt_path" value=""/>
+	    <param name="evaluation_ground_truth_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/groundtruth.txt"/>
+	    <param name="evaluation_output_trajectory_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/output.txt"/>
+        <param name="object_database_location" value="/home/siddharth/kinect" />
       </node>
 
 	 <!-- <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/> -->
