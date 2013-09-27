@@ -29,8 +29,6 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
-#include <cloudcv_ros/cloudcv_viz.h>
-
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -67,9 +65,6 @@ class OmniMapperROSNode
 
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
-
-    // CloudCV Plugin
-    CloudViz<PointT> cloud_vis_plugin_;
 
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
@@ -190,7 +185,6 @@ class OmniMapperROSNode
         edge_icp_plugin_ (&omb_),
         plane_plugin_ (&omb_),
         object_plugin_ (&omb_),
-        cloud_vis_plugin_(&omb_),
         vis_plugin_ (&omb_),
         tsdf_plugin_ (&omb_),
         bag_error_plugin_ (&omb_),
@@ -417,8 +411,8 @@ class OmniMapperROSNode
      typename  boost::function<void(std::vector<CloudPtr>, omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> > )> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2, _3);
        organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
 
-        boost::function<void(std::vector<CloudPtr>, std::map<int, int>, std::map < int, std::map<int, int> >, std::map<int, PoseVector>, int, omnimapper::Time)> object_vis_callback = boost::bind (&CloudViz<PointT>::callViz, &cloud_vis_plugin_, _1, _2, _3, _4, _5, _6);
-        object_plugin_.setObjectCallback(object_vis_callback);
+       boost::function<void(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map)> object_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback, &vis_plugin_, _1);
+       object_plugin_.setObjectCallback(object_vis_callback);
        // 	object_plugin_.test();
 
       }

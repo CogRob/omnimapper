@@ -41,6 +41,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
 
   pose_covariances_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/pose_covariances", 0);
 
+  object_modeled_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("modelled_objects", 0);
 
 }
 
@@ -690,6 +691,70 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<
   cloud_msg.header.stamp = ptime2rostime (t);
   segmented_clusters_pub_.publish (cloud_msg);
 }
+
+
+template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback (
+    std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map)
+{
+
+  typename std::map<gtsam::Symbol, gtsam::Object<PointT> >::iterator it;
+  typename std::map<gtsam::Symbol, CloudPtr>::iterator it_cluster;
+  typename std::multimap<int, gtsam::Symbol> top_objects;
+  typename std::multimap<int, gtsam::Symbol>::iterator obj_iterator;
+  pcl::PointCloud<pcl::PointXYZRGB> aggregate_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB> truncated_map_cloud;
+
+  for (it = object_map.begin (); it != object_map.end (); it++)
+  {
+    gtsam::Symbol sym = it->first;
+    gtsam::Object<PointT> object = it->second;
+    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+    top_objects.insert(std::pair<int, gtsam::Symbol>(cluster.size(), sym));
+  }
+
+
+  int object_count = 0;
+  for (obj_iterator = top_objects.begin (); obj_iterator != top_objects.end ();
+      obj_iterator++)
+  {
+    if(object_count == 20)break;
+    gtsam::Symbol sym = obj_iterator->second;
+    gtsam::Object<PointT> object = object_map.at(sym);
+    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+
+    for (it_cluster = cluster.begin (); it_cluster != cluster.end ();
+        it_cluster++)
+    {
+
+      gtsam::Symbol pose_sym = it_cluster->first;
+      CloudPtr cloud = it_cluster->second;
+      boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
+          pose_sym);
+      if (cloud_pose)
+      {
+        CloudPtr map_cloud (new Cloud());
+        gtsam::Pose3 new_pose = *cloud_pose;
+        Eigen::Matrix4f map_transform = new_pose.matrix ().cast<float> ();
+        pcl::transformPointCloud (*cloud, *map_cloud, map_transform);
+        pcl::copyPointCloud(*map_cloud, truncated_map_cloud);
+        aggregate_cloud = aggregate_cloud + truncated_map_cloud;
+
+      }
+    }
+
+    object_count++; //counter to process only top K objects
+  }
+
+  sensor_msgs::PointCloud2 cloud_msg;
+  pcl::toROSMsg(aggregate_cloud, cloud_msg);
+  cloud_msg.header.frame_id = "/world"; ///camera_rgb_optical_frame";
+  cloud_msg.header.stamp = ros::Time::now ();
+  object_modeled_pub_.publish(cloud_msg);
+
+
+}
+
+
 
 
 // template <typename PointT> void

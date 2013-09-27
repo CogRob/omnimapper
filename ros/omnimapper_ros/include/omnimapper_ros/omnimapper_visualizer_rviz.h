@@ -40,6 +40,8 @@ namespace omnimapper
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
 
+      /** \brief objectCallback draws the estimated objects computed by object_plugin */
+      void objectCallback(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map);
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;
@@ -69,6 +71,8 @@ namespace omnimapper
       
       // Publisher for object observations
       ros::Publisher object_observation_pub_;
+      ros::Publisher object_modeled_pub_;
+
 
       ros::ServiceServer draw_icp_clouds_srv_;
 

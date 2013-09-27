@@ -23,10 +23,6 @@ include_directories(../../3rdparty/distortion_model/include)
 include_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/include)
 link_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/build)
 
-find_package(cloudcv REQUIRED)
-include_directories(${CLOUDCV_INCLUDE_DIRS})
-#link_directories(${CLOUDCV_LIB_DIRS})
-
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -53,4 +49,4 @@ rosbuild_add_executable(time_test src/time_test.cpp)
 #target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam ${CLOUDCV_LIBRARIES}) 
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam) 

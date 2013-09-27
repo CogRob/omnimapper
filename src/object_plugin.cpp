@@ -38,9 +38,7 @@ namespace omnimapper
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback (
       boost::function<
-          void (std::vector<CloudPtr>, std::map<int, int>,
-              std::map<int, std::map<int, int> >, std::map<int, PoseVector>,
-              int, omnimapper::Time)>& fn)
+          void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn)
   {
     cloud_cv_callback_ = fn;
     cloud_cv_flag_ = true;
@@ -1088,10 +1086,7 @@ namespace omnimapper
       if (cloud_cv_flag_)
       {
         std::cout << "Inside Object Plugin" << std::endl;
-        cloud_cv_callback_ (segment_propagation_->final_map_cloud,
-            segment_propagation_->final_count,
-            object_recognition_->segment_object,
-            object_recognition_->pose_map, max_object_size, t);
+        cloud_cv_callback_ (object_map);
 
         //cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
       }

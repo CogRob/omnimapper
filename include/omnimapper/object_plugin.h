@@ -43,9 +43,7 @@ namespace omnimapper
 
       void setObjectCallback (
           boost::function<
-              void (std::vector<CloudPtr>, std::map<int, int>,
-                  std::map<int, std::map<int, int> >, std::map<int, PoseVector>,
-                  int, omnimapper::Time)>& fn);
+              void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn);
 
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
@@ -87,9 +85,7 @@ namespace omnimapper
       std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
       boost::function<
-          void (std::vector<CloudPtr>, std::map<int, int>,
-              std::map<int, std::map<int, int> >, std::map<int, PoseVector>,
-              int, omnimapper::Time)> cloud_cv_callback_;
+          void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)> cloud_cv_callback_;
 
       boost::shared_ptr<SegmentPropagation<PointT> > segment_propagation_;
       boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;
