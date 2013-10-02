@@ -38,8 +38,13 @@ typedef boost::posix_time::ptime Time;
 // Test of Intel Threading Building Blocks Library for organized feature extraction
 // Initial pipeline: Grabber::<Null, CloudPtr> -> NormalEstimation<CloudPtr, <CloudPtr, NormalCloudPtr> > -> OrganizedMultiPlane < <CloudPtr, NormalCloudPtr>, <
 
+// NOTE: Currently we assume that each of the pipeline stages (e.g. normals) may be published and used by a subsequent process.
+//       This implies that we must allocate new memory for each of these, as is done currently
+//       If this is not the case, we could instead use a ring-buffer (sized for pipeline length) to save on malloc overhead.
+
 
 // This is the normal estimation task.  Input is a raw point cloud, output is the normals.
+// Contains a normal cloud for the current computation, and a normal cloud for the most recently published stage.
 template <typename PointT>
 class NormalEstimationTask
 {
@@ -53,20 +58,44 @@ class NormalEstimationTask
     NormalCloudPtr normals_;
 
   public:
-    NormalEstimationTask (boost::shared_ptr<pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> >& ne) 
-      : ne_ (ne),
+    NormalEstimationTask () 
+      : ne_ (new pcl::IntegralImageNormalEstimation<PointT, pcl::Normal>()),
         normals_ (new NormalCloud ())
     {
-      ne_.setNormalEstimationMethod (ne_.COVARIANCE_MATRIX);
-      ne_.setMaxDepthChangeFactor (0.02f);
-      ne_.setNormalSmoothingSize (20.0f);
+      //ne_->setNormalEstimationMethod (ne_->COVARIANCE_MATRIX);
+      ne_->setNormalEstimationMethod (ne_->SIMPLE_3D_GRADIENT);
+      ne_->setMaxDepthChangeFactor (0.02f);
+      ne_->setNormalSmoothingSize (20.0f);
+    }
+
+    NormalEstimationTask (const NormalEstimationTask<PointT>& f) 
+      : ne_ (f.ne_),
+        normals_ (f.normals_)
+    {
     }
     
-    void
-    setCloud (CloudPtr& cloud)
+    boost::tuple<CloudConstPtr, NormalCloudPtr>
+    operator () (CloudConstPtr cloud) const
     {
-      ne_.setInputCloud (cloud);
+      // Allocate a new set of normals for this cloud
+      //normals_ = NormalCloudPtr(new NormalCloud ());
+      
+      NormalCloudPtr normals (new NormalCloud ());
+
+      if (cloud->points.size () < 100)
+        return (boost::make_tuple (cloud, normals));
+      
+      ne_->setInputCloud (cloud);
+      ne_->compute (*normals);
+      printf ("Computed normals!\n");
+      return (boost::make_tuple (cloud, normals));
     }
+
+    // void
+    // setCloud (CloudPtr& cloud)
+    // {
+    //   ne_.setInputCloud (cloud);
+    // }
 
     // tbb::task* 
     // execute ()
@@ -81,11 +110,16 @@ class NormalEstimationTask
 
 // This is the Organized Multi Plane Segmentation task.  Input is a point cloud, output is segments, labels, etc.  As a tuple.
 template <typename PointT>
-class PlaneSegmentationTask : public tbb::task
+class PlaneSegmentationTask
 {
   protected:
-    pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps_;
+    boost::shared_ptr<pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> > mps_;
   public:
+    PlaneSegmentationTask ()
+      : mps_ (new pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label>())
+    {
+    }
+
     tbb::task* execute ()
     {
         
@@ -198,10 +232,12 @@ class PublishTask
     PublishTask (const PublishTask<PointT>& f) 
     {}
     
+    //void
+    //operator () (CloudConstPtr cloud) const
     void
-    operator () (CloudConstPtr cloud) const
+    operator () (boost::tuple<CloudConstPtr, NormalCloudPtr> tuple) const
     {
-      printf ("Got cloud with %d\n", cloud->points.size ());
+      printf ("Got cloud with %d\n", tuple.get<0>()->points.size ());
       double time = pcl::getTime ();
       std::cout << "Time :" << double(time - prev_time) << std::endl;
       prev_time = time;
@@ -235,25 +271,28 @@ main (int argc, char** argv)
   // cloud1.reset ();
   // printf ("cloud2: %lf\n", cloud2->points[0].z);//1.0
 
-  //tbb::pipeline pipeline;
+  // Get clouds from somewhere -- in this case, an OpenNI Sensor
   GrabberTask<pcl::PointXYZRGBA> grabber_task;
-  //pipeline.add_filter (grabber_task);
 
+  // Compute Normals
+  NormalEstimationTask<pcl::PointXYZRGBA> normal_estimation_task;
+
+  // Segment Planes
+  //OrganizedMultiPlaneSegmentationTask<pcl::PointXYZRGBA> plane_segmentation_task;
+  
+  // Cluster the rest
+  //EuclideanClusteringTask<pcl::PointXYZRGBA> euclidean_clustering_task;
+
+  // Publish Result
   PublishTask<pcl::PointXYZRGBA> publish_task;
 
+  
   tbb::filter_t<void, CloudConstPtr> grabber_filter (tbb::filter::serial_in_order, grabber_task);
-  tbb::filter_t<CloudConstPtr, void> publish_filter (tbb::filter::serial_in_order, publish_task);
+  tbb::filter_t<CloudConstPtr, boost::tuple<CloudConstPtr, NormalCloudPtr> > normal_estimation_filter (tbb::filter::serial_in_order, normal_estimation_task);
+  tbb::filter_t<boost::tuple<CloudConstPtr, NormalCloudPtr>, void> publish_filter (tbb::filter::serial_in_order, publish_task);
 
-  tbb::filter_t<void, void> filter_chain = grabber_filter & publish_filter;
+  tbb::filter_t<void, void> filter_chain = grabber_filter & normal_estimation_filter & publish_filter;
   tbb::parallel_pipeline (3, filter_chain);
-  
-
-  // tbb::parallel_pipeline (3,
-  //                         tbb::make_filter<void, CloudPtr> (tbb::filter::serial_in_order, grabber_task ()) &
-  //                         tbb::make_filter<CloudPtr, void> (tbb::filter::serial_in_order, publish_task ())
-  //                         );
-  
-  
   
   return (0);
 }

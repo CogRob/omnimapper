@@ -109,3 +109,6 @@ target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES})
 
 add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
 target_link_libraries(organized_feature_extraction_demo omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6)
+
+add_executable(tbb_test src/tbb_test.cpp)
+target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES} tbb)
