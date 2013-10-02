@@ -11,21 +11,15 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), object_discovery_ (), recompute_flag_ (
-          1), object_database_location_()
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), recompute_flag_ (
+          1)
   {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 
-    loadRepresentations ();
-    std::cout << "Loaded representations " << std::endl;
-    segment_propagation_.reset (new SegmentPropagation<PointT> ());
-    segment_propagation_->setActiveLabelIndices (max_object_size);
-    std::cout << "Active label indices set" << std::endl;
-
     boost::thread object_recognition_thread (
         &ObjectPlugin<PointT>::objectRecognitionLoop, this);
-    //     boost::thread object_discovery_thread (&ObjectPlugin<PointT>::objectDiscoveryLoop, this);
+
 
   }
 
@@ -34,6 +28,22 @@ namespace omnimapper
   ObjectPlugin<PointT>::~ObjectPlugin ()
   {
   }
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template<typename PointT> void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(std::string object_database_location){
+    object_database_location_ = object_database_location;
+    std::cout << "Object database location set: " << object_database_location_
+        << std::endl;
+    loadRepresentations ();
+    std::cout << "Loaded representations " << std::endl;
+    segment_propagation_.reset (new SegmentPropagation<PointT> ());
+    segment_propagation_->setActiveLabelIndices (max_object_size);
+    std::cout << "Active label indices set" << std::endl;
+
+    object_discovery_.reset (new ObjectDiscovery<PointT> ());
+    object_discovery_->loadRepresentations(object_database_location_);
+    // boost::thread object_discovery_thread (&ObjectPlugin<PointT>::objectDiscoveryLoop, this);
+     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback (
@@ -102,6 +112,7 @@ namespace omnimapper
     std::cout << "Descriptor Loaded " << std::endl;
     /* load object descriptors */
 
+    std::cout << "Object location: " << object_database_location_ << std::endl;
     int max_segment = object_recognition_->loadDatabase (object_database_location_); //home/siddharth/kinect
 
     max_object_size = max_segment + 1;
@@ -669,9 +680,9 @@ namespace omnimapper
 
     std::string discover_dir = object_database_location_ +"/object_models";
     std::cout << "Discovering objects " << std::endl;
-    object_discovery_.createFinalCloud (discover_dir);
-    object_discovery_.createGraph ();
-    object_discovery_.mergeClouds ();
+    object_discovery_->createFinalCloud (discover_dir);
+    object_discovery_->createGraph ();
+    object_discovery_->mergeClouds ();
     boost::this_thread::sleep (boost::posix_time::milliseconds (10));
 
   }

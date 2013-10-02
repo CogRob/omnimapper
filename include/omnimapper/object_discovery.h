@@ -19,7 +19,7 @@ class ObjectDiscovery
 
 
     void createGraph();
-    void loadRepresentations();
+    void loadRepresentations(std::string dir);
     void createFinalCloud(std::string dir);
     void reconstructSurface(typename pcl::PointCloud<PointT>::Ptr merged, int id);
     float  computeJaccardIndex(

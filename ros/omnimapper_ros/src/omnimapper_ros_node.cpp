@@ -176,6 +176,9 @@ class OmniMapperROSNode
     std::string evaluation_output_trajectory_txt_path_;
     ros::Timer eval_timer_;
 
+    // Handheld
+    bool use_handheld_;
+
     OmniMapperROSNode ()
       : n_ ("~"),
         omb_ (),
@@ -194,6 +197,7 @@ class OmniMapperROSNode
         tf_listener_ (ros::Duration (500.0))
     {
       // Load some params
+      n_.param ("use_handheld", use_handheld_, false);
       n_.param ("use_planes", use_planes_, true);
       n_.param ("use_objects", use_objects_, true);
       n_.param ("use_icp", use_icp_, true);
@@ -298,8 +302,11 @@ class OmniMapperROSNode
       }
 
       // Add the TF Pose Plugin
+
+      if(!use_handheld_){
       tf_plugin_.setOdomFrameName (odom_frame_name_);
       tf_plugin_.setBaseFrameName (base_frame_name_);
+      }
       tf_plugin_.setRotationNoise (tf_trans_noise_);//0.1
       tf_plugin_.setRollNoise (tf_roll_noise_);
       tf_plugin_.setPitchNoise (tf_pitch_noise_);
@@ -370,7 +377,7 @@ class OmniMapperROSNode
 
       // Set up the object Plugin
       object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
-      object_plugin_.setObjectDatabaseLocation (object_database_location_);
+      object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
       // Set up the feature extraction
       if (use_occ_edge_icp_)
       {

@@ -657,7 +657,8 @@ PoseVector ObjectRecognition<FeatureType>::loadPoseArray(
 
 template<typename FeatureType>
 int ObjectRecognition<FeatureType>::loadDatabase(std::string dir) {
-	base_directory_ = dir;
+	std::cout << "load directory_ " << dir << std::endl;
+  base_directory_ = dir;
 	feature_directory_ = base_directory_ + "/object_templates";
 	pose_directory_ = base_directory_ + "/pose_templates";
 	model_directory_ = base_directory_ + "/object_models";

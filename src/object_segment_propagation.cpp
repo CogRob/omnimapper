@@ -924,6 +924,9 @@ typename SegmentPropagation<PointT>::CloudPtrVector SegmentPropagation<
     std::cout << "[propagating labels] Map size :  " << final_map_cloud.size ()
         << " CurrentCloudPtrVector size: " << label.size () << std::endl;
 
+    // TODO: final_map_cloud is an unoptimized cloud estimated using the poses till that
+    // time, experiment with propagation against the optimized cloud
+
     final_label = propagateLabels (final_map_cloud, transformed_label);
     final_untransformed_label = findFinalLabels (final_neighbors, label);
     prev_cloud_vec_ = final_label;

@@ -71,10 +71,8 @@ namespace omnimapper
           boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void recreateObjectModels ();
 
-      void setObjectDatabaseLocation(std::string object_database_location){
-        object_database_location_ = object_database_location;
-      }
-
+      void setAndLoadObjectDatabaseLocation (
+          std::string object_database_location);
 
     protected:
       bool cloud_cv_flag_, recompute_flag_;
@@ -89,7 +87,7 @@ namespace omnimapper
 
       boost::shared_ptr<SegmentPropagation<PointT> > segment_propagation_;
       boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;
-      ObjectDiscovery<pcl::PointXYZRGBA> object_discovery_;
+      boost::shared_ptr<ObjectDiscovery<pcl::PointXYZRGBA> > object_discovery_;
 
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;

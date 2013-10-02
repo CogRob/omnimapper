@@ -5,10 +5,11 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 template<typename PointT>
-ObjectDiscovery<PointT>::ObjectDiscovery() {
+ObjectDiscovery<PointT>::ObjectDiscovery(): max_current_size(0),
+max_object_size(0){
 
-	loadRepresentations();
 }
+
 
 template<typename PointT>
 float ObjectDiscovery<PointT>::computeJaccardIndex(Eigen::Vector4f min_pt_1,
@@ -45,7 +46,7 @@ float ObjectDiscovery<PointT>::computeJaccardIndex(Eigen::Vector4f min_pt_1,
 }
 
 template<typename PointT>
-void ObjectDiscovery<PointT>::loadRepresentations() {
+void ObjectDiscovery<PointT>::loadRepresentations(std::string object_location) {
 
 	std::cout << "Inside loadDesc" << std::endl;
 	pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D = new pcl::SIFTKeypoint<
@@ -74,8 +75,7 @@ void ObjectDiscovery<PointT>::loadRepresentations() {
 
 	/* load object descriptors */
 
-	int max_segment = correspondence_estimator->loadDatabase(
-			"/home/siddharth/kinect/");
+	int max_segment = correspondence_estimator->loadDatabase(object_location);
 
 	max_object_size = max_segment + 1;
 	max_current_size = max_object_size;
