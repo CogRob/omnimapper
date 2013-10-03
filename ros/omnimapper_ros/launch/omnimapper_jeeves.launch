@@ -7,7 +7,7 @@
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen"  >
       	    <param name="use_planes" value="false"/>
 	    <param name="use_icp" value="true"/>
-	    <param name="use_objects" value="true"/>
+	    <param name="use_objects" value="false"/>
 	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="true"/>
 	    <param name="use_error_plugin" value="false"/>
