@@ -18,7 +18,7 @@
 #include <pcl/point_types.h>
 //#include <omnimapper_msgs/PlaneInfos.h>
 //#include <omnimapper_msgs/WallFeature.h>
-#include <sensor_msgs/PointCloud2.h>
+//#include <pcl/PCLHeader.h>
 //#include <gtpointcloud/pointcloud_helpers.h>
 //#include <omnimapper/math_functions.h>
 //#include <mspacegtsam/MathUtils.h>
@@ -32,6 +32,7 @@
 
 namespace boost{
   namespace serialization {
+
     template <class Archive>
       void serialize(Archive& ar, pcl::PointXYZ& pt, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(pt.x);
@@ -51,7 +52,6 @@ namespace gtsam {
   class Plane: public DerivedValue<Plane<PointT> > {
   private:
     //double theta_, phi_,rho_;
-    std_msgs::Header header_;
     double a_, b_, c_, d_;
     pcl::PointCloud<PointT> hull_;
     pcl::PointCloud<PointT> inliers_;
@@ -89,14 +89,12 @@ namespace gtsam {
 	  double c, double d,
 	  const pcl::PointCloud<PointT>& hull,
 	  const pcl::PointCloud<PointT>& inliers,
-	  const Eigen::Vector4f& centroid,
-	  const std_msgs::Header header);
+	  const Eigen::Vector4f& centroid);
 
     Plane(double a, double b,
 	  double c, double d,
 	  const pcl::PointCloud<PointT>& hull,
-	  const pcl::PointCloud<PointT>& inliers,
-	  const std_msgs::Header header);
+	  const pcl::PointCloud<PointT>& inliers);
       
       PointT MakePoint(float x, float y, float z);
 
@@ -173,7 +171,7 @@ namespace gtsam {
 	printf("f\n");
 	ar & boost::serialization::make_nvp("hull", hull_.points);
 	printf("g\n");
-      }
+     }
   };
 
   /** print using member print function, currently used by LieConfig */

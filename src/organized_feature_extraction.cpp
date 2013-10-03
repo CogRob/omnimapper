@@ -280,7 +280,7 @@ namespace omnimapper
               Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
               for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
               {
-                cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp);
+                cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp, stage5_cluster_indices_);
               }
             }
           }
@@ -397,6 +397,7 @@ namespace omnimapper
     //Segment Objects
     //typename pcl::PointCloud<PointT>::CloudVectorType clusters;
     stage5_clusters_.clear ();
+    stage5_cluster_indices_.clear();
 
     stage5_labels_ = LabelCloudPtr(new LabelCloud ());
     //pcl::copyPointCloud (*stage4_labels_, *stage5_labels_);
@@ -447,6 +448,7 @@ namespace omnimapper
         //clusters.push_back (cluster);
         
         stage5_clusters_.push_back (cluster);
+        stage5_cluster_indices_.push_back(euclidean_label_indices[i]);
         }    
     }
     
@@ -649,7 +651,7 @@ namespace omnimapper
   }
 
   template <typename PointT> void
-  OrganizedFeatureExtraction<PointT>::setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time)> fn)
+  OrganizedFeatureExtraction<PointT>::setClusterCloudCallback (boost::function<void(std::vector<CloudPtr>, Time,  boost::optional<std::vector<pcl::PointIndices> > )> fn)
   {
     cluster_cloud_callbacks_.push_back (fn);
   }

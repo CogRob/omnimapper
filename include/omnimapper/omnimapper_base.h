@@ -38,6 +38,11 @@
 
 #pragma once
 
+// STLs
+#include <map>
+#include <vector>
+#include <list>
+
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Point2.h>
@@ -65,6 +70,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/locks.hpp>
 
+
 typedef pcl::PointXYZRGBA PointT;
 
 namespace omnimapper
@@ -85,7 +91,7 @@ namespace omnimapper
       typedef boost::shared_ptr<omnimapper::PosePlugin> PosePluginPtr;
       typedef boost::shared_ptr<omnimapper::OutputPlugin> OutputPluginPtr;
       //typedef boost::posix_time::ptime Time;
-      //typedef boost::posix_time::duration Duration;
+      //typedef boost::posix_time::duration Duration;lin
 
     protected:
       // An ISAM2 instance
@@ -132,6 +138,7 @@ namespace omnimapper
       // Map timestamps to pose symbols
       //std::map<Time, gtsam::Symbol> symbol_times;
       // A list of measurement plugins
+
       std::vector<omnimapper::MeasurementPlugin> measurement_plugins;
       // A list of pose plugins.  The first plugin in the list will add the pose to the graph and specify the initialization point, while the rest will only add factors.
       std::vector<PosePluginPtr> pose_plugins;
@@ -194,6 +201,16 @@ namespace omnimapper
       /** \brief Returns the most recent solution */
       gtsam::Values 
       getSolution ();
+
+      /** \brief Returs the most recent graph */
+      gtsam::NonlinearFactorGraph
+      getGraph ();
+
+      /** \brief Returs the most recent graph augmented with any pending uncommitted graph*/
+      gtsam::NonlinearFactorGraph
+      getGraphAndUncommitted ();
+
+
 
       /** \brief Returns the most recent solution augmented with any pending uncommitted values */
       gtsam::Values
