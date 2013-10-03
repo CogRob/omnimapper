@@ -1,5 +1,65 @@
---- pcl_conversions_orig.h	2013-07-22 18:57:26.796000000 -0400
-+++ pcl_conversions.h	2013-09-03 15:00:38.626488226 -0400
+diff -rupN pcl_conversions_orig/CHANGELOG.rst pcl_conversions/CHANGELOG.rst
+--- pcl_conversions_orig/CHANGELOG.rst	2013-10-03 17:33:53.692000000 -0400
++++ pcl_conversions/CHANGELOG.rst	2013-07-22 18:57:26.796000000 -0400
+@@ -2,10 +2,6 @@
+ Changelog for package pcl_conversions
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-0.1.5 (2013-08-27)
+-------------------
+-* Use new pcl rosdep keys (libpcl-all and libpcl-all-dev)
+-
+ 0.1.4 (2013-07-13)
+ ------------------
+ * Fixup dependencies and CMakeLists.txt:
+Binary files pcl_conversions_orig/.git/index and pcl_conversions/.git/index differ
+diff -rupN pcl_conversions_orig/.git/logs/HEAD pcl_conversions/.git/logs/HEAD
+--- pcl_conversions_orig/.git/logs/HEAD	2013-10-03 17:33:53.688000000 -0400
++++ pcl_conversions/.git/logs/HEAD	2013-07-22 18:57:26.788000000 -0400
+@@ -1 +1 @@
+-0000000000000000000000000000000000000000 5b52fedea20b383f19e82e1fcc892e7187782476 Alex Trevor <atrevor@gmail.com> 1380836033 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
++0000000000000000000000000000000000000000 9e568f8d8be5998115d1c5bdc7d8f06e183deb5f Alex Trevor <atrevor@gmail.com> 1374533846 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
+diff -rupN pcl_conversions_orig/.git/logs/refs/heads/hydro-devel pcl_conversions/.git/logs/refs/heads/hydro-devel
+--- pcl_conversions_orig/.git/logs/refs/heads/hydro-devel	2013-10-03 17:33:53.688000000 -0400
++++ pcl_conversions/.git/logs/refs/heads/hydro-devel	2013-07-22 18:57:26.788000000 -0400
+@@ -1 +1 @@
+-0000000000000000000000000000000000000000 5b52fedea20b383f19e82e1fcc892e7187782476 Alex Trevor <atrevor@gmail.com> 1380836033 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
++0000000000000000000000000000000000000000 9e568f8d8be5998115d1c5bdc7d8f06e183deb5f Alex Trevor <atrevor@gmail.com> 1374533846 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
+diff -rupN pcl_conversions_orig/.git/logs/refs/remotes/origin/HEAD pcl_conversions/.git/logs/refs/remotes/origin/HEAD
+--- pcl_conversions_orig/.git/logs/refs/remotes/origin/HEAD	2013-10-03 17:33:53.688000000 -0400
++++ pcl_conversions/.git/logs/refs/remotes/origin/HEAD	2013-07-22 18:57:26.788000000 -0400
+@@ -1 +1 @@
+-0000000000000000000000000000000000000000 5b52fedea20b383f19e82e1fcc892e7187782476 Alex Trevor <atrevor@gmail.com> 1380836033 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
++0000000000000000000000000000000000000000 9e568f8d8be5998115d1c5bdc7d8f06e183deb5f Alex Trevor <atrevor@gmail.com> 1374533846 -0400	clone: from https://github.com/ros-perception/pcl_conversions.git
+Binary files pcl_conversions_orig/.git/objects/pack/pack-5d27d1de3ebbefc2ad19474400581bbf291e6fc5.idx and pcl_conversions/.git/objects/pack/pack-5d27d1de3ebbefc2ad19474400581bbf291e6fc5.idx differ
+Binary files pcl_conversions_orig/.git/objects/pack/pack-5d27d1de3ebbefc2ad19474400581bbf291e6fc5.pack and pcl_conversions/.git/objects/pack/pack-5d27d1de3ebbefc2ad19474400581bbf291e6fc5.pack differ
+Binary files pcl_conversions_orig/.git/objects/pack/pack-ed6e025274452aba74d77103b6081bf28d914277.idx and pcl_conversions/.git/objects/pack/pack-ed6e025274452aba74d77103b6081bf28d914277.idx differ
+Binary files pcl_conversions_orig/.git/objects/pack/pack-ed6e025274452aba74d77103b6081bf28d914277.pack and pcl_conversions/.git/objects/pack/pack-ed6e025274452aba74d77103b6081bf28d914277.pack differ
+diff -rupN pcl_conversions_orig/.git/packed-refs pcl_conversions/.git/packed-refs
+--- pcl_conversions_orig/.git/packed-refs	2013-10-03 17:33:53.684000000 -0400
++++ pcl_conversions/.git/packed-refs	2013-07-22 18:57:26.784000000 -0400
+@@ -1,11 +1,9 @@
+ # pack-refs with: peeled 
+-96c138d575c6d9dc33ab86a8a69c0879a4e747aa refs/remotes/origin/fuerte-devel
+ e150fee0a663056f15d33781332a7fbe4a0c36ae refs/remotes/origin/groovy-devel
+-5b52fedea20b383f19e82e1fcc892e7187782476 refs/remotes/origin/hydro-devel
++9e568f8d8be5998115d1c5bdc7d8f06e183deb5f refs/remotes/origin/hydro-devel
+ e150fee0a663056f15d33781332a7fbe4a0c36ae refs/tags/0.0.1
+ f9b19964989c154662810a890ddcdffb51e84f00 refs/tags/0.1.0
+ b2eea447810004c4cbe8bc8bd4c0b25b5bbb92e6 refs/tags/0.1.1
+ d4bc987feddbe47d89764a576b3c053f7d1373bd refs/tags/0.1.2
+ cb88b4f66e395a62ad941a62bd45c67be2cefae5 refs/tags/0.1.3
+ 9e568f8d8be5998115d1c5bdc7d8f06e183deb5f refs/tags/0.1.4
+-5b52fedea20b383f19e82e1fcc892e7187782476 refs/tags/0.1.5
+diff -rupN pcl_conversions_orig/.git/refs/heads/hydro-devel pcl_conversions/.git/refs/heads/hydro-devel
+--- pcl_conversions_orig/.git/refs/heads/hydro-devel	2013-10-03 17:33:53.688000000 -0400
++++ pcl_conversions/.git/refs/heads/hydro-devel	2013-07-22 18:57:26.788000000 -0400
+@@ -1 +1 @@
+-5b52fedea20b383f19e82e1fcc892e7187782476
++9e568f8d8be5998115d1c5bdc7d8f06e183deb5f
+diff -rupN pcl_conversions_orig/include/pcl_conversions/pcl_conversions.h pcl_conversions/include/pcl_conversions/pcl_conversions.h
+--- pcl_conversions_orig/include/pcl_conversions/pcl_conversions.h	2013-10-03 17:33:53.692000000 -0400
++++ pcl_conversions/include/pcl_conversions/pcl_conversions.h	2013-09-03 15:00:38.626488226 -0400
 @@ -36,6 +36,9 @@
  #ifndef PCL_CONVERSIONS_H__
  #define PCL_CONVERSIONS_H__
@@ -36,7 +96,7 @@
  
  #include <pcl/io/pcd_io.h>
  
-@@ -78,6 +81,7 @@
+@@ -78,6 +81,7 @@ namespace pcl_conversions {
    inline
    void fromPCL(const pcl::PCLHeader &pcl_header, std_msgs::Header &header)
    {
@@ -44,7 +104,7 @@
      header.stamp.fromNSec(pcl_header.stamp * 1e3);  // Convert from us to ns
      header.seq = pcl_header.seq;
      header.frame_id = pcl_header.frame_id;
-@@ -86,6 +90,7 @@
+@@ -86,6 +90,7 @@ namespace pcl_conversions {
    inline
    void toPCL(const std_msgs::Header &header, pcl::PCLHeader &pcl_header)
    {
@@ -52,7 +112,7 @@
      pcl_header.stamp = header.stamp.toNSec() / 1e3;  // Convert from ns to us
      pcl_header.seq = header.seq;
      pcl_header.frame_id = header.frame_id;
-@@ -259,167 +264,167 @@
+@@ -259,167 +264,167 @@ namespace pcl_conversions {
  
    /** pcl::PointIndices <=> pcl_msgs::PointIndices **/
  
@@ -372,3 +432,51 @@
  
  } // namespace pcl_conversions
  
+diff -rupN pcl_conversions_orig/manifest.xml pcl_conversions/manifest.xml
+--- pcl_conversions_orig/manifest.xml	1969-12-31 19:00:00.000000000 -0500
++++ pcl_conversions/manifest.xml	2013-09-04 13:42:16.995036358 -0400
+@@ -0,0 +1,15 @@
++<package>
++  <description brief="pcl_conversions">
++
++    pcl_conversions
++
++  </description>
++  <author></author>
++  <license></license>
++  <review status="unreviewed" notes=""/>
++  <url></url>
++  
++  <export>
++      <cpp cflags="`rosboost-cfg --cflags` -I${prefix}/include"/>
++  </export>
++</package>
+\ No newline at end of file
+diff -rupN pcl_conversions_orig/package.xml pcl_conversions/package.xml
+--- pcl_conversions_orig/package.xml	2013-10-03 17:33:53.692000000 -0400
++++ pcl_conversions/package.xml	2013-07-22 18:57:26.796000000 -0400
+@@ -1,7 +1,7 @@
+ <?xml version="1.0"?>
+ <package>
+   <name>pcl_conversions</name>
+-  <version>0.1.5</version>
++  <version>0.1.4</version>
+   <description>Provides conversions from PCL data types and ROS message types</description>
+   <maintainer email="william@osrfoundation.org">William Woodall</maintainer>
+ 
+@@ -14,13 +14,13 @@
+ 
+   <buildtool_depend>catkin</buildtool_depend>
+ 
+-  <build_depend>libpcl-all-dev</build_depend>
++  <build_depend version_gte="1.7.0">pcl</build_depend>
+   <build_depend>pcl_msgs</build_depend>
+   <build_depend>roscpp</build_depend>
+   <build_depend>sensor_msgs</build_depend>
+   <build_depend>std_msgs</build_depend>
+ 
+-  <run_depend>libpcl-all</run_depend>
++  <run_depend version_gte="1.7.0">pcl</run_depend>
+   <run_depend>pcl_msgs</run_depend>
+   <run_depend>roscpp</run_depend>
+   <run_depend>sensor_msgs</run_depend>
