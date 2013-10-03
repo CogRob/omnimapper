@@ -151,7 +151,7 @@ namespace omnimapper
       previous3_sym_ (gtsam::Symbol ('x', 0)),
       add_identity_on_failure_ (false),
       add_multiple_links_ (false),
-      add_loop_closures_ (false),
+      add_loop_closures_ (true),
       paused_ (false),
     count_(0),
     triggered_mode_ (false),
@@ -495,17 +495,24 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
     int pose_index_thresh_ = 40;//40
 
     // Get the latest solution from the mapper
-    //gtsam::Values solution = mapper_->getSolution ();
-    gtsam::Values solution = mapper_->getSolutionAndUncommitted ();
+    gtsam::Values solution = mapper_->getSolution ();
+    // gtsam::Values solution = mapper_->getSolutionAndUncommitted ();
 
-    // Look up the current pose
-    while (!solution.exists<gtsam::Pose3> (sym))
-    {
-      std::cout << "CSMPlugin: Can't find current pose in LC thread!" << std::endl;
-      boost::this_thread::sleep (boost::posix_time::milliseconds (100));
-      solution = mapper_->getSolutionAndUncommitted ();
-    }
-    gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
+    // // Look up the current pose
+    // while (!solution.exists<gtsam::Pose3> (sym))
+    // {
+    //   std::cout << "CSMPlugin: Can't find current pose in LC thread!" << std::endl;
+    //   boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    //   solution = mapper_->getSolutionAndUncommitted ();
+    // }
+    // gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
+    boost::optional<gtsam::Pose3> current_pose = mapper_->predictPose(sym);
+    
+    if (!current_pose)
+      {
+	printf ("Could not predict pose in Laser Scan loop closure!\n");
+	exit(1);
+      }
 
     // Find the closest pose
     gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = solution.filter<gtsam::Pose3>();
@@ -520,7 +527,7 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
       {
         printf ("(%d) > %d\n",(sym.index () - test_sym.index ()), pose_index_thresh_);
         gtsam::Pose3 test_pose (key_value.value);
-        double test_dist = current_pose.range (test_pose);
+        double test_dist = current_pose->range (test_pose);
 
         std::map<gtsam::Symbol, LaserScanPtr>::iterator itr1;
         itr1 = lscans_.find (test_sym);
