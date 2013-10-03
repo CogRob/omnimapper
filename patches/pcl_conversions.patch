@@ -1,0 +1,374 @@
+--- pcl_conversions_orig.h	2013-07-22 18:57:26.796000000 -0400
++++ pcl_conversions.h	2013-09-03 15:00:38.626488226 -0400
+@@ -36,6 +36,9 @@
+ #ifndef PCL_CONVERSIONS_H__
+ #define PCL_CONVERSIONS_H__
+ 
++// Note: This is a subset of the PCL conversion code from: https://github.com/ros-perception/pcl_conversions
++// The above was designed for using ROS Hydro, not ROS Groovy with PCL 1.7.
++
+ #include <vector>
+ 
+ #include <ros/ros.h>
+@@ -54,17 +57,17 @@
+ #include <pcl/PCLPointCloud2.h>
+ #include <sensor_msgs/PointCloud2.h>
+ 
+-#include <pcl/PointIndices.h>
+-#include <pcl_msgs/PointIndices.h>
++ #include <pcl/PointIndices.h>
++// #include <std_msgs/PointIndices.h>
+ 
+-#include <pcl/ModelCoefficients.h>
+-#include <pcl_msgs/ModelCoefficients.h>
++ #include <pcl/ModelCoefficients.h>
++// #include <pcl_msgs/ModelCoefficients.h>
+ 
+-#include <pcl/Vertices.h>
+-#include <pcl_msgs/Vertices.h>
++ #include <pcl/Vertices.h>
++// #include <pcl_msgs/Vertices.h>
+ 
+-#include <pcl/PolygonMesh.h>
+-#include <pcl_msgs/PolygonMesh.h>
++ #include <pcl/PolygonMesh.h>
++// #include <pcl_msgs/PolygonMesh.h>
+ 
+ #include <pcl/io/pcd_io.h>
+ 
+@@ -78,6 +81,7 @@
+   inline
+   void fromPCL(const pcl::PCLHeader &pcl_header, std_msgs::Header &header)
+   {
++    //header.stamp.fromNSec (pcl_header.stamp);
+     header.stamp.fromNSec(pcl_header.stamp * 1e3);  // Convert from us to ns
+     header.seq = pcl_header.seq;
+     header.frame_id = pcl_header.frame_id;
+@@ -86,6 +90,7 @@
+   inline
+   void toPCL(const std_msgs::Header &header, pcl::PCLHeader &pcl_header)
+   {
++    //pcl_header.stamp = header.stamp.toNSec ();
+     pcl_header.stamp = header.stamp.toNSec() / 1e3;  // Convert from ns to us
+     pcl_header.seq = header.seq;
+     pcl_header.frame_id = header.frame_id;
+@@ -259,167 +264,167 @@
+ 
+   /** pcl::PointIndices <=> pcl_msgs::PointIndices **/
+ 
+-  inline
+-  void fromPCL(const pcl::PointIndices &pcl_pi, pcl_msgs::PointIndices &pi)
+-  {
+-    fromPCL(pcl_pi.header, pi.header);
+-    pi.indices = pcl_pi.indices;
+-  }
+-
+-  inline
+-  void moveFromPCL(pcl::PointIndices &pcl_pi, pcl_msgs::PointIndices &pi)
+-  {
+-    fromPCL(pcl_pi.header, pi.header);
+-    pi.indices.swap(pcl_pi.indices);
+-  }
+-
+-  inline
+-  void toPCL(const pcl_msgs::PointIndices &pi, pcl::PointIndices &pcl_pi)
+-  {
+-    toPCL(pi.header, pcl_pi.header);
+-    pcl_pi.indices = pi.indices;
+-  }
+-
+-  inline
+-  void moveToPCL(pcl_msgs::PointIndices &pi, pcl::PointIndices &pcl_pi)
+-  {
+-    toPCL(pi.header, pcl_pi.header);
+-    pcl_pi.indices.swap(pi.indices);
+-  }
++  // inline
++  // void fromPCL(const pcl::PointIndices &pcl_pi, std_msgs::Pointindices &pi)
++  // {
++  //   fromPCL(pcl_pi.header, pi.header);
++  //   pi.indices = pcl_pi.indices;
++  // }
++
++  // inline
++  // void moveFromPCL(pcl::PointIndices &pcl_pi, std_msgs::Pointindices &pi)
++  // {
++  //   fromPCL(pcl_pi.header, pi.header);
++  //   pi.indices.swap(pcl_pi.indices);
++  // }
++
++  // inline
++  // void toPCL(const std_msgs::Pointindices &pi, pcl::PointIndices &pcl_pi)
++  // {
++  //   toPCL(pi.header, pcl_pi.header);
++  //   pcl_pi.indices = pi.indices;
++  // }
++
++  // inline
++  // void moveToPCL(std_msgs::Pointindices &pi, pcl::PointIndices &pcl_pi)
++  // {
++  //   toPCL(pi.header, pcl_pi.header);
++  //   pcl_pi.indices.swap(pi.indices);
++  // }
+ 
+   /** pcl::ModelCoefficients <=> pcl_msgs::ModelCoefficients **/
+ 
+-  inline
+-  void fromPCL(const pcl::ModelCoefficients &pcl_mc, pcl_msgs::ModelCoefficients &mc)
+-  {
+-    fromPCL(pcl_mc.header, mc.header);
+-    mc.values = pcl_mc.values;
+-  }
+-
+-  inline
+-  void moveFromPCL(pcl::ModelCoefficients &pcl_mc, pcl_msgs::ModelCoefficients &mc)
+-  {
+-    fromPCL(pcl_mc.header, mc.header);
+-    mc.values.swap(pcl_mc.values);
+-  }
+-
+-  inline
+-  void toPCL(const pcl_msgs::ModelCoefficients &mc, pcl::ModelCoefficients &pcl_mc)
+-  {
+-    toPCL(mc.header, pcl_mc.header);
+-    pcl_mc.values = mc.values;
+-  }
+-
+-  inline
+-  void moveToPCL(pcl_msgs::ModelCoefficients &mc, pcl::ModelCoefficients &pcl_mc)
+-  {
+-    toPCL(mc.header, pcl_mc.header);
+-    pcl_mc.values.swap(mc.values);
+-  }
++  // inline
++  // void fromPCL(const pcl::ModelCoefficients &pcl_mc, pcl_msgs::ModelCoefficients &mc)
++  // {
++  //   fromPCL(pcl_mc.header, mc.header);
++  //   mc.values = pcl_mc.values;
++  // }
++
++  // inline
++  // void moveFromPCL(pcl::ModelCoefficients &pcl_mc, pcl_msgs::ModelCoefficients &mc)
++  // {
++  //   fromPCL(pcl_mc.header, mc.header);
++  //   mc.values.swap(pcl_mc.values);
++  // }
++
++  // inline
++  // void toPCL(const pcl_msgs::ModelCoefficients &mc, pcl::ModelCoefficients &pcl_mc)
++  // {
++  //   toPCL(mc.header, pcl_mc.header);
++  //   pcl_mc.values = mc.values;
++  // }
++
++  // inline
++  // void moveToPCL(pcl_msgs::ModelCoefficients &mc, pcl::ModelCoefficients &pcl_mc)
++  // {
++  //   toPCL(mc.header, pcl_mc.header);
++  //   pcl_mc.values.swap(mc.values);
++  // }
+ 
+   /** pcl::Vertices <=> pcl_msgs::Vertices **/
+ 
+-  inline
+-  void fromPCL(const pcl::Vertices &pcl_vert, pcl_msgs::Vertices &vert)
+-  {
+-    vert.vertices = pcl_vert.vertices;
+-  }
+-
+-  inline
+-  void fromPCL(const std::vector<pcl::Vertices> &pcl_verts, std::vector<pcl_msgs::Vertices> &verts)
+-  {
+-    verts.resize(pcl_verts.size());
+-    std::vector<pcl::Vertices>::const_iterator it = pcl_verts.begin();
+-    std::vector<pcl_msgs::Vertices>::iterator jt = verts.begin();
+-    for (; it != pcl_verts.end() && jt != verts.end(); ++it, ++jt) {
+-      fromPCL(*(it), *(jt));
+-    }
+-  }
+-
+-  inline
+-  void moveFromPCL(pcl::Vertices &pcl_vert, pcl_msgs::Vertices &vert)
+-  {
+-    vert.vertices.swap(pcl_vert.vertices);
+-  }
+-
+-  inline
+-  void fromPCL(std::vector<pcl::Vertices> &pcl_verts, std::vector<pcl_msgs::Vertices> &verts)
+-  {
+-    verts.resize(pcl_verts.size());
+-    std::vector<pcl::Vertices>::iterator it = pcl_verts.begin();
+-    std::vector<pcl_msgs::Vertices>::iterator jt = verts.begin();
+-    for (; it != pcl_verts.end() && jt != verts.end(); ++it, ++jt) {
+-      moveFromPCL(*(it), *(jt));
+-    }
+-  }
+-
+-  inline
+-  void toPCL(const pcl_msgs::Vertices &vert, pcl::Vertices &pcl_vert)
+-  {
+-    pcl_vert.vertices = vert.vertices;
+-  }
+-
+-  inline
+-  void toPCL(const std::vector<pcl_msgs::Vertices> &verts, std::vector<pcl::Vertices> &pcl_verts)
+-  {
+-    pcl_verts.resize(verts.size());
+-    std::vector<pcl_msgs::Vertices>::const_iterator it = verts.begin();
+-    std::vector<pcl::Vertices>::iterator jt = pcl_verts.begin();
+-    for (; it != verts.end() && jt != pcl_verts.end(); ++it, ++jt) {
+-      toPCL(*(it), *(jt));
+-    }
+-  }
+-
+-  inline
+-  void moveToPCL(pcl_msgs::Vertices &vert, pcl::Vertices &pcl_vert)
+-  {
+-    pcl_vert.vertices.swap(vert.vertices);
+-  }
+-
+-  inline
+-  void moveToPCL(std::vector<pcl_msgs::Vertices> &verts, std::vector<pcl::Vertices> &pcl_verts)
+-  {
+-    pcl_verts.resize(verts.size());
+-    std::vector<pcl_msgs::Vertices>::iterator it = verts.begin();
+-    std::vector<pcl::Vertices>::iterator jt = pcl_verts.begin();
+-    for (; it != verts.end() && jt != pcl_verts.end(); ++it, ++jt) {
+-      moveToPCL(*(it), *(jt));
+-    }
+-  }
++  // inline
++  // void fromPCL(const pcl::Vertices &pcl_vert, pcl_msgs::Vertices &vert)
++  // {
++  //   vert.vertices = pcl_vert.vertices;
++  // }
++
++  // inline
++  // void fromPCL(const std::vector<pcl::Vertices> &pcl_verts, std::vector<pcl_msgs::Vertices> &verts)
++  // {
++  //   verts.resize(pcl_verts.size());
++  //   std::vector<pcl::Vertices>::const_iterator it = pcl_verts.begin();
++  //   std::vector<pcl_msgs::Vertices>::iterator jt = verts.begin();
++  //   for (; it != pcl_verts.end() && jt != verts.end(); ++it, ++jt) {
++  //     fromPCL(*(it), *(jt));
++  //   }
++  // }
++
++  // inline
++  // void moveFromPCL(pcl::Vertices &pcl_vert, pcl_msgs::Vertices &vert)
++  // {
++  //   vert.vertices.swap(pcl_vert.vertices);
++  // }
++
++  // inline
++  // void fromPCL(std::vector<pcl::Vertices> &pcl_verts, std::vector<pcl_msgs::Vertices> &verts)
++  // {
++  //   verts.resize(pcl_verts.size());
++  //   std::vector<pcl::Vertices>::iterator it = pcl_verts.begin();
++  //   std::vector<pcl_msgs::Vertices>::iterator jt = verts.begin();
++  //   for (; it != pcl_verts.end() && jt != verts.end(); ++it, ++jt) {
++  //     moveFromPCL(*(it), *(jt));
++  //   }
++  // }
++
++  // inline
++  // void toPCL(const pcl_msgs::Vertices &vert, pcl::Vertices &pcl_vert)
++  // {
++  //   pcl_vert.vertices = vert.vertices;
++  // }
++
++  // inline
++  // void toPCL(const std::vector<pcl_msgs::Vertices> &verts, std::vector<pcl::Vertices> &pcl_verts)
++  // {
++  //   pcl_verts.resize(verts.size());
++  //   std::vector<pcl_msgs::Vertices>::const_iterator it = verts.begin();
++  //   std::vector<pcl::Vertices>::iterator jt = pcl_verts.begin();
++  //   for (; it != verts.end() && jt != pcl_verts.end(); ++it, ++jt) {
++  //     toPCL(*(it), *(jt));
++  //   }
++  // }
++
++  // inline
++  // void moveToPCL(pcl_msgs::Vertices &vert, pcl::Vertices &pcl_vert)
++  // {
++  //   pcl_vert.vertices.swap(vert.vertices);
++  // }
++
++  // inline
++  // void moveToPCL(std::vector<pcl_msgs::Vertices> &verts, std::vector<pcl::Vertices> &pcl_verts)
++  // {
++  //   pcl_verts.resize(verts.size());
++  //   std::vector<pcl_msgs::Vertices>::iterator it = verts.begin();
++  //   std::vector<pcl::Vertices>::iterator jt = pcl_verts.begin();
++  //   for (; it != verts.end() && jt != pcl_verts.end(); ++it, ++jt) {
++  //     moveToPCL(*(it), *(jt));
++  //   }
++  // }
+ 
+   /** pcl::PolygonMesh <=> pcl_msgs::PolygonMesh **/
+ 
+-  inline
+-  void fromPCL(const pcl::PolygonMesh &pcl_mesh, pcl_msgs::PolygonMesh &mesh)
+-  {
+-    fromPCL(pcl_mesh.header, mesh.header);
+-    fromPCL(pcl_mesh.cloud, mesh.cloud);
+-    fromPCL(pcl_mesh.polygons, mesh.polygons);
+-  }
+-
+-  inline
+-  void moveFromPCL(pcl::PolygonMesh &pcl_mesh, pcl_msgs::PolygonMesh &mesh)
+-  {
+-    fromPCL(pcl_mesh.header, mesh.header);
+-    moveFromPCL(pcl_mesh.cloud, mesh.cloud);
+-    moveFromPCL(pcl_mesh.cloud, mesh.cloud);
+-  }
+-
+-  inline
+-  void toPCL(const pcl_msgs::PolygonMesh &mesh, pcl::PolygonMesh &pcl_mesh)
+-  {
+-    toPCL(mesh.header, pcl_mesh.header);
+-    toPCL(mesh.cloud, pcl_mesh.cloud);
+-    toPCL(mesh.polygons, pcl_mesh.polygons);
+-  }
+-
+-  inline
+-  void moveToPCL(pcl_msgs::PolygonMesh &mesh, pcl::PolygonMesh &pcl_mesh)
+-  {
+-    toPCL(mesh.header, pcl_mesh.header);
+-    moveToPCL(mesh.cloud, pcl_mesh.cloud);
+-    moveToPCL(mesh.polygons, pcl_mesh.polygons);
+-  }
++  // inline
++  // void fromPCL(const pcl::PolygonMesh &pcl_mesh, pcl_msgs::PolygonMesh &mesh)
++  // {
++  //   fromPCL(pcl_mesh.header, mesh.header);
++  //   fromPCL(pcl_mesh.cloud, mesh.cloud);
++  //   fromPCL(pcl_mesh.polygons, mesh.polygons);
++  // }
++
++  // inline
++  // void moveFromPCL(pcl::PolygonMesh &pcl_mesh, pcl_msgs::PolygonMesh &mesh)
++  // {
++  //   fromPCL(pcl_mesh.header, mesh.header);
++  //   moveFromPCL(pcl_mesh.cloud, mesh.cloud);
++  //   moveFromPCL(pcl_mesh.cloud, mesh.cloud);
++  // }
++
++  // inline
++  // void toPCL(const pcl_msgs::PolygonMesh &mesh, pcl::PolygonMesh &pcl_mesh)
++  // {
++  //   toPCL(mesh.header, pcl_mesh.header);
++  //   toPCL(mesh.cloud, pcl_mesh.cloud);
++  //   toPCL(mesh.polygons, pcl_mesh.polygons);
++  // }
++
++  // inline
++  // void moveToPCL(pcl_msgs::PolygonMesh &mesh, pcl::PolygonMesh &pcl_mesh)
++  // {
++  //   toPCL(mesh.header, pcl_mesh.header);
++  //   moveToPCL(mesh.cloud, pcl_mesh.cloud);
++  //   moveToPCL(mesh.polygons, pcl_mesh.polygons);
++  // }
+ 
+ } // namespace pcl_conversions
+ 
