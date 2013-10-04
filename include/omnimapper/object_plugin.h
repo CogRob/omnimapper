@@ -42,8 +42,7 @@ namespace omnimapper
           omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> >);
 
       void setObjectCallback (
-          boost::function<
-              void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn);
+          boost::function<void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn);
 
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
@@ -75,15 +74,14 @@ namespace omnimapper
           std::string object_database_location);
 
     protected:
-      bool cloud_cv_flag_, recompute_flag_;
+      bool cloud_cv_flag_;
       OmniMapperBase* mapper_;
       GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
-      boost::function<
-          void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)> cloud_cv_callback_;
+      boost::function<void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)> cloud_cv_callback_;
 
       boost::shared_ptr<SegmentPropagation<PointT> > segment_propagation_;
       boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;
@@ -98,7 +96,10 @@ namespace omnimapper
       std::queue<gtsam::Symbol> train_queue;
       int max_object_size, max_current_size;
       cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
-      boost::mutex recog_mutex;
+
+      /* mutexes */
+      boost::mutex recog_mutex_; //mutex for recognition queue
+      boost::mutex map_building_mutex_; //mutex for optimal map creation
 
       std::string object_database_location_;
 

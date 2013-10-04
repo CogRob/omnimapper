@@ -4,7 +4,7 @@ namespace gtsam {
 
 template<typename PointT>
 Object<PointT>::Object() :
-		clusters_(), landmark(false) {
+		clusters_(), landmark(false), optimal_cloud_(new Cloud()) {
 
 }
 

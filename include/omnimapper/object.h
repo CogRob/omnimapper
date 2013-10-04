@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Point3.h>
 
 #include <omnimapper/omnimapper_base.h>
+#include <boost/thread/locks.hpp>
 
 namespace gtsam {
 // For now, this is just a collection that contains a point cloud pointer and an optional label
@@ -30,6 +31,9 @@ public:
 	std::map<gtsam::Symbol, CloudPtr> clusters_;
 	std::map<gtsam::Symbol, pcl::PointIndices> indices_;
 	std::map<gtsam::Symbol, int> factor_flag;
+	CloudPtr optimal_cloud_;
+	//boost::mutex object_mutex_;
+
 	// optional label
 	std::string name;
 
@@ -38,6 +42,8 @@ public:
 
 	//gtsam::Symbol
 	void addObservation(gtsam::Symbol sym, CloudPtr cluster, boost::optional<pcl::PointIndices> indices);
+
+
 
 
 

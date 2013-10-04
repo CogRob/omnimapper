@@ -11,15 +11,16 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), recompute_flag_ (
-          1)
-  {
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree)  {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 
     boost::thread object_recognition_thread (
         &ObjectPlugin<PointT>::objectRecognitionLoop, this);
 
+    //find optimal object models in a thread
+    boost::thread reconstruction_thread (
+        &ObjectPlugin<PointT>::recreateObjectModels, this);
 
   }
 
@@ -335,7 +336,7 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::recreateObjectModels ()
   {
-
+    std::cout << "Creating Optimal Cloud\n" << std::endl;
     typename std::map<gtsam::Symbol, gtsam::Object<PointT> >::iterator it;
     typename std::map<gtsam::Symbol, CloudPtr>::iterator it_cluster;
     for (it = object_map.begin (); it != object_map.end (); it++)
@@ -350,8 +351,11 @@ namespace omnimapper
           it_cluster++)
       {
 
+        map_building_mutex_.lock();
         gtsam::Symbol pose_sym = it_cluster->first;
         CloudPtr cloud = it_cluster->second;
+        map_building_mutex_.unlock();
+
         boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
             pose_sym);
         if (cloud_pose)
@@ -365,12 +369,13 @@ namespace omnimapper
         }
       }
 
-      int id = sym.index ();
-      std::string output_file = object_database_location_ + "/object_models/"
-          + boost::lexical_cast<std::string> (id) + ".pcd";
-      pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
-
+     // object.object_mutex_.lock();
+      object.optimal_cloud_ = transformed_cloud_opt_.makeShared();
+     // object.object_mutex_.unlock();
     }
+
+    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+
 
   }
 
@@ -613,9 +618,6 @@ namespace omnimapper
                 zero_pt, measurement_noise));
         mapper_->addFactor (object_object_factor);
 
-        // re-render all the objects
-        recompute_flag_ = 1;
-        recreateObjectModels ();
 
       }
 
@@ -635,7 +637,7 @@ namespace omnimapper
   template<typename PointT>
   gtsam::Symbol ObjectPlugin<PointT>::popFromQueue ()
   {
-    boost::mutex::scoped_lock (recog_mutex);
+    boost::mutex::scoped_lock (recog_mutex_);
     gtsam::Symbol sym = train_queue.front ();
     train_queue.pop ();
 
@@ -645,7 +647,7 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::pushIntoQueue (gtsam::Symbol sym)
   {
-    boost::mutex::scoped_lock (recog_mutex);
+    boost::mutex::scoped_lock (recog_mutex_);
     train_queue.push (sym);
     return;
   }
@@ -984,19 +986,25 @@ namespace omnimapper
               filtered_observation_indices[old_label]);
           new_object.factor_flag.insert (
               std::pair<gtsam::Symbol, int> (pose_symbol, -1));
+
+          map_building_mutex_.lock();
           object_map.insert (
               std::pair<gtsam::Symbol, gtsam::Object<PointT> > (best_symbol,
                   new_object));
+          map_building_mutex_.unlock();
           //mapper_->addNewValue(best_symbol, new_object);
         }
         else
         {
 
           int old_label = segment_propagation_->back_label_.at (obj_cnt);
+
+          map_building_mutex_.lock();
           object_map.at (best_symbol).addObservation (pose_symbol,
               final_cloud[obj_cnt], filtered_observation_indices[old_label]);
           object_map.at (best_symbol).factor_flag.insert (
               std::pair<gtsam::Symbol, int> (pose_symbol, -1));
+          map_building_mutex_.unlock();
         }
 
       }

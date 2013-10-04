@@ -725,8 +725,12 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
     if(object_count == 20)break;
     gtsam::Symbol sym = obj_iterator->second;
     gtsam::Object<PointT> object = object_map.at(sym);
-    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
 
+   // CloudPtr optimal_cloud = object.optimal_cloud_;
+   // pcl::copyPointCloud(*optimal_cloud, truncated_map_cloud);
+    //aggregate_cloud = aggregate_cloud + truncated_map_cloud;
+
+    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
     for (it_cluster = cluster.begin (); it_cluster != cluster.end ();
         it_cluster++)
     {
