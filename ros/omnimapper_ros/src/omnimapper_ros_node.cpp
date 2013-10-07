@@ -31,6 +31,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
+
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
 typedef Cloud::Ptr CloudPtr;
@@ -145,6 +146,9 @@ class OmniMapperROSNode
     double plane_angular_threshold_;
     double plane_range_noise_;
     double plane_angular_noise_;
+
+    // Object Plugin Params
+    std::string object_database_location_;
 
     // Labelled Cloud Plugin Params
     bool use_label_cloud_;
@@ -262,6 +266,8 @@ class OmniMapperROSNode
       n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
       n_.param ("evaluation_ground_truth_txt_path", evaluation_ground_truth_txt_path_, std::string (""));
       n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
+      n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
+
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -382,7 +388,7 @@ class OmniMapperROSNode
 
       // Set up the object Plugin
       object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
-
+      object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
       // Set up the feature extraction
       if (use_occ_edge_icp_)
       {
@@ -408,15 +414,25 @@ class OmniMapperROSNode
       // Optionally draw clusters
       if (draw_clusters_)
       {
-        boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> cluster_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback, &vis_plugin_, _1, _2);
+        boost::function<void(std::vector<CloudPtr>, omnimapper::Time t,  boost::optional<std::vector<pcl::PointIndices> > )> cluster_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback, &vis_plugin_, _1, _2, _3);
         organized_feature_extraction_.setClusterCloudCallback (cluster_vis_callback);
+
+        //gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>, omnimapper::Time t
+
+
       }
+
 
       // Optionally use labels
       if (use_objects_)
       {
-        boost::function<void(std::vector<CloudPtr>, omnimapper::Time t)> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2);
-        organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
+     typename  boost::function<void(std::vector<CloudPtr>, omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> > )> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2, _3);
+       organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
+
+       boost::function<void(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map)> object_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback, &vis_plugin_, _1);
+       object_plugin_.setObjectCallback(object_vis_callback);
+       // 	object_plugin_.test();
+
       }
 
       // Canonical Scan Matcher
@@ -454,6 +470,7 @@ class OmniMapperROSNode
         boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr (&vis_plugin_);
         omb_.addOutputPlugin (vis_ptr);
       }
+
 
       // Set up the TSDF Plugin
       if (use_tsdf_plugin_)

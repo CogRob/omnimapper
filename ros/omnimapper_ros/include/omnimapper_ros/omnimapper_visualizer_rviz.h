@@ -32,7 +32,7 @@ namespace omnimapper
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
       void drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx);
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
-      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t);
+      void clusterCloudCallback (std::vector<CloudPtr> clusters, omnimapper::Time t,  boost::optional<std::vector<pcl::PointIndices> > );
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; }
       void setObjectPlugin (boost::shared_ptr<omnimapper::ObjectPlugin<PointT> >& object_plugin) { object_plugin_ = object_plugin; }
       bool drawObjectObservationCloud (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
@@ -40,6 +40,8 @@ namespace omnimapper
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
 
+      /** \brief objectCallback draws the estimated objects computed by object_plugin */
+      void objectCallback(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map);
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;
@@ -59,6 +61,9 @@ namespace omnimapper
       // Publisher for visualization marker arrays
       ros::Publisher marker_array_pub_;
 
+
+      ros::Publisher pose_covariances_pub_;
+
       // Publishers for segmentation results of planes
       ros::Publisher segmented_plane_pub_;
       ros::Publisher segmented_label_cloud_pub_;
@@ -66,6 +71,8 @@ namespace omnimapper
       
       // Publisher for object observations
       ros::Publisher object_observation_pub_;
+      ros::Publisher object_modeled_pub_;
+
 
       ros::ServiceServer draw_icp_clouds_srv_;
 

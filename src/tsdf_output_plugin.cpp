@@ -58,6 +58,7 @@ omnimapper::TSDFOutputPlugin<PointT>::update (boost::shared_ptr<gtsam::Values>& 
   printf ("tsdf_plugin: updating latest solution!\n");
   
   latest_solution_ = vis_values;
+  std::cout << "TSDFPlugin Updated " << std::endl;
 }
 
 template <typename PointT> void
@@ -87,6 +88,8 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
 
   printf ("tsdf_plugin: getting poses\n");
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = latest_solution_->filter<gtsam::Pose3>();
+  //gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
+
   int pose_num = 0;
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -131,7 +134,7 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
       tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal> (*frame_cloud, empty_normals, tform); // Integrate the cloud
     // Note, the normals aren't being used in the default settings. Feel free to pass in an empty cloud
   }
-  tsdf->save ("output.vol"); // Save it?  
+  tsdf->save ("/home/siddharth/kinect/output.vol"); // Save it?
 
   // Maching Cubes
   cpu_tsdf::MarchingCubesTSDFOctree mc;
@@ -141,12 +144,12 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
   mc.setMinWeight (0.1);
   pcl::PolygonMesh mesh;
   mc.reconstruct (mesh);
-  pcl::io::savePLYFileBinary ("mesh.ply", mesh);
+  pcl::io::savePLYFileBinary ("/home/siddharth/kinect/mesh.ply", mesh);
   
   // Render from xo
   Eigen::Affine3d init_pose = Eigen::Affine3d::Identity ();
   pcl::PointCloud<pcl::PointNormal>::Ptr raytraced = tsdf->renderView (init_pose);
-  pcl::io::savePCDFileBinary ("rendered_view.pcd", *raytraced);
+  //pcl::io::savePCDFileBinary ("rendered_view.pcd", *raytraced);
 }
 
 template class omnimapper::TSDFOutputPlugin<pcl::PointXYZRGBA>;
