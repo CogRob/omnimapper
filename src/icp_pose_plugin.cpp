@@ -55,8 +55,16 @@ namespace omnimapper
     // Store this as the previous cloud
     boost::mutex::scoped_lock (current_cloud_mutex_);
     current_cloud_ = cloud;
+    
+    //
+    if (have_new_cloud_)
+    {
+      printf ("got new cloud before done processing the old one!\n");
+      assert (false);
+    }
+    
     have_new_cloud_ = true;
-    printf ("stored new cloud!\n");
+    printf ("ICPTest: stored new cloud!\n");
   }
 
   /*
@@ -204,7 +212,8 @@ namespace omnimapper
     printf ("first: %d\n", first_);
     if (first_)
     {
-      printf ("done with first, returning\n");
+      boost::mutex::scoped_lock (current_cloud_mutex_);
+      printf ("ICPTest: done with first, returning\n");
       have_new_cloud_ = false;
       previous_sym_ = current_sym;
       first_ = false;
@@ -214,7 +223,8 @@ namespace omnimapper
     // Add constraints
     printf ("ICP SYMS: prev3: x%d, prev2: x%d  prev: x%d, curr: x%d\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
-    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, score_threshold_);
+    //boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, score_threshold_);
+    boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, current_sym, score_threshold_);
     // Try previous too
     if (add_multiple_links_)
     {
@@ -235,7 +245,10 @@ namespace omnimapper
     if (add_loop_closures_)
     {
       if (clouds_.size () > 20)
+      {
         boost::thread loop_closure_thread (&ICPPoseMeasurementPlugin<PointT>::tryLoopClosure, this, previous3_sym_);
+        loop_closure_thread.join ();
+      }
     }
     
     // Wait for latest one to complete, at least
@@ -244,11 +257,12 @@ namespace omnimapper
     // Note that we're done
     {
       boost::mutex::scoped_lock (current_cloud_mutex_);
-      have_new_cloud_ = false;
+      printf ("ICPTest: done with cloud!\n");
       previous3_sym_ = previous2_sym_;
       previous2_sym_ = previous_sym_;
       previous_sym_ = current_sym;
       last_processed_time_ = current_time;
+      have_new_cloud_ = false;
     }
 
     double spin_end = pcl::getTime ();
@@ -304,20 +318,21 @@ namespace omnimapper
     
     bool icp_converged = registerClouds (cloud1, cloud2, aligned_cloud, cloud_tform, icp_score);
     
-    if (icp_converged  && icp_score < icp_score_threshold)
+    if (icp_converged  && (icp_score < icp_score_threshold))
     {
       //gtsam::Pose3 relative_pose (gtsam::Rot3 (cloud_tform.block (0, 0, 3, 3).cast<double>()), 
       //                            gtsam::Point3 (cloud_tform (0,3), cloud_tform (1,3), cloud_tform (2,3)));
       Eigen::Matrix4d tform4d = cloud_tform.cast<double>();
       gtsam::Pose3 relative_pose (tform4d);
-      relative_pose = relative_pose.inverse ();
+      //relative_pose = relative_pose.inverse ();
 
       // TODO: make these params
       double trans_noise = trans_noise_;// * icp_score;
       double rot_noise = rot_noise_;// * icp_score;
       gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
-      omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+      //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+      omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
       printf ("ADDED FACTOR BETWEEN x%d and x%d\n", sym1.index (), sym2.index ());
       relative_pose.print ("\n\nICP Relative Pose\n");
       printf ("ICP SCORE: %lf\n", icp_score);
@@ -342,7 +357,7 @@ namespace omnimapper
         double trans_noise = trans_noise_;
         double rot_noise = rot_noise_;
         gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
-        omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+        omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
         mapper_->addFactor (between);
       }
 
@@ -466,6 +481,7 @@ namespace omnimapper
   ICPPoseMeasurementPlugin<PointT>::ready ()
   {
     boost::mutex::scoped_lock (current_cloud_mutex_);
+    printf ("ICPTest: ready: %d\n", (!have_new_cloud_));
     return (!have_new_cloud_);
   }
 

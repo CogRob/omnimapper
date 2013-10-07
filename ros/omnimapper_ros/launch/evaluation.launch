@@ -13,13 +13,15 @@
 
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
       	    <param name="use_planes" value="false"/>
-	    <param name="use_icp" value="false"/>
+	    <param name="use_icp" value="true"/>
+	    <param name="use_csm" value="false"/>
 	    <param name="use_objects" value="false"/>
-	    <param name="use_occ_edge_icp" value="true"/>
+	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="false"/>
 	    <param name="use_error_plugin" value="false"/>
 	    <param name="use_tsdf_plugin" value="false"/>
 	    <param name="use_no_motion" value="false"/>
+	    <param name="use_rviz_plugin" value="false"/>
 	    <param name="use_rgbd_sensor_base_tf_functor" value="false"/>
 	    <param name="use_distortion_model" value="false"/>
       	    <param name="odom_frame_name" value="/world"/>
@@ -41,17 +43,17 @@
 	    <param name="occ_edge_trans_noise" value="0.05"/>
 	    <param name="occ_edge_rot_noise" value="0.1"/>
 	    <param name="occ_edge_max_correspondence_dist" value="0.15"/>
-	    <param name="occ_edge_score_thresh" value="0.1"/>
+	    <param name="occ_edge_score_thresh" value="0.3"/>
 	    <param name="occ_edge_add_identity_on_fail" value="true"/>
 	    <param name="tf_trans_noise" value="10.05"/>
 	    <param name="tf_rot_noise" value="10.0872664626"/>
 	    <param name="draw_pose_array" value="false"/>
-	    <param name="add_pose_per_cloud" value="true"/>
+	    <param name="add_pose_per_cloud" value="false"/>
 	    <param name="evaluation_mode" value="true"/>
-	    <param name="evaluation_pcd_path" value="/home/atrevor/Desktop/out_pcds/rgb"/>
-	    <param name="evaluation_associated_txt_path" value="/home/atrevor/Desktop/psf/Home/data/rgbd_dataset/rgbd_dataset_freiburg1_desk/associated.txt"/>
-	    <param name="evaluation_ground_truth_txt_path" value="/home/atrevor/Desktop/psf/Home/data/rgbd_dataset/rgbd_dataset_freiburg1_desk/groundtruth.txt"/>
-	    <param name="evaluation_output_trajectory_txt_path" value="/home/atrevor/Desktop/out_trajectory.txt"/>
+	    <param name="evaluation_pcd_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/pcd/rgb/"/>
+	    <param name="evaluation_associated_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/associated.txt"/>
+	    <param name="evaluation_ground_truth_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/groundtruth.txt"/>
+	    <param name="evaluation_output_trajectory_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/omnimapper_trajectory.txt"/>
       </node>
 
        <!-- <node name="base_link_to_base_link_optical" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 -0.5 0.5 -0.5 0.5 /base_link_estimate /base_link_estimate_optical 100" respawn="false" output="screen"/> -->

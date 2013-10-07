@@ -9,6 +9,8 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
     mapper_ (mapper)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
+  marker_server_->clear ();
+  marker_server_->applyChanges ();
 }
 
 void
@@ -18,6 +20,7 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
+/*
   visualization_msgs::MarkerArray marker_array;
   visualization_msgs::Marker mapper_graph;
   mapper_graph.header.frame_id = "/world";
@@ -56,8 +59,9 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
       gtsam::Symbol sym1 (keys[0]);
       gtsam::Symbol sym2 (keys[1]);
 
-      //if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x') && (abs (sym1.index () - sym2.index ()) == 1))
-      if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
+
+      //if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
+      if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x') && (abs (sym1.index () - sym2.index ()) == 1))
       {
         // Draw the pose graph
         gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
@@ -107,6 +111,8 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
   marker_array.markers.push_back (ground_truth_graph);
   marker_array_pub_.publish (marker_array);
 
+*/
+
   // Set up the error evaluation, for error modeling
   // double avg_sequential_position_error = 0.0;
   // double avg_sequential_angular_error = 0.0;
@@ -132,16 +138,15 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
   // }
 
   // Generate interactive markers for the poses
-  visualization_msgs::InteractiveMarker int_marker;
-  int_marker.header.frame_id = "/world";
-  int_marker.name = "mapper_trajectory";
-  int_marker.description = "Mapper Trajectory";
+  // visualization_msgs::InteractiveMarker int_marker;
+  // int_marker.header.frame_id = "/world";
+  // int_marker.name = "mapper_trajectory";
+  // int_marker.description = "Mapper Trajectory";
   
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
-    geometry_msgs::Pose pose;
-    
+    geometry_msgs::Pose pose;    
     gtsam::Symbol key_symbol (key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation ();
@@ -152,9 +157,9 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     // Make a sphere
     visualization_msgs::Marker pose_marker;
     pose_marker.type = visualization_msgs::Marker::SPHERE;
-    pose_marker.scale.x = 0.005;
-    pose_marker.scale.y = 0.005;
-    pose_marker.scale.z = 0.005;
+    pose_marker.scale.x = 0.01;//0.005;
+    pose_marker.scale.y = 0.01;//0.005;
+    pose_marker.scale.z = 0.01;//0.005;
     pose_marker.color.r = 1.0;
     pose_marker.color.g = 0.0;
     pose_marker.color.b = 0.0;
@@ -167,16 +172,38 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     pose_marker.pose.orientation.z = 0.0;
     pose_marker.pose.orientation.w = 1.0;
 
-    // Make a button to hold the menu
-    visualization_msgs::InteractiveMarkerControl control;
-    control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
-    control.always_visible = true;
-    control.markers.push_back (pose_marker);
-    int_marker.controls.push_back (control);
-    
-    marker_server_->insert (int_marker);
+    // Try setting the pose first
+
+
+    std::string marker_name (key_symbol);
+    std_msgs::Header marker_header;
+    marker_header.frame_id = "/world";
+    marker_header.stamp = ros::Time::now ();
+
+    // visualization_msgs::InteractiveMarker current_marker;
+    // bool test_get = marker_server_->get (marker_name, current_marker);
+
+    bool set_pose_worked = marker_server_->setPose (marker_name, pose_marker.pose, marker_header);
+
+    if (!set_pose_worked)
+    {
+      visualization_msgs::InteractiveMarker int_marker;
+      int_marker.header = marker_header;//.frame_id = "/world";
+      int_marker.name = marker_name;
+      //int_marker.description = "Mapper Trajectory";
+
+      // Make a button to hold the menu
+      visualization_msgs::InteractiveMarkerControl control;
+      control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+      control.always_visible = true;
+      control.markers.push_back (pose_marker);
+      int_marker.controls.push_back (control);
+      
+      marker_server_->insert (int_marker);
+    }
     
   }
+  marker_server_->applyChanges ();  
 
   //writeMapperTrajectoryFile (std::string (""), current_solution);
 
