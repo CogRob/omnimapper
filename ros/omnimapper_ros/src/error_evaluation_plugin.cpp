@@ -10,6 +10,30 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
   marker_server_->clear ();
+
+  // Create a control marker at the map origin for map level controls
+  visualization_msgs::InteractiveMarker origin_int_marker;
+  origin_int_marker.header.frame_id = "/world";
+  origin_int_marker.name = "OmniMapper";
+
+  visualization_msgs::Marker box_marker;
+  box_marker.type = visualization_msgs::Marker::CUBE;
+  box_marker.scale.x = 0.1;
+  box_marker.scale.y = 0.1;
+  box_marker.scale.z = 0.1;
+  box_marker.color.r = 0.5;
+  box_marker.color.g = 0.5;
+  box_marker.color.b = 0.5;
+  box_marker.color.a = 1.0;
+
+  visualization_msgs::InteractiveMarkerControl control;
+  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+  control.always_visible = true;
+  control.markers.push_back (box_marker);
+  origin_int_marker.controls.push_back (control);
+
+  marker_server_->insert (origin_int_marker);
+
   marker_server_->applyChanges ();
 }
 
@@ -173,8 +197,8 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     pose_marker.pose.orientation.w = 1.0;
 
     // Try setting the pose first
-
-
+    
+    geometry_msgs::Pose origin_pose;
     std::string marker_name (key_symbol);
     std_msgs::Header marker_header;
     marker_header.frame_id = "/world";
@@ -183,7 +207,11 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     // visualization_msgs::InteractiveMarker current_marker;
     // bool test_get = marker_server_->get (marker_name, current_marker);
 
-    bool set_pose_worked = marker_server_->setPose (marker_name, pose_marker.pose, marker_header);
+    
+
+     bool set_pose_worked = marker_server_->setPose (marker_name, origin_pose, marker_header);
+    //bool set_pose_worked = false;
+    
 
     if (!set_pose_worked)
     {

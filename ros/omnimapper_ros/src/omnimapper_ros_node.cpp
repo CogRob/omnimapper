@@ -387,8 +387,12 @@ class OmniMapperROSNode
       plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up the object Plugin
-      object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
-      object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
+      if (use_objects_)
+      {
+        object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
+        object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
+      }
+
       // Set up the feature extraction
       if (use_occ_edge_icp_)
       {

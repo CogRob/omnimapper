@@ -24,8 +24,9 @@ link_directories(../../build)
 
 include_directories(../../3rdparty/distortion_model/include)
 
-include_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/include)
-link_directories(/home/siddharth/Research/projects/workspace/cpu_tsdf/build)
+find_package (CPUTSDF REQUIRED)
+include_directories(${CPUTSDF_INCLUDE_DIRS})
+link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

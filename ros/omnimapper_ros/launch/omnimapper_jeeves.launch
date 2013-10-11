@@ -8,7 +8,7 @@
       	    <param name="use_planes" value="true"/>
 	    <param name="use_icp" value="true"/>
 	    <param name="use_csm" value="false"/>
-	    <param name="use_objects" value="true"/>
+	    <param name="use_objects" value="false"/>
 	    <param name="use_occ_edge_icp" value="false"/>
 	    <param name="use_tf" value="true"/>
 	    <param name="use_error_plugin" value="false"/>

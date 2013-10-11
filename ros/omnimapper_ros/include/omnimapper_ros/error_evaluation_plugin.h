@@ -46,6 +46,9 @@ namespace omnimapper
       // Interactive Markers
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
 
+      // Interactive Menu Handler
+      interactive_markers::MenuHandler menu_handler_;
+
       // Publisher for markers
       ros::Publisher marker_array_pub_;
 

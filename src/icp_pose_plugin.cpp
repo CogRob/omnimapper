@@ -60,7 +60,7 @@ namespace omnimapper
     if (have_new_cloud_)
     {
       printf ("got new cloud before done processing the old one!\n");
-      assert (false);
+      //assert (false);
     }
     
     have_new_cloud_ = true;
