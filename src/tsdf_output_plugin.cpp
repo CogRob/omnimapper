@@ -62,19 +62,19 @@ omnimapper::TSDFOutputPlugin<PointT>::update (boost::shared_ptr<gtsam::Values>& 
 }
 
 template <typename PointT> void
-omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
+omnimapper::TSDFOutputPlugin<PointT>::generateTSDF (double grid_size, int resolution)
 {
   printf ("tsdf_plugin: starting generateTSDF\n");
   // Make a TSDF
   cpu_tsdf::TSDFVolumeOctree::Ptr tsdf (new cpu_tsdf::TSDFVolumeOctree);
   printf ("tsdf_plugin: created TSDFVolumeOctree\n");
-  //tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
+  tsdf->setGridSize (grid_size, grid_size, grid_size); // 10m x 10m x 10m
   //tsdf->setGridSize (30.0, 30.0, 30.0);
-  tsdf->setGridSize (3.0, 3.0, 3.0);
+  //tsdf->setGridSize (3.0, 3.0, 3.0);
   //tsdf->setResolution (1024, 1024, 1024);
-  //tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
+  tsdf->setResolution (resolution, resolution, resolution); // Smallest sell cize = 10m / 2048 = about half a centimeter
   //tsdf->setResolution (4096, 4096, 4096);
-  tsdf->setGridSize (3000, 3000, 3000);
+  //tsdf->setGridSize (3000, 3000, 3000);
   Eigen::Affine3d tsdf_center = Eigen::Affine3d::Identity (); // Optionally offset the center
   tsdf->setGlobalTransform (tsdf_center);
   //tsdf->setDepthTruncationLimits ();
@@ -84,16 +84,20 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
   tsdf->reset (); // Initialize it to be empty
 
   printf ("tsdf_plugin: initialized to empty\n");
-  
 
   printf ("tsdf_plugin: getting poses\n");
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = latest_solution_->filter<gtsam::Pose3>();
   //gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
 
+  printf ("tsdf_plugin: solution has: %zu\n", pose_filtered.size ());
+  
+  // Debug
+  CloudPtr aggregate_cloud (new Cloud ());
+  // end debug
+
   int pose_num = 0;
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
-    printf ("tsdf_plugin: Adding cloud %d...\n", ++pose_num);
     gtsam::Symbol key_symbol (key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
 
@@ -131,25 +135,41 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF ()
     printf ("Cloud has: %d normals has: %d\n", frame_cloud->points.size (), empty_normals.points.size ());
 
     if (frame_cloud->points.size () > 0)
+    {
+      printf ("tsdf_plugin: Adding cloud %d...\n", ++pose_num);
+      
+      // Debug
+      CloudPtr map_cloud (new Cloud ());
+      pcl::transformPointCloud (*frame_cloud, *map_cloud, tform);
+      (*aggregate_cloud) += (*map_cloud);
+      // end debug
+
       tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal> (*frame_cloud, empty_normals, tform); // Integrate the cloud
+    }
+    
     // Note, the normals aren't being used in the default settings. Feel free to pass in an empty cloud
   }
-  tsdf->save ("/home/siddharth/kinect/output.vol"); // Save it?
+  tsdf->save ("/home/atrevor/Desktop/output.vol"); // Save it?
+
+  // debug
+  pcl::io::savePCDFileBinaryCompressed ("/home/atrevor/Desktop/aggregate_cloud.pcd", *aggregate_cloud);
+  
+  // end debug
 
   // Maching Cubes
   cpu_tsdf::MarchingCubesTSDFOctree mc;
   mc.setInputTSDF (tsdf);
   mc.setColorByConfidence (false);
   mc.setColorByRGB (true);
-  mc.setMinWeight (0.1);
+  //mc.setMinWeight (0.1);
   pcl::PolygonMesh mesh;
   mc.reconstruct (mesh);
-  pcl::io::savePLYFileBinary ("/home/siddharth/kinect/mesh.ply", mesh);
+  pcl::io::savePLYFileBinary ("/home/atrevor/Desktop/mesh.ply", mesh);
   
   // Render from xo
   Eigen::Affine3d init_pose = Eigen::Affine3d::Identity ();
   pcl::PointCloud<pcl::PointNormal>::Ptr raytraced = tsdf->renderView (init_pose);
-  //pcl::io::savePCDFileBinary ("rendered_view.pcd", *raytraced);
+  pcl::io::savePCDFileBinary ("/home/atrevor/Desktop/rendered_view.pcd", *raytraced);
 }
 
 template class omnimapper::TSDFOutputPlugin<pcl::PointXYZRGBA>;

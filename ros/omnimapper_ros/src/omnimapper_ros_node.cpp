@@ -159,6 +159,7 @@ class OmniMapperROSNode
     double tf_roll_noise_, tf_pitch_noise_, tf_yaw_noise_;
     
     // Visualization params
+    bool use_rviz_plugin_;
     bool draw_pose_array_;
     bool draw_pose_graph_;
     bool draw_label_cloud_;
@@ -187,6 +188,8 @@ class OmniMapperROSNode
     std::string evaluation_associated_txt_path_;
     std::string evaluation_ground_truth_txt_path_;
     std::string evaluation_output_trajectory_txt_path_;
+    bool evaluation_mode_write_trajectory_;
+    bool evaluation_mode_write_tsdf_;
     ros::Timer eval_timer_;
 
     OmniMapperROSNode ()
@@ -250,13 +253,14 @@ class OmniMapperROSNode
       n_.param ("init_qy", init_qy_, 0.0);
       n_.param ("init_qz", init_qz_, 0.0);
       n_.param ("init_qw", init_qw_, 1.0);
+      n_.param ("use_rviz_plugin", use_rviz_plugin_, true);
       n_.param ("draw_pose_array", draw_pose_array_, true);
       n_.param ("draw_pose_graph", draw_pose_graph_, true);
       n_.param ("draw_label_cloud", draw_label_cloud_, true);
       n_.param ("use_label_cloud", use_label_cloud_, true);
       n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
       n_.param ("broadcast_map_to_odom", broadcast_map_to_odom_, false);
-      n_.param ("use_distortion_model", use_distortion_model_, true);
+      n_.param ("use_distortion_model", use_distortion_model_, false);
       n_.param ("use_rgbd_sensor_base_tf_functor", use_rgbd_sensor_base_tf_functor_, true);
       n_.param ("distortion_model_path", distortion_model_path_, std::string ("/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model"));
       n_.param ("evaluation_mode", evaluation_mode_, false);
@@ -264,6 +268,8 @@ class OmniMapperROSNode
       n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
       n_.param ("evaluation_ground_truth_txt_path", evaluation_ground_truth_txt_path_, std::string (""));
       n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
+      n_.param ("evaluation_mode_write_trajectory", evaluation_mode_write_trajectory_, true);
+      n_.param ("evaluation_mode_write_tsdf", evaluation_mode_write_tsdf_, false);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
 
 
@@ -385,8 +391,12 @@ class OmniMapperROSNode
       plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
       // Set up the object Plugin
-      object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
-      object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
+      if (use_objects_)
+      {
+        object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
+        object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
+      }
+
       // Set up the feature extraction
       if (use_occ_edge_icp_)
       {
@@ -461,10 +471,13 @@ class OmniMapperROSNode
       pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperROSNode::cloudCallback, this);//("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
       
       // Install the visualizer
-      vis_plugin_.setDrawPoseArray (draw_pose_array_);
-      vis_plugin_.setDrawPoseGraph (draw_pose_graph_);
-      boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr (&vis_plugin_);
-      omb_.addOutputPlugin (vis_ptr);
+      if (use_rviz_plugin_)
+      {
+        vis_plugin_.setDrawPoseArray (draw_pose_array_);
+        vis_plugin_.setDrawPoseGraph (draw_pose_graph_);
+        boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr (&vis_plugin_);
+        omb_.addOutputPlugin (vis_ptr);
+      }
 
 
       // Set up the TSDF Plugin
@@ -603,7 +616,7 @@ class OmniMapperROSNode
     generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req, omnimapper_ros::OutputMapTSDF::Response &res)
     {
       printf ("TSDF Service call, calling tsdf plugin\n");
-      tsdf_plugin_.generateTSDF ();
+      tsdf_plugin_.generateTSDF (req.grid_size, req.resolution);
       return (true);
     }
 
@@ -621,7 +634,7 @@ class OmniMapperROSNode
       if (use_occ_edge_icp_ && !edge_icp_plugin_.ready ())
         ready = false;
       
-      if (ready && evaluation_file_idx_ < evaluation_pcd_files_.size ())
+      if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size ()))
       {
         // Load next file
         CloudPtr cloud (new Cloud ());
@@ -642,15 +655,28 @@ class OmniMapperROSNode
 
         sensor_msgs::PointCloud2ConstPtr cloud_msg_ptr (cloud_msg);
         cloudCallback (cloud_msg_ptr);
+        ready = false;
       }
       else
         ROS_INFO ("Plugins not yet ready.\n");
 
       // Write the trajectory if we're finished
-      if (evaluation_file_idx_ == evaluation_pcd_files_.size ())
+      if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size ()))
       {
+        ROS_INFO ("Completed evaluation, writing output file.");
         gtsam::Values solution = omb_.getSolution ();
-        eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
+        
+        if (evaluation_mode_write_trajectory_)
+        {
+          eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
+          ROS_INFO ("Evaluation log written as: %s", evaluation_output_trajectory_txt_path_.c_str ());
+        }
+
+        if (evaluation_mode_write_tsdf_)
+        {
+          tsdf_plugin_.generateTSDF (10.0, 1024);
+        }
+        
         exit (0);
       }
       

@@ -40,12 +40,18 @@ namespace omnimapper
       // Writes mapper trajectory as a file, in the format used by the TUM RGBD Benchmarking tools
       void writeMapperTrajectoryFile (std::string trajectory_filename, gtsam::Values& current_solution);
 
+      // Initializes the interactive markers menu
+      void initMenu ();
+
     protected:
       ros::NodeHandle nh_;
       
       // Interactive Markers
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
 
+      // Interactive Menu Handler
+      interactive_markers::MenuHandler menu_handler_;
+      
       // Publisher for markers
       ros::Publisher marker_array_pub_;
 

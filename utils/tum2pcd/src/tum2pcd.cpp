@@ -129,9 +129,8 @@ int main (int argc, char** argv)
     
     //std::cout << "Would write: " << outfile << std::endl;
     
-    
-    //pcl::io::savePCDFileBinaryCompressed (outfile, *cloud_ptr);
-    pcl::io::savePCDFile (outfile, *cloud_ptr);
+    pcl::io::savePCDFileBinaryCompressed (outfile, *cloud_ptr);
+    //pcl::io::savePCDFile (outfile, *cloud_ptr);
     // boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time ();
     // eval->process (stamps[i], cloud_ptr);
     // boost::posix_time::ptime current_time = boost::posix_time::microsec_clock::local_time ();
