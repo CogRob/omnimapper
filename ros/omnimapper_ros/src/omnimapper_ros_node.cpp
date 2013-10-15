@@ -188,6 +188,8 @@ class OmniMapperROSNode
     std::string evaluation_associated_txt_path_;
     std::string evaluation_ground_truth_txt_path_;
     std::string evaluation_output_trajectory_txt_path_;
+    bool evaluation_mode_write_trajectory_;
+    bool evaluation_mode_write_tsdf_;
     ros::Timer eval_timer_;
 
     OmniMapperROSNode ()
@@ -266,6 +268,8 @@ class OmniMapperROSNode
       n_.param ("evaluation_associated_txt_path", evaluation_associated_txt_path_, std::string (""));
       n_.param ("evaluation_ground_truth_txt_path", evaluation_ground_truth_txt_path_, std::string (""));
       n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
+      n_.param ("evaluation_mode_write_trajectory", evaluation_mode_write_trajectory_, true);
+      n_.param ("evaluation_mode_write_tsdf", evaluation_mode_write_tsdf_, false);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
 
 
@@ -612,7 +616,7 @@ class OmniMapperROSNode
     generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req, omnimapper_ros::OutputMapTSDF::Response &res)
     {
       printf ("TSDF Service call, calling tsdf plugin\n");
-      tsdf_plugin_.generateTSDF ();
+      tsdf_plugin_.generateTSDF (req.grid_size, req.resolution);
       return (true);
     }
 
@@ -651,6 +655,7 @@ class OmniMapperROSNode
 
         sensor_msgs::PointCloud2ConstPtr cloud_msg_ptr (cloud_msg);
         cloudCallback (cloud_msg_ptr);
+        ready = false;
       }
       else
         ROS_INFO ("Plugins not yet ready.\n");
@@ -660,8 +665,18 @@ class OmniMapperROSNode
       {
         ROS_INFO ("Completed evaluation, writing output file.");
         gtsam::Values solution = omb_.getSolution ();
-        eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
-        ROS_INFO ("Evaluation log written as: %s", evaluation_output_trajectory_txt_path_.c_str ());
+        
+        if (evaluation_mode_write_trajectory_)
+        {
+          eval_plugin_.writeMapperTrajectoryFile (evaluation_output_trajectory_txt_path_, solution);
+          ROS_INFO ("Evaluation log written as: %s", evaluation_output_trajectory_txt_path_.c_str ());
+        }
+
+        if (evaluation_mode_write_tsdf_)
+        {
+          tsdf_plugin_.generateTSDF (10.0, 1024);
+        }
+        
         exit (0);
       }
       

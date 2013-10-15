@@ -38,6 +38,15 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
 }
 
 void
+omnimapper::ErrorEvaluationPlugin::initMenu ()
+{
+  //visualization_msgs::MenuHandler::EntryHandle play_pause;
+  //menu_handler_.insert (play_pause, "play / pause");
+  
+}
+
+
+void
 omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
   printf ("Updating Error evaluation plugin\n");
@@ -178,7 +187,12 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     // W X Y Z
     gtsam::Vector quat = rot.quaternion ();
 
-    // Make a sphere
+    omnimapper::Time t1;
+    mapper_->getTimeAtPoseSymbol (key_symbol, t1);
+    
+    gtsam::Pose3 gt_p1 = getPoseAtTime (t1);
+    
+    // Make a sphere for the current pose
     visualization_msgs::Marker pose_marker;
     pose_marker.type = visualization_msgs::Marker::SPHERE;
     pose_marker.scale.x = 0.01;//0.005;
@@ -195,6 +209,31 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     pose_marker.pose.orientation.y = 0.0;
     pose_marker.pose.orientation.z = 0.0;
     pose_marker.pose.orientation.w = 1.0;
+
+    // Ground Truth Marker
+    std::string gt_name = std::string ("gt_") + std::string (key_symbol);
+    visualization_msgs::InteractiveMarker gt_marker;
+    bool gt_pose_exists = marker_server_->get (gt_name, gt_marker);
+    
+    if (!gt_pose_exists)
+    {
+      visualization_msgs::Marker gt_pose_marker;
+      gt_pose_marker.type = visualization_msgs::Marker::SPHERE;
+      gt_pose_marker.scale.x = 0.01;//0.005;
+      gt_pose_marker.scale.y = 0.01;//0.005;
+      gt_pose_marker.scale.z = 0.01;//0.005;
+      gt_pose_marker.color.r = 0.0;
+      gt_pose_marker.color.g = 1.0;
+      gt_pose_marker.color.b = 0.0;
+      gt_pose_marker.color.a = 1.0;
+      gt_pose_marker.pose.position.x = gt_p1.x ();
+      gt_pose_marker.pose.position.y = gt_p1.y ();
+      gt_pose_marker.pose.position.z = gt_p1.z ();
+      gt_pose_marker.pose.orientation.x = 0.0;
+      gt_pose_marker.pose.orientation.y = 0.0;
+      gt_pose_marker.pose.orientation.z = 0.0;
+      gt_pose_marker.pose.orientation.w = 1.0;
+    }
 
     // Try setting the pose first
     

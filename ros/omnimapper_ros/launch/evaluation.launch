@@ -36,7 +36,7 @@
 	    <param name="init_qz" value="-0.089359"/>
 	    <param name="init_qw" value="-0.391090"/>
 	    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
-	    <param name="icp_leaf_size" value="0.05"/>
+	    <param name="icp_leaf_size" value="0.025"/>
 	    <param name="icp_max_correspondence_distance" value="0.1"/>
 	    <param name="icp_trans_noise" value="0.05"/>
 	    <param name="icp_rot_noise" value="0.05"/>

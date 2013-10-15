@@ -5,6 +5,7 @@
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/gicp.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/common/time.h>
 
@@ -79,7 +80,7 @@ namespace omnimapper
     }
 
     gtsam::Symbol current_symbol = mapper_->currentPoseSymbol ();
-    printf ("current symbol: %d\n", current_symbol.index ());
+    printf ("current symbol: %zu\n", current_symbol.index ());
     {
       boost::mutex::scoped_lock (current_cloud_mutex_);
       clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_symbol, current_cloud_));
@@ -146,7 +147,7 @@ namespace omnimapper
       
       current_cloud = current_cloud_;
     }
-    printf ("current cloud points: %d\n", current_cloud->points.size ());
+    printf ("current cloud points: %zu\n", current_cloud->points.size ());
     
     // Downsample, if needed
     CloudPtr current_cloud_filtered (new Cloud ());
@@ -196,7 +197,7 @@ namespace omnimapper
     std::cout << "ICP Plugin: Getting symbol for current time: " << current_time << std::endl;
     mapper_->getPoseSymbolAtTime (current_time, current_sym);
     //std::cout << "stamp time: " << current_cloud_->header.stamp << " converted time: " << current_time << std::endl;
-    printf ("ICP Plugin: current symbol: %d, inserting cloud\n", current_sym.index ());
+    printf ("ICP Plugin: current symbol: %zu, inserting cloud\n", current_sym.index ());
     //{
     //  boost::mutex::scoped_lock (current_cloud_mutex_);
     clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_base));//current_cloud_));
@@ -204,8 +205,16 @@ namespace omnimapper
   
     if (save_full_res_clouds_)
     {
-      printf ("ICPPlugin: Saving full res cloud with %d\n", current_cloud->points.size ());
-      full_res_clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud));
+      printf ("ICPPlugin: Saving full res cloud with %zu\n", current_cloud->points.size ());
+      //full_res_clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud));
+      CloudPtr full_res_cloud_base (new Cloud ());
+      Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
+      pcl::transformPointCloud (*current_cloud, *full_res_cloud_base, sensor_to_base);
+      
+      std::string out_file = "/tmp/" + std::string (current_sym) + ".pcd";
+      full_res_clouds_.insert (std::pair<gtsam::Symbol, std::string> (current_sym, out_file));
+      //pcl::io::savePCDFileBinaryCompressed (out_file, *current_cloud);
+      pcl::io::savePCDFileBinaryCompressed (out_file, *full_res_cloud_base);
     }
     
     // We're done if that was the first cloud
@@ -221,7 +230,7 @@ namespace omnimapper
     }
     
     // Add constraints
-    printf ("ICP SYMS: prev3: x%d, prev2: x%d  prev: x%d, curr: x%d\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
+    printf ("ICP SYMS: prev3: x%zu, prev2: x%zu  prev: x%zu, curr: x%zu\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
     //boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, score_threshold_);
     boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, current_sym, score_threshold_);
@@ -333,7 +342,7 @@ namespace omnimapper
       
       //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
-      printf ("ADDED FACTOR BETWEEN x%d and x%d\n", sym1.index (), sym2.index ());
+      printf ("ADDED FACTOR BETWEEN x%zu and x%zu\n", sym1.index (), sym2.index ());
       relative_pose.print ("\n\nICP Relative Pose\n");
       printf ("ICP SCORE: %lf\n", icp_score);
       printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
@@ -369,7 +378,7 @@ namespace omnimapper
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::registerClouds (CloudConstPtr& cloud1, CloudConstPtr& cloud2, CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform, double& score)
   {
-    printf ("Starting icp... Cloud1: %d Cloud2: %d\n", cloud1->points.size (), cloud2->points.size ());
+    printf ("Starting icp... Cloud1: %zu Cloud2: %zu\n", cloud1->points.size (), cloud2->points.size ());
     std::cout << "Cloud1 stamp: " << cloud1->header.stamp << " Cloud2 stamp: " << cloud2->header.stamp << std::endl;
     if (cloud1->points.size () < 200 || cloud2->points.size () < 200)
         return (false);
@@ -445,7 +454,7 @@ namespace omnimapper
     {
       gtsam::Symbol test_sym (key_value.key);
       int sym_dist = sym.index () - test_sym.index ();
-      printf ("sym: %d test: %d\n",sym.index (), test_sym.index ());
+      printf ("sym: %zu test: %zu\n",sym.index (), test_sym.index ());
       if (sym_dist > pose_index_thresh_)
       {
         printf ("(%d) > %d\n",(sym.index () - test_sym.index ()), pose_index_thresh_);
@@ -465,7 +474,7 @@ namespace omnimapper
     if (min_dist < loop_closure_distance_threshold_)
     {
       addConstraint (sym, closest_sym, score_threshold_);
-      printf ("ADDED LOOP CLOSURE BETWEEN %d and %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+      printf ("ADDED LOOP CLOSURE BETWEEN %zu and %zu!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
               sym.index (), closest_sym.index ());
       return (true);
     }
@@ -481,7 +490,7 @@ namespace omnimapper
   ICPPoseMeasurementPlugin<PointT>::ready ()
   {
     boost::mutex::scoped_lock (current_cloud_mutex_);
-    printf ("ICPTest: ready: %d\n", (!have_new_cloud_));
+    printf ("ICPTest: ready: %zu\n", (!have_new_cloud_));
     return (!have_new_cloud_);
   }
 
@@ -524,16 +533,21 @@ namespace omnimapper
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  template <typename PointT> typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudConstPtr
+  template <typename PointT> typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudPtr
   ICPPoseMeasurementPlugin<PointT>::getFullResCloudPtr (gtsam::Symbol sym)
   {
     printf ("ICPPlugin: In getCloudPtr!\n");
     if (full_res_clouds_.count (sym) > 0)
-      return (full_res_clouds_.at (sym));
+    {
+      CloudPtr cloud_ptr (new Cloud ());
+      pcl::io::loadPCDFile<PointT>(full_res_clouds_.at (sym).c_str (), *cloud_ptr);
+      return (cloud_ptr);
+      //return (full_res_clouds_.at (sym));
+    }
     else
     {
       printf ("ERROR: REQUESTED SYMBOL WITH NO POINTS!\n");
-      CloudConstPtr empty (new Cloud ());
+      CloudPtr empty (new Cloud ());
       return (empty);
     }
   }

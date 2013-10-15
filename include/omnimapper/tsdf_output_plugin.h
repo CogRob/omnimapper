@@ -57,7 +57,7 @@ namespace omnimapper
       TSDFOutputPlugin (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; };
-      void generateTSDF ();
+      void generateTSDF (double grid_size, int resolution);
     protected:
       OmniMapperBase* mapper_;
       
