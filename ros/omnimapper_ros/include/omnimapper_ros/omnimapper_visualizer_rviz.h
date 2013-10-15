@@ -41,7 +41,7 @@ namespace omnimapper
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
 
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
-      void objectCallback(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map);
+      void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;

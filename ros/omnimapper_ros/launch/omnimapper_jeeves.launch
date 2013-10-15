@@ -5,7 +5,7 @@
    	    <arg name="load_driver" value="false" />
    </include>
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen"  >
-      	    <param name="use_planes" value="true"/>
+      	    <param name="use_planes" value="false"/>
 	    <param name="use_icp" value="true"/>
 	    <param name="use_csm" value="false"/>
 	    <param name="use_objects" value="true"/>
@@ -24,13 +24,13 @@
 	    <param name="icp_rot_noise" value="0.15"/>
 	    <param name="plane_range_threshold" value="0.1"/>
 	    <param name="plane_angular_threshold" value="0.174532925"/>
-	    <param name="plane_range_noise" value="0.5"/>
-	    <param name="plane_angular_noise" value="1.174532925"/>
+	    <param name="plane_range_noise" value="0.1"/>
+	    <param name="plane_angular_noise" value="0.174532925"/>
 	    <param name="tf_trans_noise" value="0.05"/>
 	    <param name="tf_roll_noise" value="0.001"/>
 	    <param name="tf_pitch_noise" value="0.001"/>
 	    <param name="tf_yaw_noise" value="0.2"/>
-	    <param name="add_pose_per_cloud" value="false"/>
+	    <param name="add_pose_per_cloud" value="true"/>
 	    <param name="broadcast_map_to_odom" value="true"/>
 	    <param name="draw_pose_array" value="true"/>
 	    <param name="draw_pose_graph" value="true"/>

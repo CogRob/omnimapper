@@ -35,7 +35,7 @@ namespace omnimapper
     object_database_location_ = object_database_location;
     std::cout << "Object database location set: " << object_database_location_
         << std::endl;
-    loadRepresentations ();
+    loadDatabase (); // load the database
     std::cout << "Loaded representations " << std::endl;
     segment_propagation_.reset (new SegmentPropagation<PointT> ());
     segment_propagation_->setActiveLabelIndices (max_object_size);
@@ -49,7 +49,7 @@ namespace omnimapper
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT> void ObjectPlugin<PointT>::setObjectCallback (
       boost::function<
-          void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn)
+          void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3, gtsam::Point3)>& fn)
   {
     cloud_cv_callback_ = fn;
     cloud_cv_flag_ = true;
@@ -57,7 +57,7 @@ namespace omnimapper
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT>
-  void ObjectPlugin<PointT>::loadRepresentations ()
+  void ObjectPlugin<PointT>::loadDatabase ()
   {
 
     std::cout << "Inside loadDesc" << std::endl;
@@ -168,18 +168,18 @@ namespace omnimapper
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   template<typename PointT>
-  void ObjectPlugin<PointT>::generateObjectModel (gtsam::Object<PointT> object,
-      Eigen::Vector4f obj_centroid, int id)
+  void ObjectPlugin<PointT>::computeTSDF (Object<PointT> object,
+      Eigen::Vector4f obj_centroid)
   {
     printf ("starting generateTSDF\n");
+
+    gtsam::Symbol object_symbol = object.sym;
+    int id = object_symbol.index();
+
 // Make a TSDF
 
-//tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
-//tsdf->setGridSize (30.0, 30.0, 30.0);
     tsdf->setGridSize (10.0, 10.0, 10.0);
     tsdf->setResolution (2048, 2048, 2048);
-//tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
-//tsdf->setResolution (4096, 4096, 4096);
 
     Eigen::Affine3d object_center;
     object_center.translation () = Eigen::Vector3d (obj_centroid[0],
@@ -336,15 +336,17 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::recreateObjectModels ()
   {
+    while(1)
+    {
     std::cout << "Creating Optimal Cloud\n" << std::endl;
-    typename std::map<gtsam::Symbol, gtsam::Object<PointT> >::iterator it;
+    typename std::map<gtsam::Symbol, Object<PointT> >::iterator it;
     typename std::map<gtsam::Symbol, CloudPtr>::iterator it_cluster;
     for (it = object_map.begin (); it != object_map.end (); it++)
     {
 
       gtsam::Symbol sym = it->first;
-      gtsam::Object<PointT> object = it->second;
-      std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+      Object<PointT>& object = it->second;
+      std::map<gtsam::Symbol, CloudPtr> cluster = it->second.clusters_;
       Cloud transformed_cloud_opt_;
 
       for (it_cluster = cluster.begin (); it_cluster != cluster.end ();
@@ -363,28 +365,29 @@ namespace omnimapper
           CloudPtr map_cloud (new Cloud ());
           gtsam::Pose3 new_pose = *cloud_pose;
           Eigen::Matrix4f map_transform = new_pose.matrix ().cast<float> ();
-          pcl::transformPointCloud (*cloud, *map_cloud, map_transform);
+          pcl::transformPointCloud (*cloud, *map_cloud, map_transform); // transform cloud from base_frame to world_frame
           transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
 
         }
       }
 
-     // object.object_mutex_.lock();
+      object.object_mutex_.lock();
       object.optimal_cloud_ = transformed_cloud_opt_.makeShared();
-     // object.object_mutex_.unlock();
+      object.object_mutex_.unlock();
     }
 
-    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
 
+    boost::this_thread::sleep (boost::posix_time::milliseconds (100 ));
+    }
 
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT>
-  void ObjectPlugin<PointT>::recognizeObject (gtsam::Object<PointT>& object,
-      int id)
+  void ObjectPlugin<PointT>::recognizeObject (Object<PointT>& object)
   {
 
+    int id = object.sym.index();
     std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
 
     std::vector<gtsam::Pose3> pose_array;
@@ -529,7 +532,7 @@ namespace omnimapper
     pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
     std::cout << "Model saved" << std::endl;
     //std::cout << "PCD file saved"
-    //generateObjectModel(object, obj_centroid, id);
+    //computeTSDF(object, obj_centroid);
 
     std::pair<int, int> obj = object_recognition_->matchToDatabase (
         transformed_cloud_opt_.makeShared (), pose_array, id, covariance_mat);
@@ -566,7 +569,7 @@ namespace omnimapper
         gtsam::Symbol object_symbol = object.sym;
         gtsam::SharedDiagonal measurement_noise;
         measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-            gtsam::Vector_ (3, 0.5, 0.5, 0.5));
+            gtsam::Vector_ (3, 5.5, 5.5, 5.5));
 
         gtsam::Symbol match_symbol = gtsam::Symbol ('o', obj.first);  // matching object symbol
 
@@ -667,7 +670,7 @@ namespace omnimapper
         sym.print ("Training Object: ");
         std::cout << "Symbol index: " << sym.index () << std::endl;
         std::cout << "#Objects in Queue: " << train_queue.size () << std::endl;
-        recognizeObject (object_map.at (sym), sym.index ());
+        recognizeObject (object_map.at (sym));
 
       }
       boost::this_thread::sleep (boost::posix_time::milliseconds (10));
@@ -719,7 +722,33 @@ namespace omnimapper
     return jaccard_index;
   }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template<typename PointT> float ObjectPlugin<PointT>::computeViewIntersection (
+      gtsam::Point3 view_direction, gtsam::Point3 view_center, Eigen::Vector4f obj_centroid)
+    {
+
+        /* compute object direction */
+
+    gtsam::Point3 obj_center (obj_centroid[0], obj_centroid[1],
+        obj_centroid[2]);  //center of the object in world frame
+    gtsam::Point3 obj_vector = obj_center-view_center; //camera center to object center direction
+    double norm=obj_vector.norm(); //direction norm
+    gtsam::Point3 obj_direction (obj_vector.x () / norm, obj_vector.y () / norm,
+        obj_vector.z () / norm); //normalized direction
+
+     /* angle between object and camera view */
+    double angle = acos((view_direction.dot(obj_direction)))*(180/M_PI);
+    std::cout << "[computeViewIntersection] object angle: " << angle << std::endl;
+
+    /* distance between object and camera view */
+    double distance = norm;
+
+    if (norm > 4 || angle > 60)  // object is either more than 4 meters away or not in the view frustum
+      return 0;
+    else
+      return 1;
+
+    }
+ //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT> void ObjectPlugin<PointT>::clusterCloudCallback (
       std::vector<CloudPtr> clusters, omnimapper::Time t,
       boost::optional<std::vector<pcl::PointIndices> > indices)
@@ -737,10 +766,18 @@ namespace omnimapper
 
     std::vector<CloudPtr> clusters_base;
 
+    // Get pose symbol for this timestamp
+     gtsam::Symbol pose_symbol;
+     mapper_->getPoseSymbolAtTime (t, pose_symbol);
+     boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
+         pose_symbol);
+
+    /* transfrom point clouds to base_frame */
+    Eigen::Affine3d sensor_to_base = Eigen::Affine3d::Identity();
     if (get_sensor_to_base_)
     {
       printf ("Object Plugin: Applying sensor to base transform.\n");
-      Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_) (t);
+       sensor_to_base = (*get_sensor_to_base_) (t);
       for (int i = 0; i < clusters.size (); i++)
       {
         CloudPtr tformed_cluster (new Cloud ());
@@ -753,15 +790,12 @@ namespace omnimapper
     {
       clusters_base = clusters;
     }
+    printf ("Object plugin got %d clusters_base\n", clusters_base.size ());
 
+    // Keep track of indices using indices_base
     std::vector<pcl::PointIndices> indices_base (clusters_base.size ());
 
-    printf ("Object plugin got %d clusters_base\n", clusters_base.size ());
-    // Get pose symbol for this timestamp
-    gtsam::Symbol pose_symbol;
-    mapper_->getPoseSymbolAtTime (t, pose_symbol);
-    boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
-        pose_symbol);
+
 
     gtsam::Values solution;
     if (filter_points_near_planes_)
@@ -973,7 +1007,7 @@ namespace omnimapper
         if (max_current_size <= obj_cnt)
         {
           // create new object
-          gtsam::Object<PointT> new_object;
+          Object<PointT> new_object;
 
           //add observation
 
@@ -989,7 +1023,7 @@ namespace omnimapper
 
           map_building_mutex_.lock();
           object_map.insert (
-              std::pair<gtsam::Symbol, gtsam::Object<PointT> > (best_symbol,
+              std::pair<gtsam::Symbol, Object<PointT> > (best_symbol,
                   new_object));
           map_building_mutex_.unlock();
           //mapper_->addNewValue(best_symbol, new_object);
@@ -1016,63 +1050,62 @@ namespace omnimapper
       // Segmentation Ends
       //////////////////////////////////////////////////////////////////////
 
-      /*
-       * Find a set of objects from the segments
-       * for which the recognition will be called
-       */
 
-      double start = pcl::getTime ();
 
-      // train or recognize an object if it is out of the active zone
-      Cloud active_cloud;
-      for (int obj_cnt = 0; obj_cnt < final_label.size (); obj_cnt++)
-      {
-        if (final_label[obj_cnt]->points.size () != 0)
-          active_cloud += *final_label[obj_cnt];
-      }
-      Eigen::Vector4f min_curr_cloud;
-      Eigen::Vector4f max_curr_cloud;
-      pcl::getMinMax3D (active_cloud, min_curr_cloud, max_curr_cloud);
+    }
 
-      std::cout << "Min Point Current Cloud " << min_curr_cloud << " Max: "
-          << max_curr_cloud << std::endl;
+    /*
+          * Find a set of objects from the segments
+          * for which the recognition will be called
+          */
 
-      Eigen::Vector4f min_curr_obj;
-      Eigen::Vector4f max_curr_obj;
+      /* estimate view pose using base frame pose and sensor_to_base transformation */
+       gtsam::Pose3 base_to_sensor(sensor_to_base.inverse().matrix());
+      gtsam::Pose3 view_pose= (*cloud_pose)*gtsam::Pose3(sensor_to_base.matrix());
 
-      for (int obj_cnt = 0; obj_cnt < matched_cloud.size (); obj_cnt++)
+      /* compute camera view direction */
+      gtsam::Rot3 view_rotation = view_pose.rotation();
+      gtsam::Point3 view_direction_vec = view_rotation.r3();
+      double view_direction_norm = view_direction_vec.norm();
+      gtsam::Point3 view_direction (view_direction_vec.x ()/view_direction_norm, view_direction_vec.y ()/view_direction_norm,
+          view_direction_vec.z ()/view_direction_norm); // camera view direction
+      gtsam::Point3 view_center = view_pose.translation ();  //camera center
+
+      view_center.print("[ObjectPlugin] view_center");
+      view_direction.print("[ObjectPlugin] view_direction");
+      CloudPtrVector unoptimized_cloud = segment_propagation_->final_map_cloud;
+      for (int obj_cnt = 0; obj_cnt < unoptimized_cloud.size (); obj_cnt++)
       {
         std::cout << "Size of object " << obj_cnt << " is "
-            << matched_cloud[obj_cnt]->points.size () << std::endl;
+            << unoptimized_cloud[obj_cnt]->points.size () << std::endl;
         gtsam::Symbol obj_symbol = gtsam::Symbol ('o', obj_cnt);
-        if (matched_cloud[obj_cnt]->points.size () != 0)
+        if (unoptimized_cloud[obj_cnt]->points.size () != 0)
         {
           // if the bounding box containing the current frame
           // does not intersect with the given object then train the object
-          pcl::getMinMax3D (*matched_cloud[obj_cnt], min_curr_obj,
-              max_curr_obj);
-          std::cout << "Min Point Current object " << min_curr_obj << " Max: "
-              << max_curr_obj << std::endl;
-          float intersection = computeIntersection (min_curr_obj, max_curr_obj,
-              min_curr_cloud, max_curr_cloud);
+          Eigen::Vector4f obj_centroid;
+          pcl::compute3DCentroid (*unoptimized_cloud[obj_cnt], obj_centroid);
+
+          float intersection = computeViewIntersection(view_direction, view_center, obj_centroid);
 
           std::cout << "Intersection of object " << obj_cnt << " is: "
               << intersection << std::endl;
+
           if (intersection == 0 && training_map[obj_symbol] == 0)
           {
             std::cout << "Intersection of object " << obj_cnt
                 << " is zero with the cloud" << std::endl;
-            //	recognizeObject(object_map.at(obj_symbol), obj_cnt);
+            //  recognizeObject(object_map.at(obj_symbol), obj_cnt);
             training_map[obj_symbol] = 1;
             obj_symbol.print ("Object symbol pushed: ");
             pushIntoQueue (obj_symbol);
 
-            //	std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
+            //  std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
           }
           else if (intersection != 0)
           {
 
-            //	pushIntoQueue(obj_symbol);
+            //  pushIntoQueue(obj_symbol);
 
             if (training_map.find (obj_symbol) == training_map.end ())
             {
@@ -1084,14 +1117,12 @@ namespace omnimapper
               training_map[obj_symbol] = 0;
             }
 
-            //	std::cout << "Retraining object " << obj_cnt << std::endl;
+            //  std::cout << "Retraining object " << obj_cnt << std::endl;
           }
 
-        }
 
+        }
       }
-      double end = pcl::getTime ();
-      std::cout << "Find objects took: " << double (end - start) << std::endl;
 
       //////////////////////////////////////////////////////////////////////
       // Objects estimated
@@ -1105,7 +1136,7 @@ namespace omnimapper
       if (cloud_cv_flag_)
       {
         std::cout << "Inside Object Plugin" << std::endl;
-        cloud_cv_callback_ (object_map);
+        cloud_cv_callback_ (object_map, view_center, view_direction);
 
         //cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
       }
@@ -1113,7 +1144,8 @@ namespace omnimapper
       std::cout << "Visualizations took: " << double (vis_end - vis_start)
           << std::endl;
 
-    }
+
+
 
   }
 

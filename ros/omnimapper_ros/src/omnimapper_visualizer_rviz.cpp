@@ -16,7 +16,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_pose_graph_ (true),
     draw_object_observation_cloud_ (true),
     draw_object_observation_bboxes_ (true),
-    draw_pose_marginals_ (false)
+    draw_pose_marginals_ (true)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -699,10 +699,10 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback (std::vector<
 
 
 template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback (
-    std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map)
+    std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 view_center, gtsam::Point3 view_direction)
 {
 
-  typename std::map<gtsam::Symbol, gtsam::Object<PointT> >::iterator it;
+  typename std::map<gtsam::Symbol, Object<PointT> >::iterator it;
   typename std::map<gtsam::Symbol, CloudPtr>::iterator it_cluster;
   typename std::multimap<int, gtsam::Symbol> top_objects;
   typename std::multimap<int, gtsam::Symbol>::iterator obj_iterator;
@@ -712,9 +712,7 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
   for (it = object_map.begin (); it != object_map.end (); it++)
   {
     gtsam::Symbol sym = it->first;
-    gtsam::Object<PointT> object = it->second;
-    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
-    top_objects.insert(std::pair<int, gtsam::Symbol>(cluster.size(), sym));
+    top_objects.insert(std::pair<int, gtsam::Symbol>(it->second.clusters_.size(), sym));
   }
 
 
@@ -724,32 +722,13 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
   {
     if(object_count == 20)break;
     gtsam::Symbol sym = obj_iterator->second;
-    gtsam::Object<PointT> object = object_map.at(sym);
+   Object<PointT>& object = object_map.at(sym);
 
-   // CloudPtr optimal_cloud = object.optimal_cloud_;
-   // pcl::copyPointCloud(*optimal_cloud, truncated_map_cloud);
-    //aggregate_cloud = aggregate_cloud + truncated_map_cloud;
-
-    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
-    for (it_cluster = cluster.begin (); it_cluster != cluster.end ();
-        it_cluster++)
-    {
-
-      gtsam::Symbol pose_sym = it_cluster->first;
-      CloudPtr cloud = it_cluster->second;
-      boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
-          pose_sym);
-      if (cloud_pose)
-      {
-        CloudPtr map_cloud (new Cloud());
-        gtsam::Pose3 new_pose = *cloud_pose;
-        Eigen::Matrix4f map_transform = new_pose.matrix ().cast<float> ();
-        pcl::transformPointCloud (*cloud, *map_cloud, map_transform);
-        pcl::copyPointCloud(*map_cloud, truncated_map_cloud);
-        aggregate_cloud = aggregate_cloud + truncated_map_cloud;
-
-      }
-    }
+    object.object_mutex_.lock();
+   CloudPtr optimal_cloud = object.optimal_cloud_;
+   object.object_mutex_.unlock();
+    pcl::copyPointCloud(*optimal_cloud, truncated_map_cloud);
+    aggregate_cloud = aggregate_cloud + truncated_map_cloud;
 
     object_count++; //counter to process only top K objects
   }
@@ -759,6 +738,92 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
   cloud_msg.header.frame_id = "/world"; ///camera_rgb_optical_frame";
   cloud_msg.header.stamp = ros::Time::now ();
   object_modeled_pub_.publish(cloud_msg);
+
+
+  view_direction.print("[rviz] view direction: ");
+  view_center.print("[rviz] view center");
+  gtsam::Point3 transformed_view_center (view_center.x (), view_center.y (),
+      view_center.z ());
+  /* publish the camera frustum */
+int depth_limit = 3; // frustum culling at 3m
+double vertical_angle = (49/2)*M_PI/180; // kinect vertical FOV=49 degrees
+double horizontal_angle = (57/2)*M_PI/180; // kinect horizontal FOV = 57
+gtsam::Point3 frame_center = transformed_view_center + depth_limit*view_direction;
+frame_center.print("[rviz] frame center");
+
+
+
+geometry_msgs::Point p1;
+  p1.x = 0;
+  p1.y = 0;
+  p1.z = 0;
+
+  geometry_msgs::Point frame_c;
+  frame_c.x = 0;
+  frame_c.y = 0;
+  frame_c.z = depth_limit;
+
+geometry_msgs::Point p2;
+p2.x = depth_limit*tan(horizontal_angle);
+p2.y = depth_limit*tan(vertical_angle);
+p2.z = depth_limit;
+
+geometry_msgs::Point p3;
+p3.x = -p2.x                                                                                                                                                                                                               ;
+p3.y = p2.y;
+p3.z = p2.z;
+
+geometry_msgs::Point p4;
+p4.x = p2.x;
+p4.y = -p2.y;
+p4.z = p2.z;
+
+geometry_msgs::Point p5;
+p5.x = -p2.x;
+p5.y = -p2.y;
+p5.z = p2.z;
+
+  visualization_msgs::MarkerArray marker_array;
+  visualization_msgs::Marker frustum_marker;
+  frustum_marker.header.frame_id = "/camera_rgb_optical_frame";
+  frustum_marker.header.stamp = ros::Time::now ();
+  frustum_marker.ns = "camera_frustum";
+  frustum_marker.id = 0;
+  frustum_marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  frustum_marker.action = visualization_msgs::Marker::ADD;
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p2);
+  frustum_marker.points.push_back (p3);
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p2);
+  frustum_marker.points.push_back (p4);
+
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p4);
+  frustum_marker.points.push_back (p5);
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p3);
+  frustum_marker.points.push_back (p5);
+
+
+
+  frustum_marker.scale.x = 1.0;
+  frustum_marker.scale.y = 1.0;
+  frustum_marker.scale.z = 1.0;
+  frustum_marker.color.a = 0.5;
+  frustum_marker.color.r = 1.0;
+  frustum_marker.color.g = 1.0;
+  frustum_marker.color.b = 1.0;
+  marker_array.markers.push_back (frustum_marker);
+  marker_array_pub_.publish (marker_array);
+
 
 
 }

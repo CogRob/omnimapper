@@ -13,7 +13,7 @@
 #include <omnimapper/omnimapper_base.h>
 #include <boost/thread/locks.hpp>
 
-namespace gtsam {
+namespace omnimapper {
 // For now, this is just a collection that contains a point cloud pointer and an optional label
 template<typename PointT>
 class Object{
@@ -26,13 +26,16 @@ public:
 	// constructor
 	Object();
 
+	//copy constructor
+	Object(const Object& object);
+
 	gtsam::Symbol sym;
 	// list of observations
 	std::map<gtsam::Symbol, CloudPtr> clusters_;
 	std::map<gtsam::Symbol, pcl::PointIndices> indices_;
 	std::map<gtsam::Symbol, int> factor_flag;
 	CloudPtr optimal_cloud_;
-	//boost::mutex object_mutex_;
+	boost::mutex object_mutex_;
 
 	// optional label
 	std::string name;

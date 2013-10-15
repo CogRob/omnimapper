@@ -23,6 +23,7 @@ namespace omnimapper
 {
   /** \brief ObjectPlugin keeps track of objects, both recognized and unrecognized, and optionally localizes from objects flagged as stationary.
    *  \author Alex Trevor
+   *  \author Siddharth Choudhary
    */
   template<typename PointT>
   class ObjectPlugin
@@ -31,39 +32,69 @@ namespace omnimapper
       typedef typename pcl::PointCloud<PointT> Cloud;
       typedef typename Cloud::Ptr CloudPtr;
       typedef typename Cloud::ConstPtr CloudConstPtr;
-      //typedef typename std::vector<CloudPtr, Eigen::aligned_allocator<CloudPtr> > CloudPtrVector;
       typedef typename std::vector<CloudPtr> CloudPtrVector;
 
     public:
+
+      /** \brief ObjectPlugin constructor */
       ObjectPlugin (omnimapper::OmniMapperBase* mapper);
+
+      /** \brief Destructor               */
       ~ObjectPlugin ();
 
+      /** \brief clusterCloudCallback receives non planar segments
+       *   from organized feature extraction and filters out object
+       *   hypothesis from those segments, aggregates the object hypothesis
+       *   to form a single object cloud and stores the feature description
+       */
       void clusterCloudCallback (std::vector<CloudPtr> clusters,
           omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> >);
 
+      /** \brief setObjectCallback sets the visualization call back
+       *  to connect object plugin to the visualization module
+       */
       void setObjectCallback (
-          boost::function<void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)>& fn);
+          boost::function<void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3, gtsam::Point3)>& fn);
 
+      /** \brief getObservations is used by visualization module
+       * to visualize filtered out object observations
+       */
       CloudPtrVector getObservations (gtsam::Symbol sym);
 
+      /** \brief setSensorToBaseFunctor provides the transformation from
+       * rgbd frame to base frame.
+       */
       void setSensorToBaseFunctor (
           omnimapper::GetTransformFunctorPtr get_transform)
       {
         get_sensor_to_base_ = get_transform;
       }
 
-      // The object descriptors stored in the database is loaded
-      void loadRepresentations ();
-      void recognizeObject (gtsam::Object<PointT>& object, int id);
+      /** \brief The object descriptors stored in the database is loaded */
+      void loadDatabase ();
+
+      /** \brief recognizeObject matches the current object representation
+       *   against the saved representations
+       */
+      void recognizeObject (Object<PointT>& object);
+
+
       void objectRecognitionLoop ();
       void objectDiscoveryLoop ();
+
+      float computeViewIntersection (gtsam::Point3 view_direction,
+          gtsam::Point3 view_center, Eigen::Vector4f obj_center);
+
       float computeIntersection (Eigen::Vector4f minA, Eigen::Vector4f maxA,
           Eigen::Vector4f minB, Eigen::Vector4f maxB);
 
       gtsam::Symbol popFromQueue ();
       void pushIntoQueue (gtsam::Symbol sym);
-      void generateObjectModel (gtsam::Object<PointT> object,
-          Eigen::Vector4f obj_centroid, int id);
+
+      /** \brief computeTSDF estimates the object TSDF */
+      void computeTSDF (Object<PointT> object,
+          Eigen::Vector4f obj_centroid);
+
       void reconstructSurface (CloudPtr cloud, int id);
 
       void update (boost::shared_ptr<gtsam::Values>& vis_values,
@@ -81,7 +112,7 @@ namespace omnimapper
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
-      boost::function<void (std::map<gtsam::Symbol, gtsam::Object<PointT> >)> cloud_cv_callback_;
+      boost::function<void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3 center, gtsam::Point3 direction)> cloud_cv_callback_;
 
       boost::shared_ptr<SegmentPropagation<PointT> > segment_propagation_;
       boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;
@@ -89,7 +120,7 @@ namespace omnimapper
 
       std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
       std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
-      std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map;
+      std::map<gtsam::Symbol, Object<PointT> > object_map;
       std::map<gtsam::Symbol, gtsam::Symbol> omnimapper_graph;
 
       std::map<gtsam::Symbol, int> training_map;
