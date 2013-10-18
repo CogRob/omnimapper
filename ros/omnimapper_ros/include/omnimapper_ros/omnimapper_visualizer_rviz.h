@@ -53,7 +53,7 @@ namespace omnimapper
       void drawMapCloudCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
-      void objectCallback(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map);
+      void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;

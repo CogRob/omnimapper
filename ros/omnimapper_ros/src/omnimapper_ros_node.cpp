@@ -439,7 +439,7 @@ class OmniMapperROSNode
      typename  boost::function<void(std::vector<CloudPtr>, omnimapper::Time t, boost::optional<std::vector<pcl::PointIndices> > )> object_cluster_callback = boost::bind (&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback, &object_plugin_, _1, _2, _3);
        organized_feature_extraction_.setClusterCloudCallback (object_cluster_callback);
 
-       boost::function<void(std::map<gtsam::Symbol, gtsam::Object<PointT> > object_map)> object_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback, &vis_plugin_, _1);
+       boost::function<void(std::map<gtsam::Symbol, omnimapper::Object<PointT> > object_map, gtsam::Point3, gtsam::Point3)> object_vis_callback = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback, &vis_plugin_, _1, _2, _3);
        object_plugin_.setObjectCallback(object_vis_callback);
        // 	object_plugin_.test();
 
