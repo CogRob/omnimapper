@@ -121,6 +121,15 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF (double grid_size, int resolu
     //pcl::transformPointCloud (*frame_cloud, *map_cloud, map_tform);
     //Eigen::Affine3d tform (Eigen::Quaterniond(sam_quat[0],sam_quat[1],sam_quat[2],sam_quat[3]), Eigen::Vector3d (sam_pose.x (), sam_pose.y (), sam_pose.z ()));
 
+    Eigen::Affine3d sensor_to_base = icp_plugin_->getSensorToBaseAtSymbol (key_symbol);
+    Eigen::Affine3d base_to_sensor;
+    base_to_sensor = sensor_to_base.inverse ();
+
+    Eigen::Affine3d sensor_pose;
+    sensor_pose = tform * sensor_to_base;//tform * sensor_to_base;//base_to_sensor;
+    Eigen::Affine3d sensor_pose_inv;
+    sensor_pose_inv = sensor_pose.inverse ();
+
     pcl::PointCloud<pcl::Normal> empty_normals;
     pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
     ne.setNormalEstimationMethod (ne.COVARIANCE_MATRIX);
@@ -137,14 +146,13 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF (double grid_size, int resolu
     if (frame_cloud->points.size () > 0)
     {
       printf ("tsdf_plugin: Adding cloud %d...\n", ++pose_num);
-      
       // Debug
       CloudPtr map_cloud (new Cloud ());
-      pcl::transformPointCloud (*frame_cloud, *map_cloud, tform);
+      pcl::transformPointCloud (*frame_cloud, *map_cloud, sensor_pose);//tform);
       (*aggregate_cloud) += (*map_cloud);
       // end debug
 
-      tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal> (*frame_cloud, empty_normals, tform); // Integrate the cloud
+      tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal> (*frame_cloud, empty_normals, sensor_pose);//tform); // Integrate the cloud
     }
     
     // Note, the normals aren't being used in the default settings. Feel free to pass in an empty cloud
@@ -153,15 +161,14 @@ omnimapper::TSDFOutputPlugin<PointT>::generateTSDF (double grid_size, int resolu
 
   // debug
   pcl::io::savePCDFileBinaryCompressed ("/home/atrevor/Desktop/aggregate_cloud.pcd", *aggregate_cloud);
-  
   // end debug
 
   // Maching Cubes
   cpu_tsdf::MarchingCubesTSDFOctree mc;
   mc.setInputTSDF (tsdf);
   mc.setColorByConfidence (false);
-  mc.setColorByRGB (true);
-  //mc.setMinWeight (0.1);
+  mc.setColorByRGB (false);
+  mc.setMinWeight (0.01);
   pcl::PolygonMesh mesh;
   mc.reconstruct (mesh);
   pcl::io::savePLYFileBinary ("/home/atrevor/Desktop/mesh.ply", mesh);
