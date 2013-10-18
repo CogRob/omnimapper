@@ -21,7 +21,7 @@
 	    <param name="use_error_plugin" value="false"/>
 	    <param name="use_tsdf_plugin" value="false"/>
 	    <param name="use_no_motion" value="false"/>
-	    <param name="use_rviz_plugin" value="false"/>
+	    <param name="use_rviz_plugin" value="true"/>
 	    <param name="use_rgbd_sensor_base_tf_functor" value="false"/>
 	    <param name="use_distortion_model" value="false"/>
       	    <param name="odom_frame_name" value="/world"/>

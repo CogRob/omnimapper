@@ -10,6 +10,7 @@ template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     mapper_ (mapper),
+    marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
     draw_icp_clouds_ (false),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
@@ -42,6 +43,58 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
 
   object_modeled_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("modelled_objects", 0);
 
+  initMenu ();
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu ()
+{
+  // Create a control marker at the map origin for map level controls
+  visualization_msgs::InteractiveMarker origin_int_marker;
+  origin_int_marker.header.frame_id = "/world";
+  origin_int_marker.name = "OmniMapper";
+
+  visualization_msgs::Marker box_marker;
+  box_marker.type = visualization_msgs::Marker::CUBE;
+  box_marker.scale.x = 0.1;
+  box_marker.scale.y = 0.1;
+  box_marker.scale.z = 0.1;
+  box_marker.color.r = 0.5;
+  box_marker.color.g = 0.5;
+  box_marker.color.b = 0.5;
+  box_marker.color.a = 1.0;
+  
+  visualization_msgs::InteractiveMarkerControl control;
+  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+  control.always_visible = true;
+  control.markers.push_back (box_marker);
+  origin_int_marker.controls.push_back (control);  
+  marker_server_->insert (origin_int_marker);
+
+  // Generate a playback control menu
+  playback_menu_ = menu_handler_.insert ("Playback Control");
+  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_.insert (playback_menu_, "Play / Pause", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb, this, _1));
+
+  // Generate an output menu
+  visualization_menu_ = menu_handler_.insert ("Visualization");
+  interactive_markers::MenuHandler::EntryHandle map_cloud = menu_handler_.insert (visualization_menu_, "Draw Map Cloud", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb, this, _1));
+
+  menu_handler_.apply (*marker_server_, "OmniMapper");
+  marker_server_->applyChanges ();
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+{
+  printf ("Toggling playback!");
+//  omb_->togglePausedState ();
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+{
+  printf ("Drawing map cloud!\n");
+  draw_icp_clouds_ = true;
 }
 
 template <typename PointT> void

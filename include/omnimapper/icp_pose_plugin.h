@@ -37,6 +37,7 @@ namespace omnimapper
       bool ready ();
       CloudConstPtr getCloudPtr (gtsam::Symbol sym);
       CloudPtr getFullResCloudPtr (gtsam::Symbol sym);
+      Eigen::Affine3d getSensorToBaseAtSymbol (gtsam::Symbol sym);
       void setMaxCorrespondenceDistance (float max_correspondence_distance) { icp_max_correspondence_distance_ = max_correspondence_distance; }
       void setShouldDownsample (bool should_downsample) { downsample_ = should_downsample; }
       void setLeafSize (float leaf_size) { leaf_size_ = leaf_size; }
@@ -62,6 +63,9 @@ namespace omnimapper
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
       //std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;
       std::map<gtsam::Symbol, std::string> full_res_clouds_;
+
+      std::map<gtsam::Symbol, Eigen::Affine3d> sensor_to_base_transforms_;
+
       //pcl::Grabber& grabber_;
       CloudConstPtr current_cloud_;
       boost::mutex current_cloud_mutex_;

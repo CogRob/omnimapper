@@ -5,45 +5,54 @@
 
 omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
-    marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
+    marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapperError", "", false)),
     mapper_ (mapper)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
   marker_server_->clear ();
 
   // Create a control marker at the map origin for map level controls
-  visualization_msgs::InteractiveMarker origin_int_marker;
-  origin_int_marker.header.frame_id = "/world";
-  origin_int_marker.name = "OmniMapper";
+  // visualization_msgs::InteractiveMarker origin_int_marker;
+  // origin_int_marker.header.frame_id = "/world";
+  // origin_int_marker.name = "OmniMapper";
 
-  visualization_msgs::Marker box_marker;
-  box_marker.type = visualization_msgs::Marker::CUBE;
-  box_marker.scale.x = 0.1;
-  box_marker.scale.y = 0.1;
-  box_marker.scale.z = 0.1;
-  box_marker.color.r = 0.5;
-  box_marker.color.g = 0.5;
-  box_marker.color.b = 0.5;
-  box_marker.color.a = 1.0;
+  // visualization_msgs::Marker box_marker;
+  // box_marker.type = visualization_msgs::Marker::CUBE;
+  // box_marker.scale.x = 0.1;
+  // box_marker.scale.y = 0.1;
+  // box_marker.scale.z = 0.1;
+  // box_marker.color.r = 0.5;
+  // box_marker.color.g = 0.5;
+  // box_marker.color.b = 0.5;
+  // box_marker.color.a = 1.0;
 
-  visualization_msgs::InteractiveMarkerControl control;
-  control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
-  control.always_visible = true;
-  control.markers.push_back (box_marker);
-  origin_int_marker.controls.push_back (control);
+  // visualization_msgs::InteractiveMarkerControl control;
+  // control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+  // control.always_visible = true;
+  // control.markers.push_back (box_marker);
+  // origin_int_marker.controls.push_back (control);
 
-  marker_server_->insert (origin_int_marker);
+  // marker_server_->insert (origin_int_marker);
 
-  marker_server_->applyChanges ();
+  // initMenu ();
+
+  // marker_server_->applyChanges ();
 }
 
 void
 omnimapper::ErrorEvaluationPlugin::initMenu ()
 {
-  //visualization_msgs::MenuHandler::EntryHandle play_pause;
-  //menu_handler_.insert (play_pause, "play / pause");
-  
+  playback_menu_ = menu_handler_.insert ("Playback Control");
+  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_.insert (playback_menu_, "Play / Pause");
+  menu_handler_.apply (*marker_server_, "OmniMapper");
+  marker_server_->applyChanges ();
 }
+
+// void
+// omnimapper::ErrorEvaluationPlugin::playPauseCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+// {
+//   printf ("Stopping playback!\n");
+// }
 
 
 void
