@@ -45,8 +45,7 @@ public:
 
 	//gtsam::Symbol
 	void addObservation(gtsam::Symbol sym, CloudPtr cluster, boost::optional<pcl::PointIndices> indices);
-
-
+	Cloud optimalCloud();
 
 
 

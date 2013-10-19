@@ -11,16 +11,17 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree)  {
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(true), verbose_(true), do_loop_closures_(true)  {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 
+    // thread to match objects
     boost::thread object_recognition_thread (
         &ObjectPlugin<PointT>::objectRecognitionLoop, this);
 
     //find optimal object models in a thread
     boost::thread reconstruction_thread (
-        &ObjectPlugin<PointT>::recreateObjectModels, this);
+        &ObjectPlugin<PointT>::computeOptimalObjectModel, this);
 
   }
 
@@ -32,17 +33,24 @@ namespace omnimapper
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT> void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(std::string object_database_location){
-    object_database_location_ = object_database_location;
-    std::cout << "Object database location set: " << object_database_location_
+
+    object_database_location_ = object_database_location; //location at which all the object pcds, descriptors are stored
+
+    if(debug_)
+    std::cout << "[ObjectPlugin] Object database location set: " << object_database_location_
         << std::endl;
-    loadDatabase (); // load the database
-    std::cout << "Loaded representations " << std::endl;
+
+    loadDatabase (); // load the database for object plugin
+    if(debug_)
+    std::cout << "[ObjectPlugin] Loaded representations " << std::endl;
+
     segment_propagation_.reset (new SegmentPropagation<PointT> ());
-    segment_propagation_->setActiveLabelIndices (max_object_size);
-    std::cout << "Active label indices set" << std::endl;
+    segment_propagation_->setActiveLabelIndices (max_object_size); // initialize segment propagation
+    if(debug_)
+    std::cout << "[ObjectPlugin] Active label indices set" << std::endl;
 
     object_discovery_.reset (new ObjectDiscovery<PointT> ());
-    object_discovery_->loadRepresentations(object_database_location_);
+    object_discovery_->loadRepresentations(object_database_location_); //load the database for object discovery thread
     // boost::thread object_discovery_thread (&ObjectPlugin<PointT>::objectDiscoveryLoop, this);
      }
 
@@ -51,16 +59,16 @@ namespace omnimapper
       boost::function<
           void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3, gtsam::Point3)>& fn)
   {
-    cloud_cv_callback_ = fn;
-    cloud_cv_flag_ = true;
+    vis_callback_ = fn;    // set visualization call back to fn
+    vis_flag_ = true;
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT>
   void ObjectPlugin<PointT>::loadDatabase ()
   {
-
-    std::cout << "Inside loadDesc" << std::endl;
+    if(debug_)
+    std::cout << "[ObjectPlugin] Inside loadDesc" << std::endl;
     pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D = new pcl::SIFTKeypoint<
         PointT, pcl::PointXYZI>;
     sift3D->setScales (0.01f, 3, 2);
@@ -110,15 +118,19 @@ namespace omnimapper
         new ObjectRecognition<pcl::SHOT1344> (keypoint_detector,
             feature_extractor));
 
-    std::cout << "Descriptor Loaded " << std::endl;
+    if(debug_)
+    std::cout << "[ObjectPlugin] Descriptor Loaded " << std::endl;
     /* load object descriptors */
 
-    std::cout << "Object location: " << object_database_location_ << std::endl;
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Object location: " << object_database_location_ << std::endl;
     int max_segment = object_recognition_->loadDatabase (object_database_location_); //home/siddharth/kinect
 
     max_object_size = max_segment + 1;
     max_current_size = max_object_size;
-    std::cout << "Size of max_segment " << max_segment + 1 << std::endl;
+
+    if(debug_)
+    std::cout << "[ObjectPlugin] Size of max_segment " << max_segment + 1 << std::endl;
 
   }
 
@@ -127,7 +139,8 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::reconstructSurface (CloudPtr merged, int id)
   {
-    std::cout << "surface reconstruction..." << std::flush;
+    if(verbose_)
+    std::cout << "[ObjectPlugin] surface reconstruction..." << std::flush;
 
     // apply grid filtering to reduce amount of points as well as to make them uniform distributed
     pcl::VoxelGrid<pcl::PointXYZRGBA> voxel_grid;
@@ -157,6 +170,8 @@ namespace omnimapper
     surface_reconstructor_->setSearchMethod (tree);
     surface_reconstructor_->setInputCloud (vertices);
     surface_reconstructor_->reconstruct (surface_);
+
+    if(verbose_)
     std::cout << "OK" << std::endl;
 
     std::string output_file = object_database_location_ + "/tsdf_models/"
@@ -171,7 +186,8 @@ namespace omnimapper
   void ObjectPlugin<PointT>::computeTSDF (Object<PointT> object,
       Eigen::Vector4f obj_centroid)
   {
-    printf ("starting generateTSDF\n");
+    if(verbose_)
+    printf ("[ObjectPlugin] starting generateTSDF\n");
 
     gtsam::Symbol object_symbol = object.sym;
     int id = object_symbol.index();
@@ -229,7 +245,9 @@ namespace omnimapper
         }
 
         pcl::PointIndices clust_indices = indices.at (sym);
-        std::cout << "Inside the loop: " << cloud->points.size ()
+
+        if(debug_)
+        std::cout << "[ObjectPlugin] Inside the loop: " << cloud->points.size ()
             << " Size of clust indices " << clust_indices.indices.size ()
             << std::endl;
         //	std::cout << "Size of clust indices " << clust_indices.indices.size() << std::endl;
@@ -275,15 +293,18 @@ namespace omnimapper
         ne.compute (empty_normals);
         //empty_normals.resize (frame_cloud->points.size ());
 
-        printf ("Cloud has: %d normals has: %d\n", cloud->points.size (),
+        if(debug_)
+        printf ("[ObjectPlugin] Cloud has: %d normals has: %d\n", cloud->points.size (),
             empty_normals.points.size ());
 
         if (cloud->points.size () > 0)
         {
-          std::cout << "Cloud integrated " << std::endl;
+          if(debug_)
+          std::cout << "[ObjectPlugin] Cloud integrated " << std::endl;
           bool integration_flag = tsdf->integrateCloud<pcl::PointXYZRGBA,
               pcl::Normal> (*map_cloud, empty_normals, tform);  // Integrate the cloud
-          std::cout << "Integration done: " << integration_flag << std::endl;
+          if(debug_)
+          std::cout << "[ObjectPlugin] Integration done: " << integration_flag << std::endl;
         }
 
       }
@@ -334,18 +355,30 @@ namespace omnimapper
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename PointT>
-  void ObjectPlugin<PointT>::recreateObjectModels ()
+  void ObjectPlugin<PointT>::computeOptimalObjectModel ()
   {
     while(1)
     {
-    std::cout << "Creating Optimal Cloud\n" << std::endl;
+      if(verbose_)
+    std::cout << "[ObjectPlugin] Creating Optimal Cloud\n" << std::endl;
     typename std::map<gtsam::Symbol, Object<PointT> >::iterator it;
     typename std::map<gtsam::Symbol, CloudPtr>::iterator it_cluster;
-    for (it = object_map.begin (); it != object_map.end (); it++)
-    {
 
-      gtsam::Symbol sym = it->first;
-      Object<PointT>& object = it->second;
+    map_building_mutex_.lock(); //lock the object map
+    int map_size = object_map.size();
+    int obj_count = 0;
+    map_building_mutex_.unlock(); //unlock the object map
+
+    for (it = object_map.begin (); it != object_map.end (); it++, obj_count++)
+    {
+      if(obj_count >= map_size)break; //making it thread safe, TODO: find a better way to make object plugin thread safe
+
+      gtsam::Symbol sym = it->first;  //object symbol
+      Object<PointT>& object = it->second;  // object
+
+      // lock the object so that none of the new segments are added
+      object.object_mutex_.lock();
+
       std::map<gtsam::Symbol, CloudPtr> cluster = it->second.clusters_;
       Cloud transformed_cloud_opt_;
 
@@ -353,13 +386,11 @@ namespace omnimapper
           it_cluster++)
       {
 
-        map_building_mutex_.lock();
-        gtsam::Symbol pose_sym = it_cluster->first;
-        CloudPtr cloud = it_cluster->second;
-        map_building_mutex_.unlock();
+        gtsam::Symbol pose_sym = it_cluster->first; // robot pose symbol
+        CloudPtr cloud = it_cluster->second; // cloud pointer
 
         boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (
-            pose_sym);
+            pose_sym); // get the optimized pose
         if (cloud_pose)
         {
           CloudPtr map_cloud (new Cloud ());
@@ -371,37 +402,40 @@ namespace omnimapper
         }
       }
 
-      object.object_mutex_.lock();
-      object.optimal_cloud_ = transformed_cloud_opt_.makeShared();
-      object.object_mutex_.unlock();
+      object.optimal_cloud_ = transformed_cloud_opt_.makeShared(); // fill in the optimal cloud
+      object.object_mutex_.unlock(); //unlock the object
     }
 
 
-    boost::this_thread::sleep (boost::posix_time::milliseconds (100 ));
+    boost::this_thread::sleep (boost::posix_time::milliseconds (100 )); // sleep for 1000ms
     }
 
   }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   template<typename PointT>
   void ObjectPlugin<PointT>::recognizeObject (Object<PointT>& object)
   {
 
-    int id = object.sym.index();
-    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+    int id = object.sym.index(); //object id
+    std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_; //cloud ptr
+
+
+
+    if(debug_)
+    std::cout << "[ObjectPlugin] Object " << id << " seen in " << cluster.size () << " frames"
+        << std::endl;
 
     std::vector<gtsam::Pose3> pose_array;
-
-    std::cout << "Object " << id << " seen in " << cluster.size () << " frames"
-        << std::endl;
     typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
 
     Cloud transformed_cloud_opt_;
-
-    gtsam::Symbol obj_symbol = gtsam::Symbol ('o', id);
+    gtsam::Symbol obj_symbol = object.sym;
     gtsam::SharedDiagonal measurement_noise;
     measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
         gtsam::Vector_ (3, 0.5, 0.5, 0.5));
+
 
     for (it = cluster.begin (); it != cluster.end (); it++)
     {
@@ -414,7 +448,6 @@ namespace omnimapper
       {
         CloudPtr map_cloud (new Cloud ());
         gtsam::Pose3 new_pose = *cloud_pose;
-        new_pose.print ("Poses\n");
         Eigen::Matrix4f map_transform = new_pose.matrix ().cast<float> ();
         pcl::transformPointCloud (*cloud, *map_cloud, map_transform);
         transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
@@ -425,22 +458,24 @@ namespace omnimapper
 
     Eigen::Vector4f obj_centroid;
     pcl::compute3DCentroid (transformed_cloud_opt_, obj_centroid);
-    std::cout << "Object " << id << " centroid is " << obj_centroid[0] << " "
+
+    if(debug_)
+    std::cout << "[ObjectPlugin] Object " << id << " centroid is " << obj_centroid[0] << " "
         << obj_centroid[1] << " " << obj_centroid[2] << std::endl;
 
     gtsam::Point3 object_centroid_pt (obj_centroid[0], obj_centroid[1],
-        obj_centroid[2]);
+        obj_centroid[2]); //object centroid
 
-    int just_added = 0;
+    /* check if object already exists in the map otherwise add it */
     if (!mapper_->getSolution ().exists (obj_symbol) && !object.landmark)
     {
-      obj_symbol.print ("Added object");
-      std::cout << "Adding new object value" << std::endl;
+      if(verbose_)
+      obj_symbol.print ("[ObjectPlugin] Added object");
       mapper_->addNewValue (obj_symbol, object_centroid_pt);
       object.landmark = true;
-      just_added = 1;
     }
 
+    /* add individual constraints between robot poses and object */
     for (it = cluster.begin (); it != cluster.end (); it++)
     {
       gtsam::Symbol sym = it->first;
@@ -449,12 +484,14 @@ namespace omnimapper
       boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose (sym);
       if (cloud_pose)
       {
+
         gtsam::Pose3 new_pose = *cloud_pose;
         Eigen::Vector4f measurement_centroid;
         pcl::compute3DCentroid (*cloud, measurement_centroid);
         const gtsam::Point3 measurement_pt (measurement_centroid[0],
-            measurement_centroid[1], measurement_centroid[2]);
+            measurement_centroid[1], measurement_centroid[2]); //centroid in the robot base frame
 
+        // check if the factor is already added
         if (object.factor_flag.at (sym) == -1)
         {
           object.factor_flag.at (sym) = 1;
@@ -464,11 +501,14 @@ namespace omnimapper
           continue;
         }
 
+        // object centroid Point3 is tranformed in the robot pose Pose3 and the error is computed w.r.t measurement pt
         omnimapper::OmniMapperBase::NonlinearFactorPtr object_factor (
             new gtsam::LandmarkTransformFactor<gtsam::Pose3, gtsam::Point3> (
                 sym, obj_symbol, measurement_pt, measurement_noise));
         mapper_->addFactor (object_factor);
-        obj_symbol.print ("Added factor for ");
+
+        if(verbose_)
+        obj_symbol.print ("[ObjectPlugin] Added factor for ");
       }
     }
 
@@ -482,21 +522,26 @@ namespace omnimapper
     gtsam::NonlinearFactorGraph graph = mapper_->getGraph ();
     gtsam::Values solution = mapper_->getSolution ();
     gtsam::Marginals marginals (graph, solution);
-    graph.print ("Objects\n");
+    if(debug_)
+    graph.print ("[ObjectPlugin] Objects\n");
     if (solution.exists (obj_symbol))
     {
       try
       {
-        obj_symbol.print ("Finding marginal covariance for");
+        if(debug_)
+        obj_symbol.print ("[ObjectPlugin] Finding marginal covariance for");
         gtsam::Matrix mat = marginals.marginalCovariance (obj_symbol);
-        std::cout << "Marginal computed" << std::endl;
+        if(debug_)
+        std::cout << "[ObjectPlugin] Marginal computed" << std::endl;
         covariance_mat += mat;
       }
       catch (std::out_of_range)
       {
-        std::cout << "Out of range: " << std::endl;
-        std::cout << "Do solution exists: " << solution.exists (obj_symbol)
+        if(debug_){
+        std::cout << "[ObjectPlugin] Out of range: " << std::endl;
+        std::cout << "[ObjectPlugin] Do solution exists: " << solution.exists (obj_symbol)
             << std::endl;
+        }
         //	graph.print("Out of range error:");
 
         covariance_mat (0, 0) = 0.001;
@@ -511,11 +556,14 @@ namespace omnimapper
       covariance_mat (0, 0) = 0.001;
       covariance_mat (1, 1) = 0.001;
       covariance_mat (2, 2) = 0.001;
-      std::cout << "Covariance is " << covariance_mat << std::endl;
+      if(debug_)
+      std::cout << "[ObjectPlugin] Covariance is " << covariance_mat << std::endl;
       //	return;
     }
-    //   reconstructSurface(transformed_cloud_opt_.makeShared(), id);
-    /*
+
+    /* Surface reconstruction
+     *
+     //   reconstructSurface(transformed_cloud_opt_.makeShared(), id);
      const gtsam::Rot3 rot;
      const gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1], obj_centroid[2]);
      gtsam::Pose3 centroid_tform(rot, centroid_pt);
@@ -524,36 +572,54 @@ namespace omnimapper
 
      pcl::transformPointCloud(transformed_cloud_opt_, transformed_cloud_opt_,
      map_tform);
-     */
 
-    std::cout << "Saving new model" << std::endl;
-    std::string output_file = object_database_location_ + "/object_models/"
-        + boost::lexical_cast<std::string> (id) + ".pcd";
-    pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
-    std::cout << "Model saved" << std::endl;
-    //std::cout << "PCD file saved"
+         //std::cout << "PCD file saved"
     //computeTSDF(object, obj_centroid);
 
+     */
+
+    /* Save PCDs to disk */
+
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Saving new model" << std::endl;
+    std::string output_file = object_database_location_ + "/object_models/"
+        + boost::lexical_cast<std::string> (id) + ".pcd";
+
+    if(transformed_cloud_opt_.points.size()>0)
+    pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
+
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Model saved" << std::endl;
+
+    /* match the object to the database */
     std::pair<int, int> obj = object_recognition_->matchToDatabase (
         transformed_cloud_opt_.makeShared (), pose_array, id, covariance_mat);
 
+
     if (obj.first == -2)
     {
-      std::cout << "Didn't find a lot of features " << std::endl;
+      if(verbose_)
+      std::cout << "[ObjectPlugin] Didn't find a lot of features " << std::endl;
 
     }
     else if (obj.first == -1)
     {
-      std::cout << "Didn't match to anything" << std::endl;
+      if(verbose_)
+      std::cout << "[ObjectPlugin] Didn't match to anything" << std::endl;
 
     }
     else
     {
-      std::cout << "Object " << id << " matched to " << obj.first << std::endl;
-      std::cout << "Matched with the same label" << std::endl;
+      if(debug_)
+      std::cout << "[ObjectPlugin] Object " << id << " matched to " << obj.first << std::endl;
+
+      if(verbose_)
+      std::cout << "[ObjectPlugin] Matched with the same label" << std::endl;
+
 
       if (obj.first < max_object_size)
       {
+
         // matches to a saved representation
         Cloud matched_cloud;
         std::string input_file = object_database_location_ + "/object_models/"
@@ -578,6 +644,7 @@ namespace omnimapper
           mapper_->addNewValue (match_symbol, matched_centroid_pt);
         }
 
+        // add a between factor between the two objects
         omnimapper::OmniMapperBase::NonlinearFactorPtr object_object_factor (
             new gtsam::BetweenFactor<gtsam::Point3> (obj_symbol, match_symbol,
                 zero_pt, measurement_noise));
@@ -588,39 +655,45 @@ namespace omnimapper
       {
 
         // loop closure detection
-
-        Cloud matched_cloud;
-        std::string input_file = object_database_location_ + "/object_models/"
-            + boost::lexical_cast<std::string> (obj.first) + ".pcd";
-        pcl::io::loadPCDFile<PointT> (input_file, matched_cloud);
-
-        Eigen::Vector4f matched_centroid;
-        pcl::compute3DCentroid (matched_cloud, matched_centroid);
-        gtsam::Point3 matched_centroid_pt (matched_centroid[0],
-            matched_centroid[1], matched_centroid[2]);
-        gtsam::Point3 zero_pt (0, 0, 0);
-
-        gtsam::Symbol object_symbol = object.sym;
-        gtsam::SharedDiagonal measurement_noise;
-        measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-            gtsam::Vector_ (3, 0.5, 0.5, 0.5));
-
-        gtsam::Symbol match_symbol = gtsam::Symbol ('o', obj.first);  // matching object symbol
-        match_symbol.print ("object matched\n");
-
-        if (!mapper_->getSolution ().exists (match_symbol))
+        if (do_loop_closures_)
         {
-          std::cout << "Adding new value" << std::endl;
-          mapper_->addNewValue (match_symbol, matched_centroid_pt);
+
+
+          /* load the matching object */
+          gtsam::Symbol match_symbol = gtsam::Symbol ('o', obj.first);
+          Cloud matched_cloud = object_map.at(match_symbol).optimalCloud();
+
+          /* compute the centroid */
+          Eigen::Vector4f matched_centroid;
+          pcl::compute3DCentroid (matched_cloud, matched_centroid);
+          gtsam::Point3 matched_centroid_pt (matched_centroid[0],
+              matched_centroid[1], matched_centroid[2]);
+          gtsam::Point3 zero_pt (0, 0, 0);
+
+          gtsam::Symbol object_symbol = object.sym;
+          gtsam::SharedDiagonal measurement_noise;
+          measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
+              gtsam::Vector_ (3, 0.5, 0.5, 0.5));
+
+          if(verbose_)
+          match_symbol.print ("[ObjectPlugin] object matched\n");
+
+          if (!mapper_->getSolution ().exists (match_symbol))
+          {
+            if(verbose_)
+            std::cout << "[ObjectPlugin] Adding new value" << std::endl;
+            mapper_->addNewValue (match_symbol, matched_centroid_pt);
+          }
+
+          // add between factor
+          if(verbose_)
+          std::cout << "[ObjectPlugin] Adding inbetween factor" << std::endl;
+          omnimapper::OmniMapperBase::NonlinearFactorPtr object_object_factor (
+              new gtsam::BetweenFactor<gtsam::Point3> (obj_symbol, match_symbol,
+                  zero_pt, measurement_noise));
+          mapper_->addFactor (object_object_factor);
+
         }
-
-        // add between factor
-        std::cout << "Adding inbetween factor" << std::endl;
-        omnimapper::OmniMapperBase::NonlinearFactorPtr object_object_factor (
-            new gtsam::BetweenFactor<gtsam::Point3> (obj_symbol, match_symbol,
-                zero_pt, measurement_noise));
-        mapper_->addFactor (object_object_factor);
-
 
       }
 
@@ -640,6 +713,7 @@ namespace omnimapper
   template<typename PointT>
   gtsam::Symbol ObjectPlugin<PointT>::popFromQueue ()
   {
+    /* push into recognition queue */
     boost::mutex::scoped_lock (recog_mutex_);
     gtsam::Symbol sym = train_queue.front ();
     train_queue.pop ();
@@ -650,6 +724,7 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::pushIntoQueue (gtsam::Symbol sym)
   {
+    /* pop out of recognition queue */
     boost::mutex::scoped_lock (recog_mutex_);
     train_queue.push (sym);
     return;
@@ -667,13 +742,17 @@ namespace omnimapper
 
         gtsam::Symbol sym = popFromQueue ();
 
-        sym.print ("Training Object: ");
-        std::cout << "Symbol index: " << sym.index () << std::endl;
-        std::cout << "#Objects in Queue: " << train_queue.size () << std::endl;
+        if(verbose_)
+        sym.print ("[ObjectPlugin] Training Object: ");
+        if(debug_){
+        std::cout << "[ObjectPlugin] Symbol index: " << sym.index () << std::endl;
+        std::cout << "[ObjectPlugin] #Objects in Queue: " << train_queue.size () << std::endl;
+        }
+
         recognizeObject (object_map.at (sym));
 
       }
-      boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+      boost::this_thread::sleep (boost::posix_time::milliseconds (10)); // sleep for 10ms
 
     }
 
@@ -682,20 +761,25 @@ namespace omnimapper
   template<typename PointT>
   void ObjectPlugin<PointT>::objectDiscoveryLoop ()
   {
+    // takes in all objects and undersegmented object parts and merge them using connected component to form full objects */
+    // TODO: use the result of object discovery and update the object map for recognition
 
     std::string discover_dir = object_database_location_ +"/object_models";
-    std::cout << "Discovering objects " << std::endl;
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Discovering objects " << std::endl;
     object_discovery_->createFinalCloud (discover_dir);
-    object_discovery_->createGraph ();
+    object_discovery_->createGraph (); //match graph
     object_discovery_->mergeClouds ();
-    boost::this_thread::sleep (boost::posix_time::milliseconds (10));
+    boost::this_thread::sleep (boost::posix_time::milliseconds (10)); //sleep for 10 ms
 
   }
+
   template<typename PointT> float ObjectPlugin<PointT>::computeIntersection (
       Eigen::Vector4f minA, Eigen::Vector4f maxA, Eigen::Vector4f minB,
       Eigen::Vector4f maxB)
   {
 
+/* compute bounding box */
     float minX = minA[0];
     float minY = minA[1];
     float minZ = minA[2];
@@ -710,6 +794,8 @@ namespace omnimapper
     float maxY1 = maxB[1];
     float maxZ1 = maxB[2];
 
+
+    /* area of intersection */
     float inter_area = MAX(MIN(maxX,maxX1)-MAX(minX,minX1),0)
         * MAX(MIN(maxY,maxY1)-MAX(minY,minY1),0)
         * MAX(MIN(maxZ,maxZ1)-MAX(minZ,minZ1),0);
@@ -717,6 +803,7 @@ namespace omnimapper
     float areaA = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
     float areaB = (maxX1 - minX1) * (maxY1 - minY1) * (maxZ1 - minZ1);
 
+/* jaccard index = (A \int B)/(A \union B) */
     float jaccard_index = inter_area / (areaA + areaB - inter_area);
 
     return jaccard_index;
@@ -737,7 +824,9 @@ namespace omnimapper
 
      /* angle between object and camera view */
     double angle = acos((view_direction.dot(obj_direction)))*(180/M_PI);
-    std::cout << "[computeViewIntersection] object angle: " << angle << std::endl;
+
+    if(debug_)
+    std::cout << "[ObjectPlugin] [computeViewIntersection] object angle: " << angle << std::endl;
 
     /* distance between object and camera view */
     double distance = norm;
@@ -776,7 +865,8 @@ namespace omnimapper
     Eigen::Affine3d sensor_to_base = Eigen::Affine3d::Identity();
     if (get_sensor_to_base_)
     {
-      printf ("Object Plugin: Applying sensor to base transform.\n");
+      if(debug_)
+      printf ("[ObjectPlugin] Object Plugin: Applying sensor to base transform.\n");
        sensor_to_base = (*get_sensor_to_base_) (t);
       for (int i = 0; i < clusters.size (); i++)
       {
@@ -790,13 +880,15 @@ namespace omnimapper
     {
       clusters_base = clusters;
     }
-    printf ("Object plugin got %d clusters_base\n", clusters_base.size ());
+
+    if(verbose_)
+    printf ("[ObjectPlugin] Object plugin got %d clusters_base\n", clusters_base.size ());
 
     // Keep track of indices using indices_base
     std::vector<pcl::PointIndices> indices_base (clusters_base.size ());
 
 
-
+    
     gtsam::Values solution;
     if (filter_points_near_planes_)
     {
@@ -889,15 +981,20 @@ namespace omnimapper
               filtered_indices.indices.push_back ( (*indices)[i].indices[j]);
             }
           }
-          printf ("cluster %d had %d points, filtered has %d points\n", i,
+
+          if(debug_)
+          printf ("[ObjectPlugin] cluster %d had %d points, filtered has %d points\n", i,
               clusters_base[i]->points.size (), filtered_clust->points.size ());
           clusters_base[i] = filtered_clust;
           indices_base[i] = filtered_indices;
 
-          printf ("filtered_indices: %d, indices_base: %d",
+          if(debug_)
+          printf ("[ObjectPlugin] filtered_indices: %d, indices_base: %d",
               filtered_indices.indices.size (),
               indices_base[i].indices.size ());
-          printf ("cluster %d now has %d points\n", i,
+
+          if(debug_)
+          printf ("[ObjectPlugin] cluster %d now has %d points\n", i,
               clusters_base[i]->points.size ());
         }
         else
@@ -910,7 +1007,9 @@ namespace omnimapper
 
           }
           indices_base[i] = filtered_indices;
-          printf ("cluster has %d points, indices has %d points\n",
+
+          if(debug_)
+          printf ("[ObjectPlugin] cluster has %d points, indices has %d points\n",
               clusters_base[i]->points.size (),
               indices_base[i].indices.size ());
 
@@ -941,12 +1040,13 @@ namespace omnimapper
         if (eig_sum != 0)
           curvature = fabsf (eigen_value / eig_sum);
 
-        printf ("Cluster %d:\n", i);
-        printf ("  Dist: %lf\n", dist);
-        printf ("  Volume: %lf\n", bbox_volume);
-        printf ("  Dims: %lf, %lf, %lf\n", size[0], size[1], size[2]);
-        printf ("  Curvature: %lf\n", curvature);
-
+        if(debug_){
+        printf ("[ObjectPlugin]Cluster %d:\n", i);
+        printf ("[ObjectPlugin]  Dist: %lf\n", dist);
+        printf ("[ObjectPlugin]  Volume: %lf\n", bbox_volume);
+        printf ("[ObjectPlugin]  Dims: %lf, %lf, %lf\n", size[0], size[1], size[2]);
+        printf ("[ObjectPlugin]  Curvature: %lf\n", curvature);
+        }
         // Clusters that are too far away suffer from too much depth discretization to be reliable
         bool dist_ok = dist < max_cluster_dist_;
         // Clusters that are too low in the robot frame can be excluded
@@ -960,20 +1060,24 @@ namespace omnimapper
         // Also, if it is mostly planar, shape descriptors will not be very reliable
         bool curvature_ok = curvature > min_curvature_;
 
-        printf ("centroid dist: %lf\n", dist);
+        if(debug_)
+        printf ("[ObjectPlugin] centroid dist: %lf\n", dist);
         if (dist_ok && height_ok && bbox_volume_ok && bbox_dims_ok
             && curvature_ok)
         {
           filtered_observations.push_back (clusters_base[i]);
           filtered_observation_indices.push_back (indices_base[i]);
-          std::cout << "Pushing cluster" << clusters_base[i]->points.size ()
+
+          if(verbose_)
+          std::cout << "[ObjectPlugin] Pushing cluster" << clusters_base[i]->points.size ()
               << " and " << indices_base[i].indices.size () << std::endl;
         }
       }
 
     }
 
-    std::cout << "Size of filtered observations: "
+    if(debug_)
+    std::cout << "[ObjectPlugin] Size of filtered observations: "
         << filtered_observations.size () << std::endl;
     observations_.insert (
         std::pair<gtsam::Symbol, CloudPtrVector> (pose_symbol,
@@ -1009,11 +1113,10 @@ namespace omnimapper
           // create new object
           Object<PointT> new_object;
 
-          //add observation
-
           // increase the count
           max_current_size = obj_cnt + 1;
 
+          // fill in the object
           int old_label = segment_propagation_->back_label_.at (obj_cnt);
           new_object.sym = best_symbol;
           new_object.addObservation (pose_symbol, final_cloud[obj_cnt],
@@ -1021,29 +1124,28 @@ namespace omnimapper
           new_object.factor_flag.insert (
               std::pair<gtsam::Symbol, int> (pose_symbol, -1));
 
-          map_building_mutex_.lock();
+          map_building_mutex_.lock(); //lock the object map
           object_map.insert (
               std::pair<gtsam::Symbol, Object<PointT> > (best_symbol,
                   new_object));
-          map_building_mutex_.unlock();
-          //mapper_->addNewValue(best_symbol, new_object);
+          map_building_mutex_.unlock(); //unlock the object map
         }
         else
         {
 
           int old_label = segment_propagation_->back_label_.at (obj_cnt);
 
-          map_building_mutex_.lock();
           object_map.at (best_symbol).addObservation (pose_symbol,
               final_cloud[obj_cnt], filtered_observation_indices[old_label]);
           object_map.at (best_symbol).factor_flag.insert (
               std::pair<gtsam::Symbol, int> (pose_symbol, -1));
-          map_building_mutex_.unlock();
         }
 
       }
       double seg_end = pcl::getTime ();
-      std::cout << "Segmentation took: " << double (seg_end - seg_start)
+
+      if(verbose_)
+      std::cout << "[ObjectPlugin] Segmentation took: " << double (seg_end - seg_start)
           << std::endl;
 
       //////////////////////////////////////////////////////////////////////
@@ -1071,12 +1173,15 @@ namespace omnimapper
           view_direction_vec.z ()/view_direction_norm); // camera view direction
       gtsam::Point3 view_center = view_pose.translation ();  //camera center
 
+      if(debug_){
       view_center.print("[ObjectPlugin] view_center");
       view_direction.print("[ObjectPlugin] view_direction");
+      }
       CloudPtrVector unoptimized_cloud = segment_propagation_->final_map_cloud;
       for (int obj_cnt = 0; obj_cnt < unoptimized_cloud.size (); obj_cnt++)
       {
-        std::cout << "Size of object " << obj_cnt << " is "
+        if(debug_)
+        std::cout << "[ObjectPlugin] Size of object " << obj_cnt << " is "
             << unoptimized_cloud[obj_cnt]->points.size () << std::endl;
         gtsam::Symbol obj_symbol = gtsam::Symbol ('o', obj_cnt);
         if (unoptimized_cloud[obj_cnt]->points.size () != 0)
@@ -1088,25 +1193,22 @@ namespace omnimapper
 
           float intersection = computeViewIntersection(view_direction, view_center, obj_centroid);
 
-          std::cout << "Intersection of object " << obj_cnt << " is: "
+          std::cout << "[ObjectPlugin] Intersection of object " << obj_cnt << " is: "
               << intersection << std::endl;
 
           if (intersection == 0 && training_map[obj_symbol] == 0)
           {
-            std::cout << "Intersection of object " << obj_cnt
+            if(debug_)
+            std::cout << "[ObjectPlugin] Intersection of object " << obj_cnt
                 << " is zero with the cloud" << std::endl;
-            //  recognizeObject(object_map.at(obj_symbol), obj_cnt);
             training_map[obj_symbol] = 1;
-            obj_symbol.print ("Object symbol pushed: ");
-            pushIntoQueue (obj_symbol);
 
-            //  std::cout << "Training map symbol of object " << obj_cnt << " is: " << training_map[obj_symbol] << std::endl;
+            if(verbose_)
+            obj_symbol.print ("[ObjectPlugin] Object symbol pushed: ");
+            pushIntoQueue (obj_symbol);
           }
           else if (intersection != 0)
           {
-
-            //  pushIntoQueue(obj_symbol);
-
             if (training_map.find (obj_symbol) == training_map.end ())
             {
               training_map.insert (
@@ -1117,7 +1219,6 @@ namespace omnimapper
               training_map[obj_symbol] = 0;
             }
 
-            //  std::cout << "Retraining object " << obj_cnt << std::endl;
           }
 
 
@@ -1133,15 +1234,19 @@ namespace omnimapper
        */
       double vis_start = pcl::getTime ();
 
-      if (cloud_cv_flag_)
+      if (vis_flag_)
       {
-        std::cout << "Inside Object Plugin" << std::endl;
-        cloud_cv_callback_ (object_map, view_center, view_direction);
+        if(verbose_)
+        std::cout << "[ObjectPlugin] Visualizing Objects" << std::endl;
+        vis_callback_ (object_map, view_center, view_direction);
 
         //cloud_cv_callback_(pose_symbol, cloud_pose, filtered_observations, t);
       }
       double vis_end = pcl::getTime ();
-      std::cout << "Visualizations took: " << double (vis_end - vis_start)
+
+
+      if(verbose_)
+      std::cout << "[ObjectPlugin] Visualizations took: " << double (vis_end - vis_start)
           << std::endl;
 
 
@@ -1161,23 +1266,30 @@ namespace omnimapper
   template<typename PointT> typename omnimapper::ObjectPlugin<PointT>::CloudPtrVector ObjectPlugin<
       PointT>::getObservations (gtsam::Symbol sym)
   {
-    printf ("Starting getObservations!\n");
-    printf ("Checking size...\n");
+    if(verbose_){
+    printf ("[ObjectPlugin] Starting getObservations!\n");
+    printf ("[ObjectPlugin] Checking size...\n");
+    }
+
     if (observations_.size () == 0)
     {
-      printf ("returning empty due to size!\n");
+      if(verbose_)
+      printf ("[ObjectPlugin] returning empty due to size!\n");
       return (empty_);
     }
 
-    printf ("Checking count!\n");
+    if(verbose_)
+    printf ("[ObjectPlugin] Checking count!\n");
     if (observations_.count (sym) > 0)
     {
-      printf ("ObjectPlugin::getObservations: returning vec!\n");
+      if(verbose_)
+      printf ("[ObjectPlugin] ObjectPlugin::getObservations: returning vec!\n");
       return (observations_.at (sym));
     }
     else
     {
-      printf ("ObjectPlugin::getObservations: returning empty!\n");
+      if(verbose_)
+      printf ("[ObjectPlugin] ObjectPlugin::getObservations: returning empty!\n");
       return (empty_);
     }
   }

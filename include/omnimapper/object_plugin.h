@@ -78,8 +78,16 @@ namespace omnimapper
        */
       void recognizeObject (Object<PointT>& object);
 
-
+      /** \brief loop to recognize objects that are pushed in the queue */
       void objectRecognitionLoop ();
+
+      /** \brief take an object out of the recognition queue */
+      gtsam::Symbol popFromQueue ();
+
+      /** \brief push an object in the recognition queue */
+      void pushIntoQueue (gtsam::Symbol sym);
+
+      /** \brief takes in all objects and undersegmented object parts and merge them using connected component to form full objects */
       void objectDiscoveryLoop ();
 
       float computeViewIntersection (gtsam::Point3 view_direction,
@@ -88,31 +96,42 @@ namespace omnimapper
       float computeIntersection (Eigen::Vector4f minA, Eigen::Vector4f maxA,
           Eigen::Vector4f minB, Eigen::Vector4f maxB);
 
-      gtsam::Symbol popFromQueue ();
-      void pushIntoQueue (gtsam::Symbol sym);
 
       /** \brief computeTSDF estimates the object TSDF */
       void computeTSDF (Object<PointT> object,
           Eigen::Vector4f obj_centroid);
 
+      /** \brief reconstruct surface */
       void reconstructSurface (CloudPtr cloud, int id);
+
 
       void update (boost::shared_ptr<gtsam::Values>& vis_values,
           boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-      void recreateObjectModels ();
 
+      /** \brief Uses the optimal poses to reconstruct objects */
+      void computeOptimalObjectModel ();
+
+      /** \brief location where the pcd files and descriptors are saved */
       void setAndLoadObjectDatabaseLocation (
           std::string object_database_location);
 
+      /** \brief use objects for loop closures or not */
+      void useObjectLoopClosures(bool do_loop_closures){
+        do_loop_closures_=do_loop_closures;
+      }
+
     protected:
-      bool cloud_cv_flag_;
+      bool vis_flag_; // flag to check if visualization callback is set
+      bool debug_, verbose_; //flags to control the couts
+      bool do_loop_closures_; //flag to control object object loop closures
       OmniMapperBase* mapper_;
       GetTransformFunctorPtr get_sensor_to_base_;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
-      boost::function<void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3 center, gtsam::Point3 direction)> cloud_cv_callback_;
+      /** vis_callback_ calls object visualization function in OmnimapperVisualizerRviz */
+      boost::function<void (std::map<gtsam::Symbol, Object<PointT> >, gtsam::Point3 center, gtsam::Point3 direction)> vis_callback_;
 
       boost::shared_ptr<SegmentPropagation<PointT> > segment_propagation_;
       boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;

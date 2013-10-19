@@ -149,6 +149,7 @@ class OmniMapperROSNode
 
     // Object Plugin Params
     std::string object_database_location_;
+    bool object_loop_closures_;
 
     // Labelled Cloud Plugin Params
     bool use_label_cloud_;
@@ -271,6 +272,7 @@ class OmniMapperROSNode
       n_.param ("evaluation_mode_write_trajectory", evaluation_mode_write_trajectory_, true);
       n_.param ("evaluation_mode_write_tsdf", evaluation_mode_write_tsdf_, false);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
+      n_.param ("object_loop_closures", object_loop_closures_, true);
 
 
       // Optionally specify an alternate initial pose
@@ -395,6 +397,7 @@ class OmniMapperROSNode
       {
         object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
         object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
+        object_plugin_.useObjectLoopClosures(object_loop_closures_);
       }
 
       // Set up the feature extraction
