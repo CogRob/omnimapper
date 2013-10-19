@@ -207,14 +207,15 @@ namespace omnimapper
     {
       printf ("ICPPlugin: Saving full res cloud with %zu\n", current_cloud->points.size ());
       //full_res_clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud));
-      CloudPtr full_res_cloud_base (new Cloud ());
+      //CloudPtr full_res_cloud_base (new Cloud ());
       Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
-      pcl::transformPointCloud (*current_cloud, *full_res_cloud_base, sensor_to_base);
-      
+      //pcl::transformPointCloud (*current_cloud, *full_res_cloud_base, sensor_to_base);
+
       std::string out_file = "/tmp/" + std::string (current_sym) + ".pcd";
       full_res_clouds_.insert (std::pair<gtsam::Symbol, std::string> (current_sym, out_file));
-      //pcl::io::savePCDFileBinaryCompressed (out_file, *current_cloud);
-      pcl::io::savePCDFileBinaryCompressed (out_file, *full_res_cloud_base);
+      pcl::io::savePCDFileBinaryCompressed (out_file, *current_cloud);
+      sensor_to_base_transforms_.insert (std::pair<gtsam::Symbol, Eigen::Affine3d> (current_sym, sensor_to_base));
+      //pcl::io::savePCDFileBinaryCompressed (out_file, *full_res_cloud_base);
     }
     
     // We're done if that was the first cloud
@@ -549,6 +550,20 @@ namespace omnimapper
       printf ("ERROR: REQUESTED SYMBOL WITH NO POINTS!\n");
       CloudPtr empty (new Cloud ());
       return (empty);
+    }
+  }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> typename Eigen::Affine3d
+  ICPPoseMeasurementPlugin<PointT>::getSensorToBaseAtSymbol (gtsam::Symbol sym)
+  {
+    if (sensor_to_base_transforms_.count (sym) > 0)
+    {
+      return (sensor_to_base_transforms_.at (sym));
+    }
+    else
+    {
+      return (Eigen::Affine3d::Identity ());
     }
   }
   

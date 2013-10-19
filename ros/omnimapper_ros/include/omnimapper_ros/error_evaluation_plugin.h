@@ -52,6 +52,9 @@ namespace omnimapper
       // Interactive Menu Handler
       interactive_markers::MenuHandler menu_handler_;
       
+      // Playback Menu Entry Handle
+      interactive_markers::MenuHandler::EntryHandle playback_menu_;
+
       // Publisher for markers
       ros::Publisher marker_array_pub_;
 

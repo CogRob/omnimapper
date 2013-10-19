@@ -7,6 +7,8 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
 #include <pcl/segmentation/planar_region.h>
+#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/menu_handler.h>
 
 
 namespace omnimapper
@@ -40,6 +42,16 @@ namespace omnimapper
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
 
+      boost::shared_ptr<interactive_markers::InteractiveMarkerServer> getInteractiveMarkerServerPtr () { return (marker_server_); }
+
+      /** \brief Initializes the Interactive Menu */
+      void initMenu ();
+
+      /** \brief playPauseCb is used by interactive marker menu to control the mapper's playback */
+      void playPauseCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
+      void drawMapCloudCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
       void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
     protected:
@@ -48,6 +60,18 @@ namespace omnimapper
       
       // A reference to a mapper instance
       OmniMapperBase* mapper_;
+
+      // Interactive Markers
+      boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
+
+      // Menu Handler
+      interactive_markers::MenuHandler menu_handler_;
+
+      // Playback Menu Entry Handle
+      interactive_markers::MenuHandler::EntryHandle playback_menu_;
+
+      // Visualizaion Menu Handle
+      interactive_markers::MenuHandler::EntryHandle visualization_menu_;
       
       // Publisher for the trajectory
       ros::Publisher pose_array_pub_;
@@ -60,7 +84,6 @@ namespace omnimapper
 
       // Publisher for visualization marker arrays
       ros::Publisher marker_array_pub_;
-
 
       ros::Publisher pose_covariances_pub_;
 

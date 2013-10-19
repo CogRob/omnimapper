@@ -192,6 +192,7 @@ class OmniMapperROSNode
     bool evaluation_mode_write_trajectory_;
     bool evaluation_mode_write_tsdf_;
     ros::Timer eval_timer_;
+    bool evaluation_mode_paused_;
 
     OmniMapperROSNode ()
       : n_ ("~"),
@@ -271,6 +272,7 @@ class OmniMapperROSNode
       n_.param ("evaluation_output_trajectory_txt_path", evaluation_output_trajectory_txt_path_, std::string (""));
       n_.param ("evaluation_mode_write_trajectory", evaluation_mode_write_trajectory_, true);
       n_.param ("evaluation_mode_write_tsdf", evaluation_mode_write_tsdf_, false);
+      n_.param ("evaluation_mode_paused", evaluation_mode_paused_, false);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
       n_.param ("object_loop_closures", object_loop_closures_, true);
 
@@ -635,6 +637,9 @@ class OmniMapperROSNode
         ready = false;
 
       if (use_occ_edge_icp_ && !edge_icp_plugin_.ready ())
+        ready = false;
+
+      if (evaluation_mode_paused_)
         ready = false;
       
       if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size ()))
