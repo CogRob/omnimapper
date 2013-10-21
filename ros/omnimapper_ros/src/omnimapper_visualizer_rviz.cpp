@@ -11,6 +11,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   : nh_ ("~"),
     mapper_ (mapper),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
+    menu_handler_ (new interactive_markers::MenuHandler ()),
     draw_icp_clouds_ (false),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
@@ -72,14 +73,14 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu ()
   marker_server_->insert (origin_int_marker);
 
   // Generate a playback control menu
-  playback_menu_ = menu_handler_.insert ("Playback Control");
-  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_.insert (playback_menu_, "Play / Pause", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb, this, _1));
+  playback_menu_ = menu_handler_->insert ("Playback Control");
+  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_->insert (playback_menu_, "Play / Pause", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb, this, _1));
 
   // Generate an output menu
-  visualization_menu_ = menu_handler_.insert ("Visualization");
-  interactive_markers::MenuHandler::EntryHandle map_cloud = menu_handler_.insert (visualization_menu_, "Draw Map Cloud", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb, this, _1));
+  visualization_menu_ = menu_handler_->insert ("Visualization");
+  interactive_markers::MenuHandler::EntryHandle map_cloud = menu_handler_->insert (visualization_menu_, "Draw Map Cloud", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb, this, _1));
 
-  menu_handler_.apply (*marker_server_, "OmniMapper");
+  menu_handler_->apply (*marker_server_, "OmniMapper");
   marker_server_->applyChanges ();
 }
 
@@ -87,7 +88,7 @@ template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
 {
   printf ("Toggling playback!");
-//  omb_->togglePausedState ();
+  
 }
 
 template <typename PointT> void

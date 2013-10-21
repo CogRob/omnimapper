@@ -519,6 +519,15 @@ class OmniMapperROSNode
         boost::shared_ptr<omnimapper::OutputPlugin> eval_plugin_ptr (&eval_plugin_);
         omb_.addOutputPlugin (eval_plugin_ptr);
 
+        // Set up Visualization and Interactive Markers
+        printf ("Getting interactive ptrs\n");
+        boost::shared_ptr<interactive_markers::InteractiveMarkerServer> ims_ptr = vis_plugin_.getInteractiveMarkerServerPtr ();
+        boost::shared_ptr<interactive_markers::MenuHandler> mh_ptr = vis_plugin_.getMenuHandlerPtr ();
+        printf ("setting ptrs\n");
+        eval_plugin_.setInteractiveMarkerServerPtr (ims_ptr);
+        eval_plugin_.setMenuHandlerPtr (mh_ptr);
+        printf ("done with that\n");
+
         // Initialize pose to start in the same coord system as the ground truth
         gtsam::Pose3 gt_init = eval_plugin_.getInitialPose ();
         omb_.setInitialPose (gt_init);

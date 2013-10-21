@@ -43,15 +43,24 @@ namespace omnimapper
       // Initializes the interactive markers menu
       void initMenu ();
 
+      // Callback function for a pose that's been clicked on
+      void poseClickCallback (const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+      // Sets the interactive marker server (for example, to share one with the RViz plugin
+      void setInteractiveMarkerServerPtr (boost::shared_ptr<interactive_markers::InteractiveMarkerServer>& marker_server) { marker_server_ = marker_server; }
+      
+      // Sets the menu handler (for example, to share one with the RViz plugin
+      void setMenuHandlerPtr (boost::shared_ptr<interactive_markers::MenuHandler>& menu_handler) { menu_handler_ = menu_handler; }
+
     protected:
       ros::NodeHandle nh_;
-      
+
       // Interactive Markers
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
 
       // Interactive Menu Handler
-      interactive_markers::MenuHandler menu_handler_;
-      
+      boost::shared_ptr<interactive_markers::MenuHandler> menu_handler_;
+
       // Playback Menu Entry Handle
       interactive_markers::MenuHandler::EntryHandle playback_menu_;
 
