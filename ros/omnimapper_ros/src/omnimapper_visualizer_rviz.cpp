@@ -778,10 +778,8 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
     gtsam::Symbol sym = obj_iterator->second;
    Object<PointT>& object = object_map.at(sym);
 
-    object.object_mutex_.lock();
-   CloudPtr optimal_cloud = object.optimal_cloud_;
-   object.object_mutex_.unlock();
-    pcl::copyPointCloud(*optimal_cloud, truncated_map_cloud);
+   Cloud optimal_cloud = object.optimalCloud();
+    pcl::copyPointCloud(optimal_cloud, truncated_map_cloud);
     aggregate_cloud = aggregate_cloud + truncated_map_cloud;
 
     object_count++; //counter to process only top K objects
@@ -796,8 +794,29 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
 
   view_direction.print("[rviz] view direction: ");
   view_center.print("[rviz] view center");
+
+  visualization_msgs::Marker view_marker;
+  view_marker.header.frame_id = "/world";
+  view_marker.header.stamp = ros::Time::now ();
+  view_marker.ns = "camera_view";
+  view_marker.id = 0;
+  view_marker.type = visualization_msgs::Marker::ARROW;
+  view_marker.action = visualization_msgs::Marker::ADD;
+  view_marker.scale.x = 1.0;
+  view_marker.scale.y = 1.0;
+  view_marker.scale.z = 1.0;
+  view_marker.color.a = 0.5;
+  view_marker.color.r = 1.0;
+  view_marker.color.g = 1.0;
+  view_marker.color.b = 1.0;
+
+
+
+
+
   gtsam::Point3 transformed_view_center (view_center.x (), view_center.y (),
       view_center.z ());
+
   /* publish the camera frustum */
 int depth_limit = 3; // frustum culling at 3m
 double vertical_angle = (49/2)*M_PI/180; // kinect vertical FOV=49 degrees
@@ -805,6 +824,18 @@ double horizontal_angle = (57/2)*M_PI/180; // kinect horizontal FOV = 57
 gtsam::Point3 frame_center = transformed_view_center + depth_limit*view_direction;
 frame_center.print("[rviz] frame center");
 
+geometry_msgs::Point arrow_start;
+  arrow_start.x = transformed_view_center.x();
+  arrow_start.y = transformed_view_center.y();
+  arrow_start.z = transformed_view_center.z();
+
+  geometry_msgs::Point arrow_end;
+    arrow_end.x = frame_center.x();
+    arrow_end.y = frame_center.y();
+    arrow_end.z = frame_center.z();
+
+    view_marker.points.push_back(arrow_start);
+    view_marker.points.push_back(arrow_end);
 
 
 geometry_msgs::Point p1;
@@ -875,6 +906,9 @@ p5.z = p2.z;
   frustum_marker.color.r = 1.0;
   frustum_marker.color.g = 1.0;
   frustum_marker.color.b = 1.0;
+
+
+  marker_array.markers.push_back (view_marker);
   marker_array.markers.push_back (frustum_marker);
   marker_array_pub_.publish (marker_array);
 
