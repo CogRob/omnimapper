@@ -11,7 +11,7 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(true), verbose_(true), do_loop_closures_(true)  {
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(false), verbose_(false), do_loop_closures_(true)  {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 

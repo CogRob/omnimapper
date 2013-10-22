@@ -26,7 +26,7 @@
 	    <param name="use_distortion_model" value="false"/>
       	    <param name="odom_frame_name" value="/world"/>
 	    <param name="base_frame_name" value="/base_link_estimate"/>
-	    <param name="use_init_pose" value="false"/>
+	    <param name="use_init_pose" value="true"/>
 	    <param name="init_pose_from_tf" value="false"/>
 	    <param name="init_x" value="1.314809"/>
 	    <param name="init_y" value="0.847662"/>
@@ -50,10 +50,10 @@
 	    <param name="draw_pose_array" value="false"/>
 	    <param name="add_pose_per_cloud" value="false"/>
 	    <param name="evaluation_mode" value="true"/>
-	    <param name="evaluation_pcd_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/pcd/rgb/"/>
-	    <param name="evaluation_associated_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/associated.txt"/>
-	    <param name="evaluation_ground_truth_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/groundtruth.txt"/>
-	    <param name="evaluation_output_trajectory_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/omnimapper_trajectory.txt"/>
+	    <param name="evaluation_pcd_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/pcds/"/>
+	    <param name="evaluation_associated_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/associate.txt"/>
+	    <param name="evaluation_ground_truth_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/groundtruth.txt"/>
+	    <param name="evaluation_output_trajectory_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/output_trajectory.txt"/>
       </node>
 
        <!-- <node name="base_link_to_base_link_optical" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 -0.5 0.5 -0.5 0.5 /base_link_estimate /base_link_estimate_optical 100" respawn="false" output="screen"/> -->

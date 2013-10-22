@@ -526,6 +526,7 @@ class OmniMapperROSNode
         gtsam::Pose3 gt_init = eval_plugin_.getInitialPose ();
         omb_.setInitialPose (gt_init);
 
+        std::cout << "Loading PCDs" << std::endl;
         evaluation_file_idx_ = 0;
         boost::filesystem::directory_iterator end_itr;
         for (boost::filesystem::directory_iterator itr (evaluation_pcd_path_); itr != end_itr; ++itr)
@@ -537,6 +538,7 @@ class OmniMapperROSNode
         ROS_INFO ("OmniMapper: Loaded %d files for evaluation\n", evaluation_pcd_files_.size ());
 
         eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
+
       }
       
     }
@@ -628,6 +630,7 @@ class OmniMapperROSNode
     void
     evalTimerCallback (const ros::TimerEvent& e)
     {
+      std::cout << "Inside eval timer" << std::endl;
       double cb_start = pcl::getTime ();
       ROS_INFO ("In timer callback at %lf!\n", cb_start);
       

@@ -26,12 +26,22 @@ struct OutputMapTSDFRequest_ {
   typedef OutputMapTSDFRequest_<ContainerAllocator> Type;
 
   OutputMapTSDFRequest_()
+  : grid_size(0.0)
+  , resolution(0)
   {
   }
 
   OutputMapTSDFRequest_(const ContainerAllocator& _alloc)
+  : grid_size(0.0)
+  , resolution(0)
   {
   }
+
+  typedef float _grid_size_type;
+  float grid_size;
+
+  typedef int32_t _resolution_type;
+  int32_t resolution;
 
 
   typedef boost::shared_ptr< ::omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> > Ptr;
@@ -96,12 +106,12 @@ template<class ContainerAllocator>
 struct MD5Sum< ::omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> > {
   static const char* value() 
   {
-    return "d41d8cd98f00b204e9800998ecf8427e";
+    return "1b91828de43dd5da7a4fbc01af025f33";
   }
 
   static const char* value(const  ::omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> &) { return value(); } 
-  static const uint64_t static_value1 = 0xd41d8cd98f00b204ULL;
-  static const uint64_t static_value2 = 0xe9800998ecf8427eULL;
+  static const uint64_t static_value1 = 0x1b91828de43dd5daULL;
+  static const uint64_t static_value2 = 0x7a4fbc01af025f33ULL;
 };
 
 template<class ContainerAllocator>
@@ -118,7 +128,9 @@ template<class ContainerAllocator>
 struct Definition< ::omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> > {
   static const char* value() 
   {
-    return "\n\
+    return "float32 grid_size\n\
+int32 resolution\n\
+\n\
 ";
   }
 
@@ -184,6 +196,8 @@ template<class ContainerAllocator> struct Serializer< ::omnimapper_ros::OutputMa
 {
   template<typename Stream, typename T> inline static void allInOne(Stream& stream, T m)
   {
+    stream.next(m.grid_size);
+    stream.next(m.resolution);
   }
 
   ROS_DECLARE_ALLINONE_SERIALIZER;
@@ -217,7 +231,7 @@ template<>
 struct MD5Sum<omnimapper_ros::OutputMapTSDF> {
   static const char* value() 
   {
-    return "89bb254424e4cffedbf494e7b0ddbfea";
+    return "64851ffcb00848c1778951a6fc353519";
   }
 
   static const char* value(const omnimapper_ros::OutputMapTSDF&) { return value(); } 
@@ -237,7 +251,7 @@ template<class ContainerAllocator>
 struct MD5Sum<omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> > {
   static const char* value() 
   {
-    return "89bb254424e4cffedbf494e7b0ddbfea";
+    return "64851ffcb00848c1778951a6fc353519";
   }
 
   static const char* value(const omnimapper_ros::OutputMapTSDFRequest_<ContainerAllocator> &) { return value(); } 
@@ -257,7 +271,7 @@ template<class ContainerAllocator>
 struct MD5Sum<omnimapper_ros::OutputMapTSDFResponse_<ContainerAllocator> > {
   static const char* value() 
   {
-    return "89bb254424e4cffedbf494e7b0ddbfea";
+    return "64851ffcb00848c1778951a6fc353519";
   }
 
   static const char* value(const omnimapper_ros::OutputMapTSDFResponse_<ContainerAllocator> &) { return value(); } 
