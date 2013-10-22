@@ -6,10 +6,11 @@
 omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapperError", "", false)),
+    menu_handler_ (new interactive_markers::MenuHandler ()),
     mapper_ (mapper)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
-  marker_server_->clear ();
+  //marker_server_->clear ();
 
   // Create a control marker at the map origin for map level controls
   // visualization_msgs::InteractiveMarker origin_int_marker;
@@ -42,9 +43,9 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
 void
 omnimapper::ErrorEvaluationPlugin::initMenu ()
 {
-  playback_menu_ = menu_handler_.insert ("Playback Control");
-  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_.insert (playback_menu_, "Play / Pause");
-  menu_handler_.apply (*marker_server_, "OmniMapper");
+  playback_menu_ = menu_handler_->insert ("Playback Control");
+  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_->insert (playback_menu_, "Play / Pause");
+  menu_handler_->apply (*marker_server_, "OmniMapper");
   marker_server_->applyChanges ();
 }
 
@@ -54,6 +55,11 @@ omnimapper::ErrorEvaluationPlugin::initMenu ()
 //   printf ("Stopping playback!\n");
 // }
 
+void
+omnimapper::ErrorEvaluationPlugin::poseClickCallback (const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+{
+  // Parse the feedback
+}
 
 void
 omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
@@ -242,6 +248,23 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
       gt_pose_marker.pose.orientation.y = 0.0;
       gt_pose_marker.pose.orientation.z = 0.0;
       gt_pose_marker.pose.orientation.w = 1.0;
+
+      gt_marker.header.frame_id = "/world";
+      gt_marker.header.stamp = ros::Time::now ();
+      gt_marker.name = gt_name;
+
+      visualization_msgs::InteractiveMarkerControl control;
+      control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+      control.always_visible = true;
+      control.markers.push_back (gt_pose_marker);
+      gt_marker.controls.push_back (control);
+      
+      marker_server_->insert (gt_marker);
+
+      // interactive_markers::MenuHandler::EntryHandle gt_menu = menu_handler_->insert (gt_name, boost::bind (&omnimapper::ErrorEvaluationPlugin::poseClickCallback, this, _1));
+      // menu_handler_->apply (*marker_server_, gt_name);
+      // marker_server_->applyChanges ();
+
     }
 
     // Try setting the pose first
@@ -254,8 +277,6 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
 
     // visualization_msgs::InteractiveMarker current_marker;
     // bool test_get = marker_server_->get (marker_name, current_marker);
-
-    
 
      bool set_pose_worked = marker_server_->setPose (marker_name, origin_pose, marker_header);
     //bool set_pose_worked = false;

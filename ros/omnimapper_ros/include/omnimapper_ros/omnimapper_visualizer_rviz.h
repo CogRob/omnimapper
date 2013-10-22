@@ -44,6 +44,8 @@ namespace omnimapper
 
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> getInteractiveMarkerServerPtr () { return (marker_server_); }
 
+      boost::shared_ptr<interactive_markers::MenuHandler> getMenuHandlerPtr () { return (menu_handler_); }
+
       /** \brief Initializes the Interactive Menu */
       void initMenu ();
 
@@ -65,7 +67,7 @@ namespace omnimapper
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
 
       // Menu Handler
-      interactive_markers::MenuHandler menu_handler_;
+      boost::shared_ptr<interactive_markers::MenuHandler> menu_handler_;
 
       // Playback Menu Entry Handle
       interactive_markers::MenuHandler::EntryHandle playback_menu_;
