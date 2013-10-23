@@ -1059,6 +1059,7 @@ namespace omnimapper
         // Clusters that are too far away suffer from too much depth discretization to be reliable
         bool dist_ok = dist < max_cluster_dist_;
         // Clusters that are too low in the robot frame can be excluded
+        std::cout << "[ObjectPlugin] min_cluster_height " << min_cluster_height_ << " centroid " << clust_centroid[2] << "\n";
         bool height_ok = clust_centroid[2] > min_cluster_height_;
         // Clusters with large bounding boxes are probably not objects of interest -- these tend to architectural features
         bool bbox_volume_ok = bbox_volume < max_bbox_volume_;

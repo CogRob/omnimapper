@@ -132,7 +132,7 @@ namespace omnimapper
       }
 
       /** \brief set minimum cluster height */
-      void setMinimumClusterHeight(bool min_cluster_height){
+      void setMinimumClusterHeight(double min_cluster_height){
           min_cluster_height_=min_cluster_height;
       }
 
