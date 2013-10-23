@@ -120,12 +120,32 @@ namespace omnimapper
         do_loop_closures_=do_loop_closures;
       }
 
+      /** \brief use objects as landmarks  or not */
+      void useObjectLandmarks(bool use_object_landmarks){
+          use_object_landmarks_ = use_object_landmarks;
+      }
+
+
+      /** \brief do object model save or not */
+      void saveObjectModels(bool save_object_models){
+          save_object_models_=save_object_models;
+      }
+
+      /** \brief set minimum cluster height */
+      void setMinimumClusterHeight(bool min_cluster_height){
+          min_cluster_height_=min_cluster_height;
+      }
+
     protected:
       bool vis_flag_; // flag to check if visualization callback is set
       bool debug_, verbose_; //flags to control the couts
       bool do_loop_closures_; //flag to control object object loop closures
+      bool save_object_models_; // flag to control object model r/w
+      bool use_object_landmarks_; // flag to control whether objects are used as landmarks or not
+
+      double min_cluster_height_; //height above the floor for each cluster
       OmniMapperBase* mapper_;
-      GetTransformFunctorPtr get_sensor_to_base_;
+      GetTransformFunctorPtr get_sensor_to_base_   ;
       CloudPtrVector empty_;
       std::map<gtsam::Symbol, CloudPtrVector> observations_;
       std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;

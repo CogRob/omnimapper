@@ -150,6 +150,9 @@ class OmniMapperROSNode
     // Object Plugin Params
     std::string object_database_location_;
     bool object_loop_closures_;
+    bool object_landmarks_;
+    bool save_object_models_;
+    double object_min_height_;
 
     // Labelled Cloud Plugin Params
     bool use_label_cloud_;
@@ -275,6 +278,9 @@ class OmniMapperROSNode
       n_.param ("evaluation_mode_paused", evaluation_mode_paused_, false);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
       n_.param ("object_loop_closures", object_loop_closures_, true);
+      n_.param ("object_landmarks", object_landmarks_, true);
+      n_.param ("save_object_models", save_object_models_, true);
+      n_.param ("object_min_height", object_min_height_, 0.3);
 
 
       // Optionally specify an alternate initial pose
@@ -400,6 +406,9 @@ class OmniMapperROSNode
         object_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
         object_plugin_.setAndLoadObjectDatabaseLocation (object_database_location_);
         object_plugin_.useObjectLoopClosures(object_loop_closures_);
+        object_plugin_.useObjectLandmarks(object_landmarks_);
+        object_plugin_.saveObjectModels(save_object_models_);
+        object_plugin_.setMinimumClusterHeight(object_min_height_); //min height of the object above floor
       }
 
       // Set up the feature extraction
@@ -546,8 +555,8 @@ class OmniMapperROSNode
         sort (evaluation_pcd_files_.begin (), evaluation_pcd_files_.end ());
         ROS_INFO ("OmniMapper: Loaded %d files for evaluation\n", evaluation_pcd_files_.size ());
 
-        eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
-
+        //eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::callBackTest, this);
+        n_.createTimer (ros::Duration (0.001), &OmniMapperROSNode::callBackTest, this);
       }
       
     }
@@ -636,6 +645,11 @@ class OmniMapperROSNode
       return (true);
     }
 
+    void callBackTest(const ros::TimerEvent& e)
+    {
+      ROS_INFO("inside callBackTest\n");
+
+    }
     void
     evalTimerCallback (const ros::TimerEvent& e)
     {

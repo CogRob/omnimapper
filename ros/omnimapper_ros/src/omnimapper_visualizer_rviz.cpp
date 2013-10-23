@@ -774,7 +774,7 @@ template<typename PointT> void omnimapper::OmniMapperVisualizerRViz<PointT>::obj
   for (obj_iterator = top_objects.begin (); obj_iterator != top_objects.end ();
       obj_iterator++)
   {
-    if(object_count == 20)break;
+   // if(object_count == 20)break;
     gtsam::Symbol sym = obj_iterator->second;
    Object<PointT>& object = object_map.at(sym);
 

@@ -11,7 +11,7 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(false), verbose_(false), do_loop_closures_(true)  {
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(true), verbose_(true), do_loop_closures_(true), save_object_models_(true), use_object_landmarks_(true), min_cluster_height_(0.3)  {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 
@@ -455,7 +455,22 @@ namespace omnimapper
 
       }
     }
+    /* Save PCDs to disk */
 
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Saving new model" << std::endl;
+    std::string output_file = object_database_location_ + "/object_models/"
+        + boost::lexical_cast<std::string> (id) + ".pcd";
+
+    if(transformed_cloud_opt_.points.size()>0)
+    pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
+
+    if(verbose_)
+    std::cout << "[ObjectPlugin] Model saved" << std::endl;
+
+    /* check if use_object_landmarks is on */
+    if(!use_object_landmarks_)return;
+    
     Eigen::Vector4f obj_centroid;
     pcl::compute3DCentroid (transformed_cloud_opt_, obj_centroid);
 
@@ -466,6 +481,8 @@ namespace omnimapper
     gtsam::Point3 object_centroid_pt (obj_centroid[0], obj_centroid[1],
         obj_centroid[2]); //object centroid
 
+    gtsam::Matrix3 covariance_mat = gtsam::zeros (3, 3);
+
     /* check if object already exists in the map otherwise add it */
     if (!mapper_->getSolution ().exists (obj_symbol) && !object.landmark)
     {
@@ -474,6 +491,7 @@ namespace omnimapper
       mapper_->addNewValue (obj_symbol, object_centroid_pt);
       object.landmark = true;
     }
+
 
     /* add individual constraints between robot poses and object */
     for (it = cluster.begin (); it != cluster.end (); it++)
@@ -516,7 +534,6 @@ namespace omnimapper
      * Compute marginals of existing objects
      */
 
-    gtsam::Matrix3 covariance_mat = gtsam::zeros (3, 3);
     int covSize = 0;
 
     gtsam::NonlinearFactorGraph graph = mapper_->getGraph ();
@@ -578,18 +595,6 @@ namespace omnimapper
 
      */
 
-    /* Save PCDs to disk */
-
-    if(verbose_)
-    std::cout << "[ObjectPlugin] Saving new model" << std::endl;
-    std::string output_file = object_database_location_ + "/object_models/"
-        + boost::lexical_cast<std::string> (id) + ".pcd";
-
-    if(transformed_cloud_opt_.points.size()>0)
-    pcl::io::savePCDFileASCII (output_file, transformed_cloud_opt_);
-
-    if(verbose_)
-    std::cout << "[ObjectPlugin] Model saved" << std::endl;
 
     /* match the object to the database */
     std::pair<int, int> obj = object_recognition_->matchToDatabase (
@@ -749,6 +754,7 @@ namespace omnimapper
         std::cout << "[ObjectPlugin] #Objects in Queue: " << train_queue.size () << std::endl;
         }
 
+        if(save_object_models_)
         recognizeObject (object_map.at (sym));
 
       }
@@ -849,7 +855,6 @@ namespace omnimapper
     double min_points_ = 1000;
     double min_clust_centroid_ptp_dist = 0.5;
     double ptp_pt_cull_thresh_ = 0.02;
-    double min_cluster_height_ = 0.3;
 
     bool filter_points_near_planes_ = true;
 
@@ -868,6 +873,10 @@ namespace omnimapper
       if(debug_)
       printf ("[ObjectPlugin] Object Plugin: Applying sensor to base transform.\n");
        sensor_to_base = (*get_sensor_to_base_) (t);
+
+
+       if(debug_)
+          std::cout << "[ObjectPlugin] Sensor to Base Transform: " << sensor_to_base.matrix() << std::endl;
       for (int i = 0; i < clusters.size (); i++)
       {
         CloudPtr tformed_cluster (new Cloud ());
