@@ -11,17 +11,13 @@ namespace omnimapper
   template<typename PointT>
   ObjectPlugin<PointT>::ObjectPlugin (omnimapper::OmniMapperBase* mapper) :
       mapper_ (mapper), get_sensor_to_base_ (GetTransformFunctorPtr ()), observations_ (), empty_ (), max_object_size (
-          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_(true), verbose_(true), do_loop_closures_(true), save_object_models_(true), use_object_landmarks_(true), min_cluster_height_(0.3)  {
+          0), max_current_size (0), tsdf (new cpu_tsdf::TSDFVolumeOctree), debug_ (
+          false), verbose_ (false), do_loop_closures_ (true), save_object_models_ (
+          true), use_object_landmarks_ (true), min_cluster_height_ (0.3)
+  {
     printf ("In constructor, checking size of observations_\n");
     printf ("Size: %d\n", observations_.size ());
 
-    // thread to match objects
-    boost::thread object_recognition_thread (
-        &ObjectPlugin<PointT>::objectRecognitionLoop, this);
-
-    //find optimal object models in a thread
-    boost::thread reconstruction_thread (
-        &ObjectPlugin<PointT>::computeOptimalObjectModel, this);
 
   }
 
@@ -52,6 +48,15 @@ namespace omnimapper
     object_discovery_.reset (new ObjectDiscovery<PointT> ());
     object_discovery_->loadRepresentations(object_database_location_); //load the database for object discovery thread
     // boost::thread object_discovery_thread (&ObjectPlugin<PointT>::objectDiscoveryLoop, this);
+
+    // thread to match objects
+    boost::thread object_recognition_thread (
+        &ObjectPlugin<PointT>::objectRecognitionLoop, this);
+
+    //find optimal object models in a thread
+    boost::thread reconstruction_thread (
+        &ObjectPlugin<PointT>::computeOptimalObjectModel, this);
+
      }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
