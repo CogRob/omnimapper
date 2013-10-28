@@ -2,16 +2,26 @@
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <std_msgs/Duration.h>
+#include <std_msgs/Float32.h>
+
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
 #include <geometry_msgs/Point.h>
 #include <omnimapper_ros/ros_time_utils.h>
 
 #include <gtsam/geometry/Pose3.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 
 namespace omnimapper
 {
+
+  typedef pcl::PointXYZRGBA PointT;
+  typedef pcl::PointCloud<PointT> Cloud;
+  typedef Cloud::Ptr CloudPtr;
+  typedef Cloud::ConstPtr CloudConstPtr;
+
   /** \brief ErrorEvaluationPlugin will take the factor graph and compute per-pose error.  
    *   Additionally visualizes error in RViz, so we can see where things go wrong. 
    *   This is useful for two purposes: uncertainty estimation and error evaluation.
@@ -52,6 +62,11 @@ namespace omnimapper
       // Sets the menu handler (for example, to share one with the RViz plugin
       void setMenuHandlerPtr (boost::shared_ptr<interactive_markers::MenuHandler>& menu_handler) { menu_handler_ = menu_handler; }
 
+      // Visualize each point cloud frame
+      void visualizeEachFrame (CloudPtr cloud);
+
+      void visualizeStats();
+
     protected:
       ros::NodeHandle nh_;
 
@@ -70,6 +85,12 @@ namespace omnimapper
       
       // Publisher for markers
       ros::Publisher marker_array_pub_;
+      ros::Publisher live_frame_pub_; // Used in evaluation mode
+      ros::Publisher time_pub_; // Publish the duration
+      ros::Publisher ate_trans_per_pose_pub_; // Per pose translation error: sqrt(sum(t1-t*)^2)
+      ros::Publisher ate_trans_rmse_pub_; // RMSE error
+
+      ros::Time current_time_;
 
       // A list of timestamps for each point cloud used in the dataset
       std::vector<omnimapper::Time> cloud_timestamps_;

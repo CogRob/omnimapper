@@ -10,6 +10,10 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
     mapper_ (mapper)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
+  live_frame_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("live_frame", 0); // Live frame publisher for evaluation mode
+  time_pub_ = nh_.advertise<std_msgs::Float32> ("/stats/time", 0);
+  ate_trans_per_pose_pub_ = nh_.advertise<std_msgs::Float32> ("/stats/ate_trans_per_pose", 0);
+  ate_trans_rmse_pub_ = nh_.advertise<std_msgs::Float32> ("/stats/ate_trans_rmse", 0);
   //marker_server_->clear ();
 
   // Create a control marker at the map origin for map level controls
@@ -192,6 +196,10 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
   // int_marker.name = "mapper_trajectory";
   // int_marker.description = "Mapper Trajectory";
   
+  float ate_trans_per_pose = 0;
+  float ate_trans_rmse = 0;
+  int ate_trans_rmse_count = 0;
+
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -208,7 +216,15 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     
     gtsam::Pose3 gt_p1 = getPoseAtTime (t1);
     
-    // Make a sphere for the current pose
+    // Compute ATE
+    gtsam::Point3 gt_point = gt_p1.translation();
+    gtsam::Point3 sam_point = sam_pose.translation();
+    gtsam::Point3 diff_point = gt_point-sam_point;
+    ate_trans_per_pose = diff_point.norm();
+    ate_trans_rmse += ate_trans_per_pose*ate_trans_per_pose;
+    ate_trans_rmse_count++;
+
+        // Make a sphere for the current pose
     visualization_msgs::Marker pose_marker;
     pose_marker.type = visualization_msgs::Marker::SPHERE;
     pose_marker.scale.x = 0.01;//0.005;
@@ -305,6 +321,17 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
     
   }
   marker_server_->applyChanges ();  
+
+
+  // Compute ATE at latest pose
+  // TODO: this assumes the last pose given by the iterator is the latest one, change it to use threads
+  std_msgs::Float32 ate_trans_per_pose_message;
+  ate_trans_per_pose_message.data = ate_trans_per_pose * 100;
+  ate_trans_per_pose_pub_.publish (ate_trans_per_pose_message);
+
+  std_msgs::Float32 ate_trans_rmse_message;
+  ate_trans_rmse_message.data = sqrt (ate_trans_rmse / ate_trans_rmse_count);
+  ate_trans_rmse_pub_.publish (ate_trans_rmse_message);
 
   //writeMapperTrajectoryFile (std::string (""), current_solution);
 
@@ -469,4 +496,121 @@ omnimapper::ErrorEvaluationPlugin::getInitialPose ()
 {
   // Lookup timestamp of 0th cloud
   return (getPoseAtTime (cloud_timestamps_[0]));
+}
+
+
+void
+omnimapper::ErrorEvaluationPlugin::visualizeEachFrame (CloudPtr cloud){
+
+  omnimapper::Time cloud_stamp = omnimapper::stamp2ptime (cloud->header.stamp);
+  gtsam::Pose3 gt_pose = getPoseAtTime(cloud_stamp); //ground truth pose
+  Eigen::Matrix4f map_tform = gt_pose.matrix ().cast<float>();
+  CloudPtr map_cloud (new Cloud ()); // declare a map cloud
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_map_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::transformPointCloud (*cloud, *map_cloud, map_tform); // transform in the map frame
+  pcl::copyPointCloud (*map_cloud, *rgb_map_cloud); // copy RGB components for publishing
+  sensor_msgs::PointCloud2 transformed_cloud_msg; // declare the ros message
+  pcl::toROSMsg(*rgb_map_cloud, transformed_cloud_msg); // convert rgb cloud to the ros message
+  transformed_cloud_msg.header.frame_id = "/world";
+  transformed_cloud_msg.header.stamp = ros::Time::now(); // publish in the global frame now
+  live_frame_pub_.publish (transformed_cloud_msg);
+
+
+
+  /* publish the camera frustum */
+int depth_limit = 4; // frustum culling at 3m
+double vertical_angle = (49/2)*M_PI/180; // kinect vertical FOV=49 degrees
+double horizontal_angle = (57/2)*M_PI/180; // kinect horizontal FOV = 57
+
+
+geometry_msgs::Point p1;
+  p1.x = 0;
+  p1.y = 0;
+  p1.z = 0;
+
+geometry_msgs::Point p2;
+p2.x = depth_limit*tan(horizontal_angle);
+p2.y = depth_limit*tan(vertical_angle);
+p2.z = depth_limit;
+
+geometry_msgs::Point p3;
+p3.x = -p2.x                                                                                                                                                                                                               ;
+p3.y = p2.y;
+p3.z = p2.z;
+
+geometry_msgs::Point p4;
+p4.x = p2.x;
+p4.y = -p2.y;
+p4.z = p2.z;
+
+geometry_msgs::Point p5;
+p5.x = -p2.x;
+p5.y = -p2.y;
+p5.z = p2.z;
+
+  visualization_msgs::MarkerArray marker_array;
+  visualization_msgs::Marker frustum_marker;
+  frustum_marker.header.frame_id = "/world";
+  frustum_marker.header.stamp = ros::Time::now ();
+  frustum_marker.ns = "camera_frustum";
+  frustum_marker.id = 0;
+  frustum_marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  frustum_marker.action = visualization_msgs::Marker::ADD;
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p2);
+  frustum_marker.points.push_back (p3);
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p2);
+  frustum_marker.points.push_back (p4);
+
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p4);
+  frustum_marker.points.push_back (p5);
+
+
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p3);
+  frustum_marker.points.push_back (p5);
+
+
+
+  frustum_marker.pose.position.x = gt_pose.x();
+  frustum_marker.pose.position.y = gt_pose.y();
+  frustum_marker.pose.position.z = gt_pose.z();
+
+  gtsam::Vector quat = gt_pose.rotation().quaternion ();
+  tf::Quaternion orientation (quat[1], quat[2], quat[3], quat[0]);
+  tf::quaternionTFToMsg (orientation, frustum_marker.pose.orientation);
+
+
+  frustum_marker.scale.x = 1.0;
+  frustum_marker.scale.y = 1.0;
+  frustum_marker.scale.z = 1.0;
+  frustum_marker.color.a = 0.2;
+  frustum_marker.color.r = 1.0;
+  frustum_marker.color.g = 1.0;
+  frustum_marker.color.b = 1.0;
+
+  marker_array.markers.push_back (frustum_marker);
+  marker_array_pub_.publish (marker_array);
+
+}
+
+
+void
+omnimapper::ErrorEvaluationPlugin::visualizeStats (){
+
+ros::Duration duration = ros::Time::now() - current_time_;
+current_time_ = ros::Time::now();
+double time_sec = duration.toSec();
+
+std_msgs::Float32 time_duration;
+time_duration.data = (float)time_sec;
+time_pub_.publish(time_duration);
+
 }

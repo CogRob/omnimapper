@@ -107,6 +107,8 @@ class OmniMapperROSNode
 
     ros::ServiceServer generate_tsdf_srv_;
 
+
+
     // Mapper config
     bool use_planes_;
     bool use_objects_;
@@ -197,6 +199,7 @@ class OmniMapperROSNode
     bool evaluation_mode_write_tsdf_;
     ros::Timer eval_timer_;
     bool evaluation_mode_paused_;
+    bool evaluation_show_frames_;
 
     OmniMapperROSNode ()
       : n_ ("~"),
@@ -278,6 +281,7 @@ class OmniMapperROSNode
       n_.param ("evaluation_mode_write_trajectory", evaluation_mode_write_trajectory_, true);
       n_.param ("evaluation_mode_write_tsdf", evaluation_mode_write_tsdf_, false);
       n_.param ("evaluation_mode_paused", evaluation_mode_paused_, false);
+      n_.param ("evaluation_show_frames", evaluation_show_frames_, true);
       n_.param ("object_database_location", object_database_location_, std::string ("/home/siddharth/kinect/"));
       n_.param ("object_loop_closures", object_loop_closures_, true);
       n_.param ("object_landmarks", object_landmarks_, true);
@@ -523,15 +527,17 @@ class OmniMapperROSNode
       // if (use_planes_)
       //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
       
+
       // If evaluation mode, start a timer to check on things, and load the files
       if (evaluation_mode_)
       {
+
         // Set up the error evaluation plugin
         eval_plugin_.loadAssociatedFile (evaluation_associated_txt_path_);
         eval_plugin_.loadGroundTruthFile (evaluation_ground_truth_txt_path_);
 
         boost::shared_ptr<omnimapper::OutputPlugin> eval_plugin_ptr (&eval_plugin_);
-        omb_.addOutputPlugin (eval_plugin_ptr);
+        omb_.addOutputPlugin (eval_plugin_ptr); // Calls the update function
 
         // Set up Visualization and Interactive Markers
         printf ("Getting interactive ptrs\n");
@@ -558,9 +564,10 @@ class OmniMapperROSNode
         ROS_INFO ("OmniMapper: Loaded %d files for evaluation\n", evaluation_pcd_files_.size ());
 
         eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
-        //n_.createTimer (ros::Duration (0.001), &OmniMapperROSNode::callBackTest, this);
       }
-      
+
+
+
     }
 
     void
@@ -647,13 +654,8 @@ class OmniMapperROSNode
       return (true);
     }
 
-    void callBackTest(const ros::TimerEvent& e)
-    {
-      ROS_INFO("inside callBackTest\n");
-
-    }
     void
-    evalTimerCallback (const ros::TimerEvent& e)
+    evalTimerCallback() // (const ros::TimerEvent& e)
     {
       std::cout << "Inside eval timer" << std::endl;
       double cb_start = pcl::getTime ();
@@ -672,6 +674,7 @@ class OmniMapperROSNode
       
       if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size ()))
       {
+
         // Load next file
         CloudPtr cloud (new Cloud ());
         double load_start = pcl::getTime ();
@@ -691,6 +694,13 @@ class OmniMapperROSNode
 
         sensor_msgs::PointCloud2ConstPtr cloud_msg_ptr (cloud_msg);
         cloudCallback (cloud_msg_ptr);
+
+        // TODO: Visualization adds a lag  each time it is called, delays if other plugins are ready or not
+        if(evaluation_show_frames_){
+        eval_plugin_.visualizeEachFrame(cloud); // visualize each frame
+        eval_plugin_.visualizeStats();
+        }
+
         ready = false;
       }
       else
