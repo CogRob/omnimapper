@@ -1,4 +1,5 @@
 <launch>
+    <param name="/use_sim_time" value="false"/>
 
   <node name="camera_tracker" pkg="dvo_ros" type="camera_tracker" respawn="false">
   	<remap from="/camera/depth_registered/image_rect_raw" to="/camera/depth/image"/>
@@ -50,10 +51,11 @@
 	    <param name="draw_pose_array" value="false"/>
 	    <param name="add_pose_per_cloud" value="false"/>
 	    <param name="evaluation_mode" value="true"/>
-	    <param name="evaluation_pcd_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/pcds/"/>
-	    <param name="evaluation_associated_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/associate.txt"/>
-	    <param name="evaluation_ground_truth_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/groundtruth.txt"/>
-	    <param name="evaluation_output_trajectory_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/output_trajectory.txt"/>
+	    <param name="evaluation_pcd_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_desk/pcds/"/>
+	    <param name="evaluation_associated_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_desk/associate.txt"/>
+	    <param name="evaluation_ground_truth_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_desk/groundtruth.txt"/>
+	    <param name="evaluation_output_trajectory_txt_path" value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_desk/output_trajectory.txt"/>
+	    <param name="evaluation_show_frames" value="true"/>
       </node>
 
        <!-- <node name="base_link_to_base_link_optical" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 -0.5 0.5 -0.5 0.5 /base_link_estimate /base_link_estimate_optical 100" respawn="false" output="screen"/> -->

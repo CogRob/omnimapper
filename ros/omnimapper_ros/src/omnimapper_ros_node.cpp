@@ -561,13 +561,7 @@ class OmniMapperROSNode
         sort (evaluation_pcd_files_.begin (), evaluation_pcd_files_.end ());
         ROS_INFO ("OmniMapper: Loaded %d files for evaluation\n", evaluation_pcd_files_.size ());
 
-        //eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::callBackTest, this);
-
-           while(ros::ok()){
-             std::cout << ros::Time::now() << std::endl;
-             evalTimerCallback();
-             ros::Duration(0.001).sleep();
-            }
+        eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
       }
 
 
