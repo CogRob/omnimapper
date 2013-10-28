@@ -64,6 +64,10 @@ namespace omnimapper
       // Playback Menu Entry Handle
       interactive_markers::MenuHandler::EntryHandle playback_menu_;
 
+      // Per Pose Menu Handlers
+      std::map<gtsam::Symbol, boost::shared_ptr<interactive_markers::MenuHandler> > pose_menus_;
+      std::map<gtsam::Symbol, interactive_markers::MenuHandler::EntryHandle> pose_error_entries_;
+      
       // Publisher for markers
       ros::Publisher marker_array_pub_;
 

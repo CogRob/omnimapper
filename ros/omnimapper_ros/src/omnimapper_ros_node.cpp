@@ -133,6 +133,7 @@ class OmniMapperROSNode
     double icp_trans_noise_;
     double icp_rot_noise_;
     bool icp_add_identity_on_fail_;
+    bool icp_add_loop_closures_;
 
     // Occluding Edge ICP Params
     double occ_edge_trans_noise_;
@@ -235,6 +236,7 @@ class OmniMapperROSNode
       n_.param ("icp_trans_noise", icp_trans_noise_, 0.1);
       n_.param ("icp_rot_noise", icp_rot_noise_, 0.1);
       n_.param ("icp_add_identity_on_fail", icp_add_identity_on_fail_, false);
+      n_.param ("icp_add_loop_closures", icp_add_loop_closures_, true);
       n_.param ("occ_edge_trans_noise", occ_edge_trans_noise_, 0.1);
       n_.param ("occ_edge_rot_noise", occ_edge_rot_noise_, 0.1);
       n_.param ("occ_edge_score_thresh", occ_edge_score_thresh_, 0.1);
@@ -370,7 +372,7 @@ class OmniMapperROSNode
       icp_plugin_.setScoreThreshold (0.8);
       icp_plugin_.setTransNoise (icp_trans_noise_);//10.1
       icp_plugin_.setRotNoise (icp_rot_noise_);//10.1
-      icp_plugin_.setAddLoopClosures (true);
+      icp_plugin_.setAddLoopClosures (icp_add_loop_closures_);
       icp_plugin_.setLoopClosureDistanceThreshold (1.0);
       icp_plugin_.setSaveFullResClouds (true);
       icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);

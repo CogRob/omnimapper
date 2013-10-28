@@ -59,6 +59,7 @@ void
 omnimapper::ErrorEvaluationPlugin::poseClickCallback (const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   // Parse the feedback
+  std::cout << "Got click from : " << feedback->marker_name << std::endl;
 }
 
 void
@@ -261,7 +262,10 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
       
       marker_server_->insert (gt_marker);
 
-      // interactive_markers::MenuHandler::EntryHandle gt_menu = menu_handler_->insert (gt_name, boost::bind (&omnimapper::ErrorEvaluationPlugin::poseClickCallback, this, _1));
+      boost::shared_ptr<interactive_markers::MenuHandler> gt_menu (new interactive_markers::MenuHandler ());
+      gt_menu->insert (std::string (key_symbol), boost::bind (&omnimapper::ErrorEvaluationPlugin::poseClickCallback, this, _1));
+      pose_menus_.insert (std::pair<gtsam::Symbol, boost::shared_ptr<interactive_markers::MenuHandler> > (key_symbol, gt_menu));
+      gt_menu->apply (*marker_server_, gt_name);
       // menu_handler_->apply (*marker_server_, gt_name);
       // marker_server_->applyChanges ();
 

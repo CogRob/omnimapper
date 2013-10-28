@@ -54,6 +54,8 @@ namespace omnimapper
 
       void drawMapCloudCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
+      void drawPoseMarginalsCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
       void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
     protected:
@@ -74,7 +76,7 @@ namespace omnimapper
 
       // Visualizaion Menu Handle
       interactive_markers::MenuHandler::EntryHandle visualization_menu_;
-      
+
       // Publisher for the trajectory
       ros::Publisher pose_array_pub_;
       

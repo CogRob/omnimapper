@@ -87,20 +87,6 @@ int main (int argc, char** argv)
   std::vector<std::string> stamps;
   std::vector<std::string> rgb_files;
   std::vector<std::string> depth_files;
-
-   /* split associate filename into directory and filename
-    * assumes data is in the same directory as associate file
-    * */
-  boost::filesystem::path associate_filename(argv[1]);
-  boost::filesystem::path associate_directory = associate_filename.parent_path();
-  std::string associate_dir = associate_directory.string();
-  associate_dir.append("/");
-  std::cout << "Data Dir: " << associate_dir << std::endl;
-
-  /* check if output directory exists if not create it */
-  if(!boost::filesystem::exists(argv[2]))
-  boost::filesystem::create_directory(argv[2]);
-
   
   std::ifstream associated_file (argv[1]);
   while (!associated_file.eof ())
@@ -120,14 +106,8 @@ int main (int argc, char** argv)
     boost::split (strs, str, boost::is_any_of ("\n "));
     //stamps.push_back (strs[0]); // rgb time stamp
     stamps.push_back (strs[2]); // depth time stamp
-
-    std::string rgb_file(associate_dir);
-    rgb_file.append(strs[1]);
-    rgb_files.push_back (rgb_file);
-
-    std::string depth_file(associate_dir);
-    depth_file.append(strs[3]);
-    depth_files.push_back (depth_file);
+    rgb_files.push_back (strs[1]);
+    depth_files.push_back (strs[3]);
   }
   
   assert (stamps.size () == rgb_files.size () && rgb_files.size () == depth_files.size ());
@@ -138,19 +118,16 @@ int main (int argc, char** argv)
     //std::cout << stamps[i] << " " << rgb_files[i] << " " << depth_files[i] << std::endl;
   }
 
-
-
   std::vector<double> time_list;
   for (int i = 0; i < numof_total_frames; i++)
   {
     CloudPtr cloud_ptr = createXYZRGBPointCloud (rgb_files[i], depth_files[i], stamps[i]);
    
     std::string outfile (argv[2]);
-    std::string rgb_fname = boost::filesystem::basename (rgb_files[i]);
-    outfile.append (rgb_fname);
+    outfile.append (rgb_files[i]);
     outfile.append (std::string (".pcd"));
     
-  //  std::cout << "Would write: " << outfile << std::endl;
+    //std::cout << "Would write: " << outfile << std::endl;
     
     pcl::io::savePCDFileBinaryCompressed (outfile, *cloud_ptr);
     //pcl::io::savePCDFile (outfile, *cloud_ptr);
