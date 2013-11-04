@@ -30,7 +30,7 @@
 
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
-
+#include <google/profiler.h>
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -196,6 +196,7 @@ class OmniMapperROSNode
     bool evaluation_mode_write_tsdf_;
     ros::Timer eval_timer_;
     bool evaluation_mode_paused_;
+    bool use_organized_feature_extraction_;
 
     OmniMapperROSNode ()
       : n_ ("~"),
@@ -281,7 +282,7 @@ class OmniMapperROSNode
       n_.param ("object_landmarks", object_landmarks_, true);
       n_.param ("save_object_models", save_object_models_, true);
       n_.param ("object_min_height", object_min_height_, 0.3);
-
+      n_.param ("use_organized_feature_extraction", use_organized_feature_extraction_, true);
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -593,10 +594,13 @@ class OmniMapperROSNode
         icp_plugin_.cloudCallback (cloud);
       }
       
-      double start_ofe = pcl::getTime ();
-      organized_feature_extraction_.cloudCallback (cloud);
-      double end_ofe = pcl::getTime ();
-      std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe) << std::endl;
+      if (use_organized_feature_extraction_)
+      {
+        double start_ofe = pcl::getTime ();
+        organized_feature_extraction_.cloudCallback (cloud);
+        double end_ofe = pcl::getTime ();
+        std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe) << std::endl;
+      }
 
       if (add_pose_per_cloud_)
       {
@@ -756,6 +760,8 @@ int
 main (int argc, char** argv)
 {
   ros::init (argc, argv, "OmniMapperROSNode");
+  //ProfilerStart ("omnimapper_ros_node.prof");
   OmniMapperROSNode<PointT> omnimapper;
   ros::spin ();
+  //ProfilerStop ();
 }
