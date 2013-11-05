@@ -182,6 +182,7 @@ class OmniMapperROSNode
     bool use_distortion_model_;
     bool use_rgbd_sensor_base_tf_functor_;
     std::string distortion_model_path_;
+    bool debug_;
 
     // Evaluation Mode
     bool evaluation_mode_;
@@ -303,6 +304,7 @@ class OmniMapperROSNode
       n_.param ("save_object_models", save_object_models_, true);
       n_.param ("object_min_height", object_min_height_, 0.3);
       n_.param ("use_organized_feature_extraction", use_organized_feature_extraction_, true);
+      n_.param ("debug", debug_, false);
 
       // Optionally specify an alternate initial pose
       if (use_init_pose_)
@@ -595,7 +597,7 @@ class OmniMapperROSNode
           &OmniMapperROSNode::generateMapTSDFCallback, this);
 
       //OmniMapper thread
-      omb_.setDebug (true);
+      omb_.setDebug (false);
       boost::thread omb_thread (&omnimapper::OmniMapperBase::spin, &omb_);
       if (use_icp_)
         boost::thread icp_thread (
@@ -661,7 +663,8 @@ class OmniMapperROSNode
 
     void cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     {
-      ROS_INFO("OmniMapperROS got a cloud.");
+      if (debug_)
+        ROS_INFO("OmniMapperROS got a cloud.");
       double start_cb = pcl::getTime ();
       double start_copy = pcl::getTime ();
       CloudPtr cloud (new Cloud ());
@@ -669,11 +672,18 @@ class OmniMapperROSNode
       double end_copy = pcl::getTime ();
       omnimapper::Time cloud_stamp = omnimapper::stamp2ptime (
           cloud->header.stamp);
-      std::cout << "OmniMapperRos: Got cloud from: " << cloud_stamp
-          << std::endl;
+      if (debug_)
+      {
+        std::cout << "OmniMapperRos: Got cloud from: " << cloud_stamp
+                  << std::endl;
+      }
       //cloud->header.stamp = msg->header.stamp.toBoost ();
-      std::cout << "cloudCallback: conversion took "
-          << double (end_copy - start_copy) << std::endl;
+      if (debug_)
+      {
+        std::cout << "cloudCallback: conversion took "
+                  << double (end_copy - start_copy) << std::endl;
+      }
+      
       //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
       //pcl::fromROSMsg (*msg, *xyz_cloud);
       //CloudPtr cloud (new Cloud ());
@@ -684,14 +694,22 @@ class OmniMapperROSNode
         double start_undistort = pcl::getTime ();
         distortion_model_.undistort (*cloud);
         double end_undistort = pcl::getTime ();
-        std::cout << "cloudCallback: undistortion took "
-            << double (end_undistort - start_undistort) << std::endl;
+        if (debug_)
+        {
+          std::cout << "cloudCallback: undistortion took "
+                    << double (end_undistort - start_undistort) << std::endl;
+        }
+        
       }
 
       if (use_icp_)
       {
-        std::cout << "Calling ICP Plugin with stamp: "
-            << omnimapper::stamp2ptime (cloud->header.stamp) << std::endl;
+        if (debug_)
+        {
+          std::cout << "Calling ICP Plugin with stamp: "
+                    << omnimapper::stamp2ptime (cloud->header.stamp) << std::endl;
+        }
+        
         icp_plugin_.cloudCallback (cloud);
       }
       
@@ -700,7 +718,8 @@ class OmniMapperROSNode
         double start_ofe = pcl::getTime ();
         organized_feature_extraction_.cloudCallback (cloud);
         double end_ofe = pcl::getTime ();
-        std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe) << std::endl;
+        if (debug_)
+          std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe) << std::endl;
       }
 
       if (add_pose_per_cloud_)
@@ -709,23 +728,24 @@ class OmniMapperROSNode
         gtsam::Symbol sym;
         boost::posix_time::ptime header_time = omnimapper::stamp2ptime (
             cloud->header.stamp);      //msg->header.stamp.toBoost ();
-        std::cout << "header time: " << header_time << std::endl;
+        if (debug_)
+          std::cout << "header time: " << header_time << std::endl;
         omb_.getPoseSymbolAtTime (header_time, sym);
         double end_getpose = pcl::getTime ();
-        std::cout << "cloudCallback: get_pose took "
-            << double (end_getpose - start_getpose) << std::endl;
+        if (debug_)
+          std::cout << "cloudCallback: get_pose took " << double (end_getpose - start_getpose) << std::endl;
       }
       if (broadcast_map_to_odom_)
       {
         double start_pub = pcl::getTime ();
         publishMapToOdom ();
         double end_pub = pcl::getTime ();
-        std::cout << "cloudCallback: pub took " << double (end_pub - start_pub)
-            << std::endl;
+        if (debug_)
+          std::cout << "cloudCallback: pub took " << double (end_pub - start_pub) << std::endl;
       }
       double end_cb = pcl::getTime ();
-      std::cout << "cloudCallback: cb took: " << double (end_cb - start_cb)
-          << std::endl;
+      if (debug_)
+        std::cout << "cloudCallback: cb took: " << double (end_cb - start_cb) << std::endl;
     }
 
     void laserScanCallback (const sensor_msgs::LaserScanConstPtr& msg)
@@ -756,9 +776,10 @@ class OmniMapperROSNode
 
     void evalTimerCallback (const ros::TimerEvent& e)
     {
-      std::cout << "Inside eval timer" << std::endl;
       double cb_start = pcl::getTime ();
-      ROS_INFO("In timer callback at %lf!\n", cb_start);
+
+      if (debug_)
+        ROS_INFO("In timer callback at %lf!\n", cb_start);
 
       // Check if everything is done processing
       bool ready = true;
@@ -780,11 +801,14 @@ class OmniMapperROSNode
         pcl::io::loadPCDFile (evaluation_pcd_files_[evaluation_file_idx_],
             *cloud);
         double load_end = pcl::getTime ();
-        std::cout << "Loading took: " << double (load_end - load_start)
-            << std::endl;
-
-        ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_,
-            cloud->points.size ());
+        
+        if (debug_)
+        {
+          std::cout << "Loading took: " << double (load_end - load_start) << std::endl;
+          
+          ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_,
+                   cloud->points.size ());
+        }
 
         // Convert it
         sensor_msgs::PointCloud2Ptr cloud_msg (new sensor_msgs::PointCloud2 ());
@@ -808,8 +832,11 @@ class OmniMapperROSNode
         ready = false;
       }
       else
-        ROS_INFO("Plugins not yet ready.\n");
-
+      {
+        if (debug_)
+          ROS_INFO("Plugins not yet ready.\n");
+      }
+      
       // Write the trajectory if we're finished
       if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size ()))
       {
@@ -833,8 +860,8 @@ class OmniMapperROSNode
       }
 
       double cb_end = pcl::getTime ();
-      std::cout << "Timer callback took: " << double (cb_end - cb_start)
-          << std::endl;
+      if (debug_)
+        std::cout << "Timer callback took: " << double (cb_end - cb_start) << std::endl;
     }
 
     void publishMapToOdom ()

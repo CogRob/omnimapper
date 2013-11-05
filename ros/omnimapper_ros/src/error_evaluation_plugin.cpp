@@ -7,7 +7,8 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
   : nh_ ("~"),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapperError", "", false)),
     menu_handler_ (new interactive_markers::MenuHandler ()),
-    mapper_ (mapper)
+    mapper_ (mapper),
+    debug_ (false)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
   live_frame_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("live_frame", 0); // Live frame publisher for evaluation mode
@@ -69,7 +70,8 @@ omnimapper::ErrorEvaluationPlugin::poseClickCallback (const visualization_msgs::
 void
 omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
-  printf ("Updating Error evaluation plugin\n");
+  if (debug_)
+    printf ("Updating Error evaluation plugin\n");
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
@@ -476,7 +478,7 @@ omnimapper::ErrorEvaluationPlugin::getPoseAtTime (omnimapper::Time time)
     // If we've found a time interval that contains our requested time
     if ((ground_truth_trajectory_[i].first < time) && (time < ground_truth_trajectory_[i+1].first))
     {
-      std::cout << "Ground Truth Pose Lookup: " << ground_truth_trajectory_[i].first << " < " << time << " < " << ground_truth_trajectory_[i+1].first << std::endl;
+      //std::cout << "Ground Truth Pose Lookup: " << ground_truth_trajectory_[i].first << " < " << time << " < " << ground_truth_trajectory_[i+1].first << std::endl;
       // Check which is closer
       boost::posix_time::time_duration lower_diff = time - ground_truth_trajectory_[i].first;
       boost::posix_time::time_duration upper_diff = ground_truth_trajectory_[i+1].first - time;

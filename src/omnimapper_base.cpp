@@ -102,7 +102,8 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
 
   if (to_commit == chain.end ())
   {
-    printf ("OmniMapper: commitNext called when latest node has already been committed!\n");
+    if (debug_)
+      printf ("OmniMapper: commitNext called when latest node has already been committed!\n");
     return (false);
   }
   
@@ -191,13 +192,13 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   }
   
   // Commit
-  printf ("Committing!\n");
+  //printf ("Committing!\n");
   new_factors.push_back (to_commit->factors);
   to_commit->status = omnimapper::PoseChainNode::COMMITTED;
   to_commit->factors.clear ();
   latest_committed_node++;
   latest_commit_time = (*get_time_)();//boost::posix_time::microsec_clock::local_time();
-  printf ("Committed!\n");
+  //printf ("Committed!\n");
 
   if (debug_)
   {
@@ -206,13 +207,13 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   }
 
   // Optimize
-  printf ("Optimizing!\n");
+  //printf ("Optimizing!\n");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
   current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
-  printf ("Optimized!\n");
+  //printf ("Optimized!\n");
   return (true);
 }
 
@@ -237,21 +238,24 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
 
   int latest_pose_idx = -1;
   Time latest_pose_time = boost::posix_time::neg_infin; // Probably nobody has data earlier than this?
-  printf ("addFactor: starting to look at keys\n");
+  if (debug_)
+    printf ("addFactor: starting to look at keys\n");
   for (int i = 0; i < keys.size (); i++)
   {
     if (gtsam::symbolChr (keys[i]) == 'x')
     {
-      printf ("Going to compare keys\n");
+      if (debug_)
+        printf ("Going to compare keys\n");
       if (symbol_lookup[keys[i]]->time > latest_pose_time)
       {
         latest_pose_idx = i;
         latest_pose_time = symbol_lookup[keys[i]]->time ;
       }
     }
-    else if (gtsam::symbolChr (keys[i]) == 'o' && i==0)
+    else if (gtsam::symbolChr (keys[i]) == 'o' && i==0)//TODO:@atrevor -- why is this here
       {
-    	std::cout << "Adding object between factor" << std::endl;
+        if (debug_)
+          std::cout << "Adding object between factor" << std::endl;
     	new_factors.push_back(new_factor);
 
       }
@@ -265,21 +269,26 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
     return false;
   }
   
-  symbol_lookup[keys[latest_pose_idx]]->symbol.print ("OmniMapper: Added factor to pose: ");
+  if (debug_)
+    symbol_lookup[keys[latest_pose_idx]]->symbol.print ("OmniMapper: Added factor to pose: ");
 
   // If that pose has been committed already, we can add this directly for the next optimization run.
   if (symbol_lookup[keys[latest_pose_idx]]->status == omnimapper::PoseChainNode::COMMITTED)
   {
-    printf ("About to push back new factor directly\n");
+    if (debug_)
+      printf ("About to push back new factor directly\n");
     new_factors.push_back (new_factor);
-    printf ("New factor pushed back direclty\n");
+    if (debug_)
+      printf ("New factor pushed back direclty\n");
   }
   else
   {
     // If it hasn't yet been commited, we should add this to the pending factors, causing pose factors to add constraints for this timestamp
-    printf ("Adding this to the pending factors\n");
+    if (debug_)
+      printf ("Adding this to the pending factors\n");
     symbol_lookup[keys[latest_pose_idx]]->factors.push_back (new_factor);
-    printf ("Added to the pending factors!\n");
+    if (debug_)
+      printf ("Added to the pending factors!\n");
   }
   
   return true;
@@ -311,7 +320,8 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
   else
   {
     // If we don't have a pose yet, make one
-    printf ("OmniMapperBase: Making a new entry\n");
+    if (debug_)
+      printf ("OmniMapperBase: Making a new entry\n");
     // Check that the time is after the latest committed pose time, otherwise we'd need to splice it into the pose chain, which is not yet supported
     if (t < latest_committed_node->time)
     {
@@ -326,7 +336,8 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
     sym = new_sym;
     // Add a relevant node to the chain
     omnimapper::PoseChainNode new_node (t, new_sym);
-    std::cout << "OmniMapperBase: need new symbol at: " << t << std::endl;
+    if (debug_)
+      std::cout << "OmniMapperBase: need new symbol at: " << t << std::endl;
     // TODO: replace this with an STL search operation
     //for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.end (); itr != chain.begin (); --itr)
     // {
@@ -431,18 +442,21 @@ omnimapper::OmniMapperBase::optimize ()
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   double opt_start = pcl::getTime ();
   if (debug_)
+  {
     current_solution.print ("Current Solution: ");
+    printf ("OmniMapper: optimizing with:\n");
+    new_factors.print ("New Factors: ");
+    new_values.print ("New Values: ");
+  }
   
-  printf ("OmniMapper: optimizing with:\n");
-  new_factors.print ("New Factors: ");
-  new_values.print ("New Values: ");
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
   current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
   double opt_end = pcl::getTime ();
-  std::cout << "OmniMapperBase: optimize() took: " << double (opt_end - opt_start) << std::endl;
+  if (debug_)
+    std::cout << "OmniMapperBase: optimize() took: " << double (opt_end - opt_start) << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -595,7 +609,8 @@ omnimapper::OmniMapperBase::spinOnce ()
   //boost::mutex::scoped_lock (omnimapper_mutex);
   if (!initialized_)
     return;
-  printf ("OMB: spinning...\n");
+  if (debug_)
+    printf ("OMB: spinning...\n");
   // If time to commit
   //std::list<omnimapper::PoseChainNode>::iterator next_node = latest_committed_node;
   //next_node++;
@@ -614,13 +629,18 @@ omnimapper::OmniMapperBase::spinOnce ()
     //optimize ();
     updateOutputPlugins ();
     // Print latest
-    gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
-    printf ("OMB Latest Pose: %lf %lf %lf\n", new_pose_value.x (), new_pose_value.y (), new_pose_value.z ());
-    printf ("OMB Latest pose det: %lf\n", new_pose_value.rotation ().matrix ().determinant ());
+    if (debug_)
+    {
+      gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
+      printf ("OMB Latest Pose: %lf %lf %lf\n", new_pose_value.x (), new_pose_value.y (), new_pose_value.z ());
+      printf ("OMB Latest pose det: %lf\n", new_pose_value.rotation ().matrix ().determinant ());
+    }
+    
   } 
   else 
   {
-    printf ("OMB: No new factors to optimize\n");
+    if (debug_)
+      printf ("OMB: No new factors to optimize\n");
   }
   
 }
@@ -662,10 +682,12 @@ omnimapper::OmniMapperBase::updateOutputPlugins ()
   double start = pcl::getTime ();
   for (int i = 0; i < output_plugins.size (); i++)
   {
-    printf ("Updating plugin %d with %u values\n", i, vis_values->size ());
+    if (debug_)
+      printf ("Updating plugin %d with %u values\n", i, vis_values->size ());
     output_plugins[i]->update (vis_values, vis_graph);
   }
   double end = pcl::getTime ();
-  std::cout << "OmniMapperBase: updating output plugins took: " << double (end - start) << std::endl;
+  if (debug_)
+    std::cout << "OmniMapperBase: updating output plugins took: " << double (end - start) << std::endl;
 }
 

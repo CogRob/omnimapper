@@ -99,6 +99,8 @@ namespace omnimapper
       std::vector<std::pair<omnimapper::Time, gtsam::Pose3> > ground_truth_trajectory_;
       
       OmniMapperBase* mapper_;
+
+      bool debug_;
   };
   
   
