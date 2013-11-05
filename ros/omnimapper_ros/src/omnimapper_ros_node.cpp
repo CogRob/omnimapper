@@ -406,7 +406,6 @@ class OmniMapperROSNode
       icp_plugin_.setAddLoopClosures (icp_add_loop_closures_);
       icp_plugin_.setTransNoise (icp_trans_noise_);      //10.1
       icp_plugin_.setRotNoise (icp_rot_noise_);      //10.1
-      icp_plugin_.setAddLoopClosures (true);
       icp_plugin_.setLoopClosureDistanceThreshold (1.0);
       icp_plugin_.setSaveFullResClouds (true);
       icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
