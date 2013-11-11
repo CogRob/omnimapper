@@ -629,6 +629,7 @@ class OmniMapperROSNode
         printf ("setting ptrs\n");
         eval_plugin_.setInteractiveMarkerServerPtr (ims_ptr);
         eval_plugin_.setMenuHandlerPtr (mh_ptr);
+        eval_plugin_.initMenu ();
         printf ("done with that\n");
 
         // Initialize pose to start in the same coord system as the ground truth

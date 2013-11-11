@@ -67,6 +67,10 @@ namespace omnimapper
 
       void visualizeStats();
 
+      void
+      computeTrajectoryStatistics (boost::shared_ptr<gtsam::Values>& values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph);
+      
+
     protected:
       ros::NodeHandle nh_;
 
@@ -79,6 +83,9 @@ namespace omnimapper
       // Playback Menu Entry Handle
       interactive_markers::MenuHandler::EntryHandle playback_menu_;
 
+      // Trajectory Statistics Menu Entry Handle
+      interactive_markers::MenuHandler::EntryHandle error_stats_menu_;
+
       // Per Pose Menu Handlers
       std::map<gtsam::Symbol, boost::shared_ptr<interactive_markers::MenuHandler> > pose_menus_;
       std::map<gtsam::Symbol, interactive_markers::MenuHandler::EntryHandle> pose_error_entries_;
@@ -89,7 +96,7 @@ namespace omnimapper
       ros::Publisher time_pub_; // Publish the duration
       ros::Publisher ate_trans_per_pose_pub_; // Per pose translation error: sqrt(sum(t1-t*)^2)
       ros::Publisher ate_trans_rmse_pub_; // RMSE error
-
+      
       ros::Time current_time_;
 
       // A list of timestamps for each point cloud used in the dataset
@@ -100,6 +107,11 @@ namespace omnimapper
       
       OmniMapperBase* mapper_;
 
+      // Containers for statistics
+      // Holds the translational error between the the pose at Symbol and the previous pose
+      std::map<gtsam::Symbol, gtsam::Point3> sequential_translation_errors_;
+
+      // Debug flag
       bool debug_;
   };
   
