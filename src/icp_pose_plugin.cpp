@@ -617,7 +617,24 @@ namespace omnimapper
     }
   }
   
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> void
+  ICPPoseMeasurementPlugin<PointT>::reset ()
+  {
+    initialized_ = false;
+    have_new_cloud_ = false;
+    first_ = true;
+    previous_sym_ = gtsam::Symbol ('x', 0);
+    previous2_sym_ = gtsam::Symbol ('x', 0);
+    previous3_sym_ = gtsam::Symbol ('x', 0);
+    clouds_.clear ();
+    full_res_clouds_.clear ();
+    sensor_to_base_transforms_.clear ();
+  }
+  
 }
+
+
 
 // TODO: Instantiation macros.
 template class omnimapper::ICPPoseMeasurementPlugin<pcl::PointXYZ>;

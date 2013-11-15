@@ -130,6 +130,7 @@ class OmniMapperROSNode
     // ICP Params
     double icp_leaf_size_;
     double icp_max_correspondence_distance_;
+    double icp_score_thresh_;
     double icp_trans_noise_;
     double icp_rot_noise_;
     bool icp_add_identity_on_fail_;
@@ -240,6 +241,7 @@ class OmniMapperROSNode
       n_.param ("icp_leaf_size", icp_leaf_size_, 0.05);
       n_.param ("icp_max_correspondence_distance",
           icp_max_correspondence_distance_, 0.5);
+      n_.param ("icp_score_thresh", icp_score_thresh_, 0.8);
       n_.param ("icp_trans_noise", icp_trans_noise_, 0.1);
       n_.param ("icp_rot_noise", icp_rot_noise_, 0.1);
       n_.param ("icp_add_identity_on_fail", icp_add_identity_on_fail_, false);
@@ -398,9 +400,8 @@ class OmniMapperROSNode
       icp_plugin_.setAddIdentityOnFailure (icp_add_identity_on_fail_);
       icp_plugin_.setShouldDownsample (true);
       icp_plugin_.setLeafSize (icp_leaf_size_);      //0.02
-      icp_plugin_.setMaxCorrespondenceDistance (
-          icp_max_correspondence_distance_);
-      icp_plugin_.setScoreThreshold (0.8);
+      icp_plugin_.setMaxCorrespondenceDistance (icp_max_correspondence_distance_);
+      icp_plugin_.setScoreThreshold (icp_score_thresh_);
       icp_plugin_.setTransNoise (icp_trans_noise_);//10.1
       icp_plugin_.setRotNoise (icp_rot_noise_);//10.1
       icp_plugin_.setAddLoopClosures (icp_add_loop_closures_);
@@ -611,7 +612,6 @@ class OmniMapperROSNode
       // If evaluation mode, start a timer to check on things, and load the files
       if (evaluation_mode_)
       {
-
         // Set up the error evaluation plugin
         eval_plugin_.loadAssociatedFile (evaluation_associated_txt_path_);
         eval_plugin_.loadGroundTruthFile (evaluation_ground_truth_txt_path_);
@@ -650,13 +650,6 @@ class OmniMapperROSNode
             evaluation_pcd_files_.size ());
 
         eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROSNode::evalTimerCallback, this);
-/*
-        while (ros::ok ())
-        {
-          std::cout << ros::Time::now () << std::endl;
-          evalTimerCallback ();
-          ros::Duration (0.001).sleep ();
-        }*/
       }
 
     }

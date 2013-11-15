@@ -278,6 +278,10 @@ namespace omnimapper
 
       void
       setSuppressCommitWindow (bool suppress) { suppress_commit_window_ = suppress; }
+
+      /** \brief Resets the mapper, clearing all existing state. */
+      void
+      reset ();
       
   };
 

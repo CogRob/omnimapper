@@ -82,10 +82,10 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
   
   if (debug_ && false)
   {  
-    printf ("chain size: %u\n", chain.size ());
+    printf ("chain size: %zu\n", chain.size ());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin (); itr != chain.end (); itr++)
     {
-      printf ("node: %c %d %u %d\n", itr->symbol.chr (), itr->symbol.index (), itr->time, itr->factors.size ());
+      printf ("node: %c %d %u %zu\n", itr->symbol.chr (), itr->symbol.index (), itr->time, itr->factors.size ());
       std::cout << "stamp: " << itr->time << std::endl;
     }
   }
@@ -691,3 +691,25 @@ omnimapper::OmniMapperBase::updateOutputPlugins ()
     std::cout << "OmniMapperBase: updating output plugins took: " << double (end - start) << std::endl;
 }
 
+void
+omnimapper::OmniMapperBase::reset ()
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  
+  // Clear state
+  isam2 = gtsam::ISAM2 ();
+  new_factors = gtsam::NonlinearFactorGraph ();
+  new_values = gtsam::Values ();
+  current_solution = gtsam::Values ();
+  current_graph = gtsam::NonlinearFactorGraph ();
+  chain.clear ();
+  time_lookup.clear ();
+  symbol_lookup.clear ();
+  
+  latest_committed_node = chain.begin ();
+  latest_commit_time = (*get_time_)();
+
+  initialized_ = false;
+  initial_pose_ = gtsam::Pose3::identity ();
+  largest_pose_index = 0;
+}
