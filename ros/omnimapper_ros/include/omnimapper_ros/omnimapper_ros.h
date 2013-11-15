@@ -47,6 +47,9 @@ class OmniMapperROS
     // Constructor
     OmniMapperROS ();
     
+    // Load (or reload) ROS Parameters
+    void loadROSParams ();
+
     // Point Cloud Callback
     void cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg);
     
@@ -62,6 +65,8 @@ class OmniMapperROS
     // Service call for generating a map TSDF
     bool generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req,
                                   omnimapper_ros::OutputMapTSDF::Response &res);
+
+    void runEvaluation (std::string& associated_filename, std::string& groundtruth_filename, std::string& output_filename);
 
   protected:
     // ROS Node Handle

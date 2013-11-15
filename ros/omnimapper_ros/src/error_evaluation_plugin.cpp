@@ -762,14 +762,23 @@ p5.z = p2.z;
 
 
 void
-omnimapper::ErrorEvaluationPlugin::visualizeStats (){
+omnimapper::ErrorEvaluationPlugin::visualizeStats ()
+{
+  ros::Duration duration = ros::Time::now() - current_time_;
+  current_time_ = ros::Time::now();
+  double time_sec = duration.toSec();
+  
+  std_msgs::Float32 time_duration;
+  time_duration.data = (float)time_sec;
+  time_pub_.publish(time_duration);
+}
 
-ros::Duration duration = ros::Time::now() - current_time_;
-current_time_ = ros::Time::now();
-double time_sec = duration.toSec();
-
-std_msgs::Float32 time_duration;
-time_duration.data = (float)time_sec;
-time_pub_.publish(time_duration);
-
+void
+omnimapper::ErrorEvaluationPlugin::reset ()
+{
+  cloud_timestamps_.clear ();
+  ground_truth_trajectory_.clear ();
+  sequential_translation_errors_.clear ();
+  pose_menus_.clear ();
+  pose_error_entries_.clear ();
 }

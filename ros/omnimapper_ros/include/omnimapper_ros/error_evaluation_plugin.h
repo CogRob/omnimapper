@@ -30,6 +30,8 @@ namespace omnimapper
   {
     public:
       ErrorEvaluationPlugin (omnimapper::OmniMapperBase* mapper);
+
+      // Update callback
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
 
       // Loads and parses a ground truth file
@@ -67,9 +69,9 @@ namespace omnimapper
 
       void visualizeStats();
 
-      void
-      computeTrajectoryStatistics (boost::shared_ptr<gtsam::Values>& values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph);
+      void computeTrajectoryStatistics (boost::shared_ptr<gtsam::Values>& values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph);
       
+      void reset ();
 
     protected:
       ros::NodeHandle nh_;
