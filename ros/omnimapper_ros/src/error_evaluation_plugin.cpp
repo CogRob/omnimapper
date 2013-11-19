@@ -7,7 +7,8 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
   : nh_ ("~"),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapperError", "", false)),
     menu_handler_ (new interactive_markers::MenuHandler ()),
-    mapper_ (mapper)
+    mapper_ (mapper),
+    debug_ (false)
 {
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/visualization_marker_array", 0);
   live_frame_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("live_frame", 0); // Live frame publisher for evaluation mode
@@ -47,8 +48,12 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin (omnimapper::OmniMapper
 void
 omnimapper::ErrorEvaluationPlugin::initMenu ()
 {
-  playback_menu_ = menu_handler_->insert ("Playback Control");
-  interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_->insert (playback_menu_, "Play / Pause");
+  //playback_menu_ = menu_handler_->insert ("Playback Control");
+  //interactive_markers::MenuHandler::EntryHandle play_pause = menu_handler_->insert (playback_menu_, "Play / Pause");
+
+  error_stats_menu_ = menu_handler_->insert ("Trajectory Error Statistics");
+  //interactive_markers::MenuHandler::EntryHandle test = menu_handler_->insert (error_stats_menu_, "Test");
+
   menu_handler_->apply (*marker_server_, "OmniMapper");
   marker_server_->applyChanges ();
 }
@@ -63,14 +68,18 @@ void
 omnimapper::ErrorEvaluationPlugin::poseClickCallback (const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   // Parse the feedback
+  std::cout << "Got click from : " << feedback->marker_name << std::endl;
 }
 
 void
 omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
-  printf ("Updating Error evaluation plugin\n");
+  if (debug_)
+    printf ("Updating Error evaluation plugin\n");
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
+
+  computeTrajectoryStatistics (vis_values, vis_graph);
 
 /*
   visualization_msgs::MarkerArray marker_array;
@@ -277,11 +286,18 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
       
       marker_server_->insert (gt_marker);
 
-      // interactive_markers::MenuHandler::EntryHandle gt_menu = menu_handler_->insert (gt_name, boost::bind (&omnimapper::ErrorEvaluationPlugin::poseClickCallback, this, _1));
+      boost::shared_ptr<interactive_markers::MenuHandler> gt_menu (new interactive_markers::MenuHandler ());
+
+      // Dipslay marker name
+      gt_menu->insert (std::string (key_symbol), boost::bind (&omnimapper::ErrorEvaluationPlugin::poseClickCallback, this, _1));
+      pose_menus_.insert (std::pair<gtsam::Symbol, boost::shared_ptr<interactive_markers::MenuHandler> > (key_symbol, gt_menu));
+      gt_menu->apply (*marker_server_, gt_name);
       // menu_handler_->apply (*marker_server_, gt_name);
       // marker_server_->applyChanges ();
 
     }
+
+    // Add error entry to the gt_menu
 
     // Try setting the pose first
     
@@ -334,6 +350,110 @@ omnimapper::ErrorEvaluationPlugin::update (boost::shared_ptr<gtsam::Values>& vis
 }
 
 void
+omnimapper::ErrorEvaluationPlugin::computeTrajectoryStatistics (boost::shared_ptr<gtsam::Values>& values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph)
+{
+  gtsam::Values current_solution = *values;
+  gtsam::NonlinearFactorGraph current_graph = *graph;
+
+  // Set up containters for statistics
+  int sequential_pose_constraint_count_;  
+  double trans_accum, x_accum, y_accum, z_accum = 0.0;
+  double trans_max = std::numeric_limits<double>::min ();
+  double trans_min = std::numeric_limits<double>::max ();
+  int min_idx, max_idx = 0;
+
+  BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
+  {
+    // check for poses
+    const std::vector<gtsam::Key> keys = factor->keys ();
+    
+    // skip if there aren't two pose keys
+    if ((keys.size () == 2))
+    {
+      gtsam::Symbol sym1 (keys[0]);
+      gtsam::Symbol sym2 (keys[1]);
+
+      // We want sym1 to be the earlier index
+      if (sym1.index () > sym2.index ())
+      {
+        gtsam::Symbol temp = sym1;
+        sym1 = sym2;
+        sym2 = temp;
+      }
+
+      // Process sequential pose constraints
+      if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x') && (abs (sym1.index () - sym2.index ()) == 1))
+      {
+        // Get the mapped_poses
+        gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
+        gtsam::Pose3 p2 = current_solution.at<gtsam::Pose3>(keys[1]);
+        gtsam::Pose3 sam_between = p1.between (p2);
+
+        // Compute relative position
+        //gtsam::Point3 sam_point = sam_pose.translation();
+        //gtsam::Point3 gt_point = gt_p1.translation();
+        //gtsam::Point3 diff_point = gt_point-sam_point;
+
+        // Get the timestamps of these poses
+        omnimapper::Time t1;
+        mapper_->getTimeAtPoseSymbol (sym1, t1);
+        omnimapper::Time t2;
+        mapper_->getTimeAtPoseSymbol (sym2, t2);
+        
+        // Get the ground truth poses for the corresponding times
+        gtsam::Pose3 gt_p1 = getPoseAtTime (t1);
+        gtsam::Pose3 gt_p2 = getPoseAtTime (t2);
+        gtsam::Pose3 gt_between = gt_p1.between (gt_p2);
+
+        // Compute displacement errors
+        gtsam::Point3 measured_translation = sam_between.translation ();
+        gtsam::Point3 true_translation = gt_between.translation ();
+        
+        gtsam::Point3 translation_err = measured_translation - true_translation;
+        sequential_translation_errors_.insert (std::pair<gtsam::Symbol, gtsam::Point3> (sym2, translation_err));
+
+        double trans_norm = translation_err.norm ();
+
+        // Max, min
+        if (trans_norm > trans_max)
+        {
+          trans_max = trans_norm;
+          max_idx = sym2.index ();
+        }
+
+        if (trans_norm < trans_min)
+        {
+          trans_min = trans_norm;
+          min_idx = sym2.index ();
+        }
+
+        // Accumulate means
+        sequential_pose_constraint_count_++;
+        trans_accum += trans_norm;
+        x_accum += translation_err.x ();
+        y_accum += translation_err.y ();
+        z_accum += translation_err.z ();
+      }
+    }
+  }
+
+  // Compute stats
+  double trans_mean = trans_accum / sequential_pose_constraint_count_;
+  double x_mean = x_accum / sequential_pose_constraint_count_;
+  double y_mean = y_accum / sequential_pose_constraint_count_;
+  double z_mean = z_accum / sequential_pose_constraint_count_;
+
+  std::string trans_string = std::string ("Mean Translation Error: ") + boost::lexical_cast<std::string> (trans_mean);
+  std::cout << trans_string << std::endl;
+  std::cout << "Min: " << min_idx << " : "<< trans_min << " Max: " << max_idx << " : " << trans_max << std::endl;
+  
+  interactive_markers::MenuHandler::EntryHandle trans_error = menu_handler_->insert (error_stats_menu_, trans_string);
+  menu_handler_->apply (*marker_server_, "OmniMapper");
+  marker_server_->applyChanges ();  
+  
+}
+
+void
 omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile (std::string trajectory_filename, gtsam::Values& current_solution)
 {
   std::cout << "Writing Mapper Trajectory to: " << trajectory_filename << std::endl;
@@ -341,14 +461,44 @@ omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile (std::string trajec
   std::ofstream trajectory_file (trajectory_filename.c_str ());
 
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
-  BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
-  {
-    geometry_msgs::Pose pose;
+  // BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+  // {
+  //   geometry_msgs::Pose pose;
     
-    gtsam::Symbol key_symbol (key_value.key);
+  //   gtsam::Symbol key_symbol (key_value.key);
+  //   omnimapper::Time key_time;
+  //   mapper_->getTimeAtPoseSymbol (key_symbol, key_time);
+  //   gtsam::Pose3 sam_pose = key_value.value;
+  //   gtsam::Rot3 rot = sam_pose.rotation ();
+  //   int pose_idx = key_symbol.index ();
+  //   // W X Y Z
+  //   gtsam::Vector quat = rot.quaternion ();
+  //   boost::posix_time::ptime epoch(boost::gregorian::date(1970,1,1));
+  //   boost::posix_time::time_duration since_epoch = key_time - epoch;
+  //   uint64_t seconds_part = since_epoch.total_seconds ();
+  //   boost::posix_time::time_duration remaining_microseconds = since_epoch - boost::posix_time::seconds (since_epoch.total_seconds ());
+  //   uint64_t microseconds_part = remaining_microseconds.total_microseconds ();
+
+  //   trajectory_file <<
+  //   boost::lexical_cast<std::string> (seconds_part) << "." << 
+  //   boost::lexical_cast<std::string>(microseconds_part) << " " <<
+  //   sam_pose.x () << " " <<
+  //   sam_pose.y () << " " <<
+  //   sam_pose.z () << " " <<
+  //   quat[1] << " " <<
+  //   quat[2] << " " << 
+  //   quat[3] << " " <<
+  //   quat[0] << " " << std::endl;
+  // }
+
+  bool done = false;
+  int sym_idx = 0;
+  gtsam::Symbol key_symbol = gtsam::Symbol ('x', sym_idx);
+  while (!done)
+  {
     omnimapper::Time key_time;
     mapper_->getTimeAtPoseSymbol (key_symbol, key_time);
-    gtsam::Pose3 sam_pose = key_value.value;
+    gtsam::Pose3 sam_pose = current_solution.at<gtsam::Pose3> (key_symbol);//key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation ();
     int pose_idx = key_symbol.index ();
     // W X Y Z
@@ -358,10 +508,25 @@ omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile (std::string trajec
     uint64_t seconds_part = since_epoch.total_seconds ();
     boost::posix_time::time_duration remaining_microseconds = since_epoch - boost::posix_time::seconds (since_epoch.total_seconds ());
     uint64_t microseconds_part = remaining_microseconds.total_microseconds ();
+    unsigned int microseconds_int = microseconds_part;
+
+    char microseconds_buf[2048];
+    sprintf (microseconds_buf, "%06d", microseconds_int);
+
+    // trajectory_file <<
+    // boost::lexical_cast<std::string> (seconds_part) << "." << 
+    // boost::lexical_cast<std::string>(microseconds_part) << " " <<
+    // sam_pose.x () << " " <<
+    // sam_pose.y () << " " <<
+    // sam_pose.z () << " " <<
+    // quat[1] << " " <<
+    // quat[2] << " " << 
+    // quat[3] << " " <<
+    // quat[0] << " " << std::endl;
 
     trajectory_file <<
-    boost::lexical_cast<std::string> (seconds_part) << "." << 
-    boost::lexical_cast<std::string>(microseconds_part) << " " <<
+    boost::lexical_cast<std::string>(seconds_part) << "." << 
+    std::string (microseconds_buf) << " " <<
     sam_pose.x () << " " <<
     sam_pose.y () << " " <<
     sam_pose.z () << " " <<
@@ -369,7 +534,14 @@ omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile (std::string trajec
     quat[2] << " " << 
     quat[3] << " " <<
     quat[0] << " " << std::endl;
+    
+    // Update symbol
+    ++sym_idx;
+    key_symbol = gtsam::Symbol ('x', sym_idx);
+    if (!current_solution.exists<gtsam::Pose3> (key_symbol))
+        done = true;
   }
+
   trajectory_file.close ();
 }
 
@@ -454,6 +626,7 @@ omnimapper::ErrorEvaluationPlugin::loadAssociatedFile (std::string associated_fi
     boost::posix_time::ptime stamp_time = time_t_epoch + since_epoch;
     uint64_t stamp = since_epoch.total_microseconds ();
     cloud_timestamps_.push_back (stamp_time);
+    std::cout << "Stamp: " << stamp_time << std::endl;
   }
   printf ("OmniMapper Error Evaluation Plugin: Loaded %d timestamps from associated file.\n", cloud_timestamps_.size ());
 }
@@ -472,7 +645,7 @@ omnimapper::ErrorEvaluationPlugin::getPoseAtTime (omnimapper::Time time)
     // If we've found a time interval that contains our requested time
     if ((ground_truth_trajectory_[i].first < time) && (time < ground_truth_trajectory_[i+1].first))
     {
-      std::cout << "Ground Truth Pose Lookup: " << ground_truth_trajectory_[i].first << " < " << time << " < " << ground_truth_trajectory_[i+1].first << std::endl;
+      //std::cout << "Ground Truth Pose Lookup: " << ground_truth_trajectory_[i].first << " < " << time << " < " << ground_truth_trajectory_[i+1].first << std::endl;
       // Check which is closer
       boost::posix_time::time_duration lower_diff = time - ground_truth_trajectory_[i].first;
       boost::posix_time::time_duration upper_diff = ground_truth_trajectory_[i+1].first - time;
@@ -589,14 +762,23 @@ p5.z = p2.z;
 
 
 void
-omnimapper::ErrorEvaluationPlugin::visualizeStats (){
+omnimapper::ErrorEvaluationPlugin::visualizeStats ()
+{
+  ros::Duration duration = ros::Time::now() - current_time_;
+  current_time_ = ros::Time::now();
+  double time_sec = duration.toSec();
+  
+  std_msgs::Float32 time_duration;
+  time_duration.data = (float)time_sec;
+  time_pub_.publish(time_duration);
+}
 
-ros::Duration duration = ros::Time::now() - current_time_;
-current_time_ = ros::Time::now();
-double time_sec = duration.toSec();
-
-std_msgs::Float32 time_duration;
-time_duration.data = (float)time_sec;
-time_pub_.publish(time_duration);
-
+void
+omnimapper::ErrorEvaluationPlugin::reset ()
+{
+  cloud_timestamps_.clear ();
+  ground_truth_trajectory_.clear ();
+  sequential_translation_errors_.clear ();
+  pose_menus_.clear ();
+  pose_error_entries_.clear ();
 }

@@ -54,6 +54,7 @@ namespace omnimapper
       void setSaveFullResClouds (bool save_full_res_clouds) { save_full_res_clouds_ = save_full_res_clouds; }
       void setSensorToBaseFunctor (omnimapper::GetTransformFunctorPtr get_transform) { get_sensor_to_base_ = get_transform; }
       omnimapper::Time getLastProcessedTime ();
+      void reset ();
 
     protected:
       OmniMapperBase* mapper_;

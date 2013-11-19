@@ -60,7 +60,6 @@
 
 #include <omnimapper/time.h>
 #include <omnimapper/pose_chain.h>
-//#include <omnimapper/StampedSymbol.h>
 #include <omnimapper/pose_plugin.h>
 #include <omnimapper/measurement_plugin.h>
 #include <omnimapper/output_plugin.h>
@@ -90,8 +89,6 @@ namespace omnimapper
       typedef boost::shared_ptr<gtsam::NonlinearFactor> NonlinearFactorPtr;
       typedef boost::shared_ptr<omnimapper::PosePlugin> PosePluginPtr;
       typedef boost::shared_ptr<omnimapper::OutputPlugin> OutputPluginPtr;
-      //typedef boost::posix_time::ptime Time;
-      //typedef boost::posix_time::duration Duration;lin
 
     protected:
       // An ISAM2 instance
@@ -112,8 +109,6 @@ namespace omnimapper
       Time latest_commit_time;
       // flag for suppressing commit window
       bool suppress_commit_window_;
-      // Time offset duration
-      //Duration time_offset;
       // The pose to be initialized at
       gtsam::Pose3 initial_pose_;
 
@@ -132,12 +127,6 @@ namespace omnimapper
 
       // Mutex to protect the state
       boost::mutex omnimapper_mutex_;
-
-      // Latest pose timestamp
-      //Time latest_time;
-      // Map timestamps to pose symbols
-      //std::map<Time, gtsam::Symbol> symbol_times;
-      // A list of measurement plugins
 
       std::vector<omnimapper::MeasurementPlugin> measurement_plugins;
       // A list of pose plugins.  The first plugin in the list will add the pose to the graph and specify the initialization point, while the rest will only add factors.
@@ -158,10 +147,6 @@ namespace omnimapper
       /** \brief An empty constructor for the mapping base */
       OmniMapperBase ();
       
-      /** \brief Adds a relative pose between the given times.  Poses will be created at times t1 and t2 if they do not already exist.  Returns true if the pose was accepted, false if it wasn't (for example, if the robot didn't move far enough. */
-      //bool
-      //addRelativePoseMeasurement (Time t1, Time t2, const gtsam::Pose3& measured, const gtsam::SharedNoiseModel& model);
-
       /** \brief Commits a pose in the pose chain to the SLAM problem.  Returns true if updated, false otherwise. */
       bool
       commitNextPoseNode ();
@@ -178,10 +163,6 @@ namespace omnimapper
       void
       setTimeFunctor (omnimapper::GetTimeFunctorPtr time_functor);
 
-      /** \brief Initialize plugins. */
-      //void
-      //initializePlugins ();
-
       /** \brief Given a timestamp, return a pose symbol.  If a pose symbol already exists for the requested timestamp, this is returned, else a new symbol is created. */
       void
       getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym);
@@ -189,14 +170,6 @@ namespace omnimapper
       /** \brief Given a symbol, return the timestamp.  This is primarily used for doing error analysis after mapping. */
       void
       getTimeAtPoseSymbol (gtsam::Symbol& sym, Time& t);
-
-      /** \brief Appends a pose factor to the graph.  Symbols of the form x_n are used, starting with x0, incrementing by 1 each time appendPose is called.  All pose plugins are then invoked to add a factor between x_n-1 and x_n. */
-      //gtsam::Symbol
-      //appendPose ();
-
-      /** \brief Adds new measurements for a newly added pose.  Updates all available measurement plugins. */
-      //void
-      //addMeasurements ();
 
       /** \brief Returns the most recent solution */
       gtsam::Values 
@@ -209,8 +182,6 @@ namespace omnimapper
       /** \brief Returs the most recent graph augmented with any pending uncommitted graph*/
       gtsam::NonlinearFactorGraph
       getGraphAndUncommitted ();
-
-
 
       /** \brief Returns the most recent solution augmented with any pending uncommitted values */
       gtsam::Values
@@ -235,10 +206,6 @@ namespace omnimapper
       /** \brief Continuously update the mapper while it is running. Suitable for use in its own thread. */
       void
       spin ();
-
-      /** \brief Adds a measurement plugin that will get called in the update loop. */
-      //void
-      //addMeasurementPlugin (omnimapper::MeasurementPlugin& plugin);
 
       /** \brief Adds a pose plugin that will add a pose constraint when requested. */
       void
@@ -311,6 +278,10 @@ namespace omnimapper
 
       void
       setSuppressCommitWindow (bool suppress) { suppress_commit_window_ = suppress; }
+
+      /** \brief Resets the mapper, clearing all existing state. */
+      void
+      reset ();
       
   };
 

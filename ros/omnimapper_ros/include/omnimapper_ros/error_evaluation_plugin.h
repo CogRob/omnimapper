@@ -30,6 +30,8 @@ namespace omnimapper
   {
     public:
       ErrorEvaluationPlugin (omnimapper::OmniMapperBase* mapper);
+
+      // Update callback
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
 
       // Loads and parses a ground truth file
@@ -67,6 +69,10 @@ namespace omnimapper
 
       void visualizeStats();
 
+      void computeTrajectoryStatistics (boost::shared_ptr<gtsam::Values>& values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph);
+      
+      void reset ();
+
     protected:
       ros::NodeHandle nh_;
 
@@ -79,13 +85,20 @@ namespace omnimapper
       // Playback Menu Entry Handle
       interactive_markers::MenuHandler::EntryHandle playback_menu_;
 
+      // Trajectory Statistics Menu Entry Handle
+      interactive_markers::MenuHandler::EntryHandle error_stats_menu_;
+
+      // Per Pose Menu Handlers
+      std::map<gtsam::Symbol, boost::shared_ptr<interactive_markers::MenuHandler> > pose_menus_;
+      std::map<gtsam::Symbol, interactive_markers::MenuHandler::EntryHandle> pose_error_entries_;
+      
       // Publisher for markers
       ros::Publisher marker_array_pub_;
       ros::Publisher live_frame_pub_; // Used in evaluation mode
       ros::Publisher time_pub_; // Publish the duration
       ros::Publisher ate_trans_per_pose_pub_; // Per pose translation error: sqrt(sum(t1-t*)^2)
       ros::Publisher ate_trans_rmse_pub_; // RMSE error
-
+      
       ros::Time current_time_;
 
       // A list of timestamps for each point cloud used in the dataset
@@ -95,6 +108,13 @@ namespace omnimapper
       std::vector<std::pair<omnimapper::Time, gtsam::Pose3> > ground_truth_trajectory_;
       
       OmniMapperBase* mapper_;
+
+      // Containers for statistics
+      // Holds the translational error between the the pose at Symbol and the previous pose
+      std::map<gtsam::Symbol, gtsam::Point3> sequential_translation_errors_;
+
+      // Debug flag
+      bool debug_;
   };
   
   

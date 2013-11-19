@@ -48,10 +48,11 @@ rosbuild_add_library(${PROJECT_NAME}
 				     src/get_transform_functor_tf.cpp 
 				     src/error_evaluation_plugin.cpp
 				     src/canonical_scan_matcher_plugin.cpp
-				      src/canonical_scan.cpp
-				       src/csm_math_functions.cpp 
-				       src/csm_visualizer.cpp)
-target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES})
+				     src/canonical_scan.cpp
+				     src/csm_math_functions.cpp 
+				     src/csm_visualizer.cpp
+				     src/omnimapper_ros.cpp)
+target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES} tcmalloc profiler)
 
 rosbuild_add_executable(time_test src/time_test.cpp)
 
@@ -59,4 +60,4 @@ rosbuild_add_executable(time_test src/time_test.cpp)
 #target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam) 
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 

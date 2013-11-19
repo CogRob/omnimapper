@@ -18,7 +18,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_pose_graph_ (true),
     draw_object_observation_cloud_ (true),
     draw_object_observation_bboxes_ (true),
-    draw_pose_marginals_ (true)
+    draw_pose_marginals_ (false),
+    output_graphviz_ (false)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -79,6 +80,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu ()
   // Generate an output menu
   visualization_menu_ = menu_handler_->insert ("Visualization");
   interactive_markers::MenuHandler::EntryHandle map_cloud = menu_handler_->insert (visualization_menu_, "Draw Map Cloud", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb, this, _1));
+  interactive_markers::MenuHandler::EntryHandle marginals = menu_handler_->insert (visualization_menu_, "Draw Pose Marginals", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawPoseMarginalsCb, this, _1));
+    interactive_markers::MenuHandler::EntryHandle graphviz = menu_handler_->insert (visualization_menu_, "Output Graphviz", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::setOutputGraphviz, this, _1));
 
   menu_handler_->apply (*marker_server_, "OmniMapper");
   marker_server_->applyChanges ();
@@ -96,6 +99,12 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb (const visualizatio
 {
   printf ("Drawing map cloud!\n");
   draw_icp_clouds_ = true;
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::drawPoseMarginalsCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+{
+  draw_pose_marginals_ = true;
 }
 
 template <typename PointT> void
@@ -193,6 +202,17 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 {
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
+
+  // Optionally output a graphviz
+  if (output_graphviz_)
+  {
+    std::ofstream of;
+    of.open ("/tmp/omnimapper_graph.dot");
+    current_graph.saveGraph (of);
+    of.close ();
+    output_graphviz_ = false;
+  }
+  
 
   // Draw the cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -479,7 +499,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 				pose_cov_marker.scale.x = sqrt (s[0]);
 				pose_cov_marker.scale.y = sqrt (s[1]);
 				pose_cov_marker.scale.z = sqrt (s[2]);
-				//pose_cov_markers.markers.push_back (pose_cov_marker);
+				pose_cov_markers.markers.push_back (pose_cov_marker);
 			}
 			catch(std::out_of_range) {
 

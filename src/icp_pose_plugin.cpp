@@ -25,7 +25,7 @@ namespace omnimapper
     score_threshold_ (0.5),
     trans_noise_ (1.0),
     rot_noise_ (1.0),
-    debug_ (true),
+    debug_ (false),
     overwrite_timestamps_ (true),
     icp_max_correspondence_distance_ (3.5),
     previous_sym_ (gtsam::Symbol ('x', 0)),
@@ -52,7 +52,8 @@ namespace omnimapper
   template <typename PointT> void 
   ICPPoseMeasurementPlugin<PointT>::cloudCallback (const CloudConstPtr& cloud)
   {
-    printf ("cloud callback\n");
+    if (debug_)
+      printf ("cloud callback\n");
     // Store this as the previous cloud
     boost::mutex::scoped_lock (current_cloud_mutex_);
     current_cloud_ = cloud;
@@ -60,12 +61,14 @@ namespace omnimapper
     //
     if (have_new_cloud_)
     {
-      printf ("got new cloud before done processing the old one!\n");
+      if (debug_)
+        printf ("got new cloud before done processing the old one!\n");
       //assert (false);
     }
     
     have_new_cloud_ = true;
-    printf ("ICPTest: stored new cloud!\n");
+    if (debug_)
+      printf ("ICPTest: stored new cloud!\n");
   }
 
   /*
@@ -135,19 +138,21 @@ namespace omnimapper
           return (false);
         }
 
-        for (int i = 0; i < current_cloud_->points.size (); i++)
-        {
-          if (!pcl::isFinite (current_cloud_->points[i]))
-          {
-            printf ("NAN FOUND IN INPUT!");
-            return (false);
-          }
-        }
+        // for (int i = 0; i < current_cloud_->points.size (); i++)
+        // {
+        //   if (!pcl::isFinite (current_cloud_->points[i]))
+        //   {
+        //     printf ("NAN FOUND IN INPUT!");
+        //     return (false);
+        //   }
+        // }
       }
       
       current_cloud = current_cloud_;
     }
-    printf ("current cloud points: %zu\n", current_cloud->points.size ());
+
+    if (debug_)
+      printf ("current cloud points: %zu\n", current_cloud->points.size ());
     
     // Downsample, if needed
     CloudPtr current_cloud_filtered (new Cloud ());
@@ -185,19 +190,23 @@ namespace omnimapper
     CloudPtr current_cloud_base (new Cloud ());
     if (get_sensor_to_base_)
     {
-      printf ("ICPPosePlugin: Applying sensor to base transform\n");
+      if (debug_)
+        printf ("ICPPosePlugin: Applying sensor to base transform\n");
       Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
       pcl::transformPointCloud (*current_cloud_filtered, *current_cloud_base, sensor_to_base);
     }
     else
     {
-      printf ("ICPPosePlugin: No sensor to base transform exists!\n");
+      if (debug_)
+        printf ("ICPPosePlugin: No sensor to base transform exists!\n");
     }
 
-    std::cout << "ICP Plugin: Getting symbol for current time: " << current_time << std::endl;
+    if (debug_)
+      std::cout << "ICP Plugin: Getting symbol for current time: " << current_time << std::endl;
     mapper_->getPoseSymbolAtTime (current_time, current_sym);
     //std::cout << "stamp time: " << current_cloud_->header.stamp << " converted time: " << current_time << std::endl;
-    printf ("ICP Plugin: current symbol: %zu, inserting cloud\n", current_sym.index ());
+    if (debug_)
+      printf ("ICP Plugin: current symbol: %zu, inserting cloud\n", current_sym.index ());
     //{
     //  boost::mutex::scoped_lock (current_cloud_mutex_);
     clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_base));//current_cloud_));
@@ -205,7 +214,8 @@ namespace omnimapper
   
     if (save_full_res_clouds_)
     {
-      printf ("ICPPlugin: Saving full res cloud with %zu\n", current_cloud->points.size ());
+      if (debug_)
+        printf ("ICPPlugin: Saving full res cloud with %zu\n", current_cloud->points.size ());
       //full_res_clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud));
       //CloudPtr full_res_cloud_base (new Cloud ());
       Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
@@ -219,11 +229,12 @@ namespace omnimapper
     }
     
     // We're done if that was the first cloud
-    printf ("first: %d\n", first_);
+    //printf ("first: %d\n", first_);
     if (first_)
     {
       boost::mutex::scoped_lock (current_cloud_mutex_);
-      printf ("ICPTest: done with first, returning\n");
+      if (debug_)
+        printf ("ICPTest: done with first, returning\n");
       have_new_cloud_ = false;
       previous_sym_ = current_sym;
       first_ = false;
@@ -231,7 +242,8 @@ namespace omnimapper
     }
     
     // Add constraints
-    printf ("ICP SYMS: prev3: x%zu, prev2: x%zu  prev: x%zu, curr: x%zu\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
+    if (debug_)
+      printf ("ICP SYMS: prev3: x%zu, prev2: x%zu  prev: x%zu, curr: x%zu\n", previous3_sym_.index (), previous2_sym_.index (), previous_sym_.index (), current_sym.index ());
     
     //boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, current_sym, previous_sym_, score_threshold_);
     boost::thread latest_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, current_sym, score_threshold_);
@@ -242,13 +254,15 @@ namespace omnimapper
       {
         boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
         prev2_icp_thread.join ();
-        printf ("PREV 2 COMPLETE!\n");
+        if (debug_)
+          printf ("PREV 2 COMPLETE!\n");
       }
       if (clouds_.size () >= 4)
       {
         boost::thread prev3_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, score_threshold_);
         prev3_icp_thread.join ();
-        printf ("PREV 3 COMPLETE!\n");
+        if (debug_)
+          printf ("PREV 3 COMPLETE!\n");
       }
     }
 
@@ -267,7 +281,8 @@ namespace omnimapper
     // Note that we're done
     {
       boost::mutex::scoped_lock (current_cloud_mutex_);
-      printf ("ICPTest: done with cloud!\n");
+      if (debug_)
+        printf ("ICPTest: done with cloud!\n");
       previous3_sym_ = previous2_sym_;
       previous2_sym_ = previous_sym_;
       previous_sym_ = current_sym;
@@ -276,7 +291,8 @@ namespace omnimapper
     }
 
     double spin_end = pcl::getTime ();
-    std::cout << "ICP Plugin took " << double(spin_end - spin_start) << std::endl;
+    if (debug_)
+      std::cout << "ICP Plugin took " << double(spin_end - spin_start) << std::endl;
 
     if (debug_)
       printf ("ICPPoseMeasurementPlugin: Added a pose!\n");
@@ -308,13 +324,21 @@ namespace omnimapper
     Eigen::Matrix4f cloud_tform;
     if ((cloud1_pose) && (cloud2_pose))
     {
-      cloud1_pose->print ("Pose1\n\n\n");
-      printf ("cloud1 pose det: %lf\n", cloud1_pose->rotation ().matrix ().determinant ());
-      cloud2_pose->print ("Pose2\n\n\n");
-      printf ("cloud2 pose det: %lf\n", cloud2_pose->rotation ().matrix ().determinant ());
+      if (debug_)
+      {
+        cloud1_pose->print ("Pose1\n\n\n");
+        printf ("cloud1 pose det: %lf\n", cloud1_pose->rotation ().matrix ().determinant ());
+        cloud2_pose->print ("Pose2\n\n\n");
+        printf ("cloud2 pose det: %lf\n", cloud2_pose->rotation ().matrix ().determinant ());
+      }
+      
       gtsam::Pose3 initial_guess = cloud1_pose->between (*cloud2_pose);//cloud1_pose->transform_to (*cloud2_pose);
-      initial_guess.print ("\n\nInitial guess\n\n");
-      printf ("initial guess det: %lf\n", initial_guess.rotation ().matrix ().determinant ());
+      if (debug_)
+      {
+        initial_guess.print ("\n\nInitial guess\n\n");
+        printf ("initial guess det: %lf\n", initial_guess.rotation ().matrix ().determinant ());
+      }
+      
       cloud_tform = initial_guess.matrix ().cast<float>();
     }
     else
@@ -343,10 +367,15 @@ namespace omnimapper
       
       //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
-      printf ("ADDED FACTOR BETWEEN x%zu and x%zu\n", sym1.index (), sym2.index ());
-      relative_pose.print ("\n\nICP Relative Pose\n");
-      printf ("ICP SCORE: %lf\n", icp_score);
-      printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
+      
+      if (debug_)
+      {  
+        printf ("ADDED FACTOR BETWEEN x%zu and x%zu\n", sym1.index (), sym2.index ());
+        relative_pose.print ("\n\nICP Relative Pose\n");
+        printf ("ICP SCORE: %lf\n", icp_score);
+        printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
+      }
+      
       //if (direct)
       //  mapper_->addFactorDirect (between);
       //else
@@ -355,7 +384,8 @@ namespace omnimapper
     }
     else
     {
-      printf ("ICP did not converge!\n");
+      if (debug_)
+        printf ("ICP did not converge!\n");
       // Always add a pose
       if (add_identity_on_failure_)
       {
@@ -379,8 +409,12 @@ namespace omnimapper
   template <typename PointT> bool
   ICPPoseMeasurementPlugin<PointT>::registerClouds (CloudConstPtr& cloud1, CloudConstPtr& cloud2, CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform, double& score)
   {
-    printf ("Starting icp... Cloud1: %zu Cloud2: %zu\n", cloud1->points.size (), cloud2->points.size ());
-    std::cout << "Cloud1 stamp: " << cloud1->header.stamp << " Cloud2 stamp: " << cloud2->header.stamp << std::endl;
+    if (debug_)
+    {
+      printf ("Starting icp... Cloud1: %zu Cloud2: %zu\n", cloud1->points.size (), cloud2->points.size ());
+      std::cout << "Cloud1 stamp: " << cloud1->header.stamp << " Cloud2 stamp: " << cloud2->header.stamp << std::endl;
+    }
+    
     if (cloud1->points.size () < 200 || cloud2->points.size () < 200)
         return (false);
     //pcl::IterativeClosestPointNonLinear<PointT, PointT> icp;
@@ -394,7 +428,8 @@ namespace omnimapper
       icp.setInputCloud (cloud2);
       icp.setInputTarget (cloud1);
       icp.align (*aligned_cloud2, tform);
-      printf ("ICP completed...\n");
+      if (debug_)
+        printf ("ICP completed...\n");
       tform = icp.getFinalTransformation ();
       score = icp.getFitnessScore ();
     }
@@ -407,13 +442,18 @@ namespace omnimapper
       icp.setInputCloud (cloud2);
       icp.setInputTarget (cloud1);
       icp.align (*aligned_cloud2, tform);
-      printf ("ICP completed...\n");
+      if (debug_)
+        printf ("ICP completed...\n");
       tform = icp.getFinalTransformation ();
       score = icp.getFitnessScore ();
     }
 
-    std::cout << "has converged score: " << score << std::endl;
-    printf ("tform:\n%lf %lf %lf %lf\n",tform (0,0), tform (0,1), tform (0,2), tform (0,3));
+    if (debug_)
+    {
+      std::cout << "has converged score: " << score << std::endl;
+      printf ("tform:\n%lf %lf %lf %lf\n",tform (0,0), tform (0,1), tform (0,2), tform (0,3));
+    }
+    
     //score = icp.getFitnessScore ();
   
     // if (!icp.hasConverged ())
@@ -455,16 +495,20 @@ namespace omnimapper
     {
       gtsam::Symbol test_sym (key_value.key);
       int sym_dist = sym.index () - test_sym.index ();
-      printf ("sym: %zu test: %zu\n",sym.index (), test_sym.index ());
+      
+      if (debug_)
+        printf ("sym: %zu test: %zu\n",sym.index (), test_sym.index ());
       if (sym_dist > pose_index_thresh_)
       {
-        printf ("(%d) > %d\n",(sym.index () - test_sym.index ()), pose_index_thresh_);
+        if (debug_)
+          printf ("(%d) > %d\n",(sym.index () - test_sym.index ()), pose_index_thresh_);
         gtsam::Pose3 test_pose (key_value.value);
         double test_dist = current_pose.range (test_pose);
         
         if ((test_dist < min_dist) && (clouds_.count (key_value.key) > 0))
         {
-          printf ("setting min dist to %lf\n",test_dist);
+          if (debug_)
+            printf ("setting min dist to %lf\n",test_dist);
           min_dist = test_dist;
           closest_sym = key_value.key;
         }
@@ -475,8 +519,12 @@ namespace omnimapper
     if (min_dist < loop_closure_distance_threshold_)
     {
       addConstraint (sym, closest_sym, score_threshold_);
-      printf ("ADDED LOOP CLOSURE BETWEEN %zu and %zu!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-              sym.index (), closest_sym.index ());
+      if (debug_)
+      {
+        printf ("ADDED LOOP CLOSURE BETWEEN %zu and %zu!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+                sym.index (), closest_sym.index ());
+      }
+      
       return (true);
     }
     else
@@ -491,7 +539,8 @@ namespace omnimapper
   ICPPoseMeasurementPlugin<PointT>::ready ()
   {
     boost::mutex::scoped_lock (current_cloud_mutex_);
-    printf ("ICPTest: ready: %zu\n", (!have_new_cloud_));
+    if (debug_)
+      printf ("ICPTest: ready: %zu\n", (!have_new_cloud_));
     return (!have_new_cloud_);
   }
 
@@ -522,7 +571,8 @@ namespace omnimapper
   template <typename PointT> typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudConstPtr
   ICPPoseMeasurementPlugin<PointT>::getCloudPtr (gtsam::Symbol sym)
   {
-    printf ("ICPPlugin: In getCloudPtr!\n");
+    if (debug_)
+      printf ("ICPPlugin: In getCloudPtr!\n");
     if (clouds_.count (sym) > 0)
       return (clouds_.at (sym));
     else
@@ -567,7 +617,24 @@ namespace omnimapper
     }
   }
   
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  template <typename PointT> void
+  ICPPoseMeasurementPlugin<PointT>::reset ()
+  {
+    initialized_ = false;
+    have_new_cloud_ = false;
+    first_ = true;
+    previous_sym_ = gtsam::Symbol ('x', 0);
+    previous2_sym_ = gtsam::Symbol ('x', 0);
+    previous3_sym_ = gtsam::Symbol ('x', 0);
+    clouds_.clear ();
+    full_res_clouds_.clear ();
+    sensor_to_base_transforms_.clear ();
+  }
+  
 }
+
+
 
 // TODO: Instantiation macros.
 template class omnimapper::ICPPoseMeasurementPlugin<pcl::PointXYZ>;

@@ -41,6 +41,7 @@ namespace omnimapper
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
+      void setOutputGraphviz (bool output_graphviz) { output_graphviz_ = output_graphviz; }
 
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> getInteractiveMarkerServerPtr () { return (marker_server_); }
 
@@ -53,6 +54,8 @@ namespace omnimapper
       void playPauseCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
       void drawMapCloudCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
+      void drawPoseMarginalsCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
       void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
@@ -74,7 +77,7 @@ namespace omnimapper
 
       // Visualizaion Menu Handle
       interactive_markers::MenuHandler::EntryHandle visualization_menu_;
-      
+
       // Publisher for the trajectory
       ros::Publisher pose_array_pub_;
       
@@ -123,5 +126,6 @@ namespace omnimapper
 
       bool draw_pose_marginals_;
 
+      bool output_graphviz_;
   };
 }
