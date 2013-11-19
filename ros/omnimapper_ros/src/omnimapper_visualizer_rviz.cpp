@@ -874,34 +874,28 @@ p5.z = p2.z;
   frustum_marker.header.stamp = ros::Time::now ();
   frustum_marker.ns = "camera_frustum";
   frustum_marker.id = 0;
-  frustum_marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  frustum_marker.type = visualization_msgs::Marker::LINE_STRIP;
   frustum_marker.action = visualization_msgs::Marker::ADD;
 
   frustum_marker.points.push_back (p1);
   frustum_marker.points.push_back (p2);
+  frustum_marker.points.push_back (p4);
+  frustum_marker.points.push_back (p5);
   frustum_marker.points.push_back (p3);
-
-
-  frustum_marker.points.push_back (p1);
   frustum_marker.points.push_back (p2);
-  frustum_marker.points.push_back (p4);
-
-
-
-  frustum_marker.points.push_back (p1);
-  frustum_marker.points.push_back (p4);
-  frustum_marker.points.push_back (p5);
-
-
   frustum_marker.points.push_back (p1);
   frustum_marker.points.push_back (p3);
+  frustum_marker.points.push_back (p1);
+  frustum_marker.points.push_back (p4);
+  frustum_marker.points.push_back (p1);
   frustum_marker.points.push_back (p5);
 
 
 
-  frustum_marker.scale.x = 1.0;
-  frustum_marker.scale.y = 1.0;
-  frustum_marker.scale.z = 1.0;
+
+  frustum_marker.scale.x = 0.04;
+ // frustum_marker.scale.y = 1.0;
+ // frustum_marker.scale.z = 1.0;
   frustum_marker.color.a = 0.5;
   frustum_marker.color.r = 1.0;
   frustum_marker.color.g = 1.0;
