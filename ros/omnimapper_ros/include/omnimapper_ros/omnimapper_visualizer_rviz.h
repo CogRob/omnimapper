@@ -42,6 +42,7 @@ namespace omnimapper
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
       void setOutputGraphviz (bool output_graphviz) { output_graphviz_ = output_graphviz; }
+      void setDrawICPCloudsAlways (bool draw_always) { draw_icp_clouds_always_ = draw_always; if (draw_always) draw_icp_clouds_ = true; }
 
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> getInteractiveMarkerServerPtr () { return (marker_server_); }
 
@@ -113,6 +114,8 @@ namespace omnimapper
       boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > object_plugin_;
 
       bool draw_icp_clouds_;
+
+      bool draw_icp_clouds_always_;
       
       bool draw_planar_landmarks_;
 

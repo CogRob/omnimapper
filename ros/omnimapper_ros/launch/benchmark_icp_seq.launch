@@ -1,0 +1,57 @@
+<launch>
+
+      <node name="benchmark_node" pkg="omnimapper_ros" type="benchmark_icp_seq" respawn="false" output="screen">
+      	    <param name="use_planes" value="false"/>
+	    <param name="use_icp" value="true"/>
+	    <param name="use_csm" value="false"/>
+	    <param name="use_objects" value="false"/>
+	    <param name="use_occ_edge_icp" value="false"/>
+	    <param name="use_tf" value="false"/>
+	    <param name="use_error_plugin" value="false"/>
+	    <param name="use_error_eval_plugin" value="true"/>
+	    <param name="use_tsdf_plugin" value="false"/>
+	    <param name="use_no_motion" value="false"/>
+	    <param name="use_rviz_plugin" value="true"/>
+	    <param name="use_rgbd_sensor_base_tf_functor" value="false"/>
+	    <param name="use_distortion_model" value="false"/>
+      	    <param name="odom_frame_name" value="/world"/>
+	    <param name="base_frame_name" value="/base_link_estimate"/>
+	    <param name="use_init_pose" value="true"/>
+	    <param name="init_pose_from_tf" value="false"/>
+	    <param name="init_x" value="1.314809"/>
+	    <param name="init_y" value="0.847662"/>
+	    <param name="init_z" value="1.519455"/>
+	    <param name="init_qx" value="0.886385"/>
+	    <param name="init_qy" value="0.231053"/>
+	    <param name="init_qz" value="-0.089359"/>
+	    <param name="init_qw" value="-0.391090"/>
+	    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
+	    <param name="icp_leaf_size" value="0.025"/>
+	    <param name="icp_max_correspondence_distance" value="0.1"/>
+	    <param name="icp_score_thresh" value="0.8"/>
+	    <param name="icp_trans_noise" value="0.05"/>
+	    <param name="icp_rot_noise" value="0.05"/>
+	    <param name="icp_add_loop_closures" value="false"/>
+	    <param name="occ_edge_trans_noise" value="0.05"/>
+	    <param name="occ_edge_rot_noise" value="0.1"/>
+	    <param name="occ_edge_max_correspondence_dist" value="0.15"/>
+	    <param name="occ_edge_score_thresh" value="0.3"/>
+	    <param name="occ_edge_add_identity_on_fail" value="true"/>
+	    <param name="tf_trans_noise" value="10.05"/>
+	    <param name="tf_rot_noise" value="10.0872664626"/>
+	    <param name="draw_pose_array" value="false"/>
+	    <param name="draw_pose_graph" value="false"/>
+	    <param name="draw_icp_clouds_always" value="false"/>
+	    <param name="broadcast_current_pose" value="true"/>
+	    <param name="add_pose_per_cloud" value="false"/>
+	    <param name="use_organized_feature_extraction" value="false"/>
+	    <param name="evaluation_mode" value="false"/>
+	    <param name="evaluation_pcd_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/pcd/rgb/"/>
+	    <param name="evaluation_associated_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/associated.txt"/>
+	    <param name="evaluation_ground_truth_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/groundtruth.txt"/>
+	    <param name="evaluation_output_trajectory_txt_path" value="/home/atrevor/data/tum_rgbd/rgbd_dataset_freiburg1_desk/output_trajectory.txt"/>
+      </node>
+
+       <!-- <node name="base_link_to_base_link_optical" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 -0.5 0.5 -0.5 0.5 /base_link_estimate /base_link_estimate_optical 100" respawn="false" output="screen"/> -->
+	<!-- <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/> -->
+</launch>
