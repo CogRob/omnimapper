@@ -13,6 +13,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
     menu_handler_ (new interactive_markers::MenuHandler ()),
     draw_icp_clouds_ (false),
+    draw_icp_clouds_always_ (false),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
     draw_pose_graph_ (true),
@@ -570,7 +571,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now ();
     map_cloud_pub_.publish (cloud_msg);
-    draw_icp_clouds_ = false;
+    if (!draw_icp_clouds_always_)
+      draw_icp_clouds_ = false;
   }
 
   // Draw object observations

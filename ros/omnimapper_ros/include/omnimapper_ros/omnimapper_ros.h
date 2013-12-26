@@ -62,11 +62,20 @@ class OmniMapperROS
     // Map To Odometry Correction Publication
     void publishMapToOdom ();
 
+    // Publish the current pose in the map frame
+    void publishCurrentPose ();
+
     // Service call for generating a map TSDF
     bool generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req,
                                   omnimapper_ros::OutputMapTSDF::Response &res);
 
-    void runEvaluation (std::string& associated_filename, std::string& groundtruth_filename, std::string& output_filename);
+    void runEvaluation (std::string& associated_filename, 
+                        std::string& groundtruth_filename, 
+                        std::string& pcd_path,
+                        std::string& output_trajectory_filename,
+                        std::string& output_timing_filename);
+
+    void resetEvaluation ();
 
   protected:
     // ROS Node Handle
@@ -192,16 +201,19 @@ class OmniMapperROS
     bool draw_pose_graph_;
     bool draw_label_cloud_;
     bool draw_clusters_;
+    bool draw_icp_clouds_always_;
 
     // TSDF plugin params
     bool use_tsdf_plugin_;
 
     // Error plugin params
     bool use_error_plugin_;
+    bool use_error_eval_plugin_;
 
     // Other Flags
     bool add_pose_per_cloud_;
     bool broadcast_map_to_odom_;
+    bool broadcast_current_pose_;
     bool use_distortion_model_;
     bool use_rgbd_sensor_base_tf_functor_;
     std::string distortion_model_path_;

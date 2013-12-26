@@ -9,7 +9,7 @@ Decompress the file.
 
 Copy modify_isam2.patch to your gtsam location and apply the patch by:
 
-$patch -p0 < modify_isam2.patch 
+$patch -p1 < modify_isam2.patch 
 
 You will see as an output:
 
@@ -24,7 +24,7 @@ Copy cpu_tsdf.patch to <path>/cpu_stdf
 
 Then apply the patch by:
 
-$patch -p0 < cpu_tsdf.patch
+$patch -p1 < cpu_tsdf.patch
 
 You will see as an output:
 

@@ -781,4 +781,7 @@ omnimapper::ErrorEvaluationPlugin::reset ()
   sequential_translation_errors_.clear ();
   pose_menus_.clear ();
   pose_error_entries_.clear ();
+  marker_server_->clear ();
+  
+  
 }

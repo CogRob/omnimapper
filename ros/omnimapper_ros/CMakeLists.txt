@@ -61,3 +61,9 @@ rosbuild_add_executable(time_test src/time_test.cpp)
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
 target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 
+
+rosbuild_add_executable(benchmark_icp_seq src/benchmark_icp_seq.cpp)
+target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 
+
+rosbuild_add_executable(benchmark_icp_lc src/benchmark_icp_lc.cpp)
+target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 
