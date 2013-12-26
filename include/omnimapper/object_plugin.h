@@ -19,6 +19,11 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 
+#include <pcl/registration/icp.h>
+#include <pcl/registration/icp_nl.h>
+#include <pcl/registration/gicp.h>
+
+
 namespace omnimapper
 {
   /** \brief ObjectPlugin keeps track of objects, both recognized and unrecognized, and optionally localizes from objects flagged as stationary.

@@ -404,6 +404,7 @@ namespace omnimapper
           pcl::transformPointCloud (*cloud, *map_cloud, map_transform); // transform cloud from base_frame to world_frame
           transformed_cloud_opt_ = transformed_cloud_opt_ + *map_cloud;
 
+
         }
       }
 
@@ -439,7 +440,7 @@ namespace omnimapper
     gtsam::Symbol obj_symbol = object.sym;
     gtsam::SharedDiagonal measurement_noise;
     measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-        gtsam::Vector_ (3, 0.5, 0.5, 0.5));
+        gtsam::Vector_ (3, 0.05, 0.05, 0.05));
 
 
     for (it = cluster.begin (); it != cluster.end (); it++)
@@ -510,10 +511,67 @@ namespace omnimapper
 
         gtsam::Pose3 new_pose = *cloud_pose;
         Eigen::Vector4f measurement_centroid;
-        pcl::compute3DCentroid (*cloud, measurement_centroid);
-        const gtsam::Point3 measurement_pt (measurement_centroid[0],
-            measurement_centroid[1], measurement_centroid[2]); //centroid in the robot base frame
+        Eigen::Vector4f tform_measurement_centroid;
+        Eigen::Vector4f object_cloud_centroid;
 
+        // transform the cloud in the map frame
+        CloudPtr map_cloud (new Cloud ());
+        Eigen::Matrix4f map_transform = new_pose.inverse().matrix ().cast<float> ();
+        pcl::transformPointCloud (transformed_cloud_opt_, *map_cloud, map_transform);
+        pcl::io::savePCDFileASCII ("/home/siddharth/kinect/map_cloud.pcd", *map_cloud);
+        pcl::io::savePCDFileASCII ("/home/siddharth/kinect/cloud.pcd", *cloud);
+
+        pcl::compute3DCentroid (*cloud, measurement_centroid);
+        pcl::compute3DCentroid (*map_cloud, tform_measurement_centroid);
+        pcl::compute3DCentroid (transformed_cloud_opt_, object_cloud_centroid);
+        std::cout << "[ObjectPlugin] untformed_centroid "
+            << measurement_centroid << " tformed_centroid "
+            << tform_measurement_centroid << " object_centroid " << object_cloud_centroid << std::endl;
+
+/*
+         compute ICP and add transform offset to the measurement_centroid
+       Cloud aligned_cloud;
+        double score;
+        Eigen::Matrix4f tform;
+        pcl::IterativeClosestPoint<PointT, PointT> icp;
+       // icp.setMaximumIterations (100);//20
+       // icp.setTransformationEpsilon (1e-6);
+      //  icp.setMaxCorrespondenceDistance (1.5);//1.5
+        std::cout << "[ObjectPlugin] Cloud point size: "
+            << cloud->points.size () << " Map cloud points size: "
+            << map_cloud->points.size () << std::endl;
+        icp.setInputCloud (cloud);
+        icp.setInputTarget (map_cloud);
+        icp.align (aligned_cloud, tform);
+
+
+        //pcl::io::savePCDFileASCII ("transformed_cloud.pcd", transformed_cloud_opt_);
+        if (debug_)
+          printf ("ICP completed...\n");
+        tform = icp.getFinalTransformation ();
+        score = icp.getFitnessScore ();
+        std::cout << "[ObjectPlugin] has converged: " << icp.hasConverged() << std::endl;
+        std::cout << "[ObjectPlugin] Fitness Score " << score << std::endl;
+        std::cout << "[ObjectPlugin] Transform " << tform << std::endl;
+        Eigen::Matrix4d tform4d = tform.cast<double>();
+        gtsam::Pose3 icp_tform(tform4d);
+
+        // TODO: find the transformation from camera's view point and use the corresponding translation as measurmenent offset
+        gtsam::Pose3 composed_tform =  icp_tform * new_pose.inverse();
+        icp_tform.print("ICP Transform");
+        new_pose.print("Camera Pose");
+        composed_tform.print("Composed Transform");
+
+        gtsam::Point3 icp_trans = composed_tform.translation();
+        icp_trans.print("[ObjectPlugin] Translation");
+
+*/
+        //const gtsam::Point3 measurement_pt (measurement_centroid[0],
+         //   measurement_centroid[1], measurement_centroid[2]); //centroid in the robot base frame
+
+        const gtsam::Point3 measurement_pt (tform_measurement_centroid[0],
+            tform_measurement_centroid[1], tform_measurement_centroid[2]); //centroid in the robot base frame
+        //measurement_pt = measurement_pt + icp_trans;
         // check if the factor is already added
         if (object.factor_flag.at (sym) == -1)
         {
