@@ -264,6 +264,10 @@ namespace gtsam {
     Eigen::Vector3d new_norm(a_+d(0),b_+d(1),c_+d(2));
     new_norm.normalize();
 
+    std::cout << "v: " << d << std::endl;
+    std::cout << "retracting: " << a_ << " " << b_ << " " << c_ << " " << d_ << std::endl;
+    std::cout << "retracted:  " << new_norm(0) << " " << new_norm(1) << " " << new_norm(2) << "d" << std::endl;
+
     bool update_hull_from_projection = false;
     pcl::PointCloud<PointT> map_hull_on_map;
     if (update_hull_from_projection)

@@ -13,7 +13,8 @@
 #include <gtsam/nonlinear/Symbol.h>
 //#include <gtsam/nonlinear/Key.h>
 //#include <omnimapper/omni_config.h>
-#include <gtsam/nonlinear/Ordering.h>
+//#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Pose3.h>
 #include <omnimapper/plane.h>
@@ -33,7 +34,7 @@ namespace gtsam {
   class PlaneFactor : public NoiseModelFactor2<Pose3, Plane<PointT> >
 {
  private:
-
+    typedef PlaneFactor<PointT> This;
   typedef NoiseModelFactor2<Pose3, Plane<PointT> > Base;
  protected:
   Symbol poseSymbol_;
@@ -61,6 +62,18 @@ namespace gtsam {
     landmarkSymbol_(landmark),
     measured_(z) {
   }
+    // PlaneFactor<PointT> (const PlaneFactor<PointT>& p) 
+    // :  PlaneFactor<PointT> (p.measured_, p.noiseModel_, p.poseSymbol_, p.landmarkSymbol_)
+    // {}
+  //   PlaneFactor (const PlaneFactor& p)
+  // : measured_ (p.measured_),
+  // noiseModel_ (p.noiseModel_),
+  // poseSymbol_ (p.poseSymbol_),
+  // landmarkSymbol_ (p.landmarkSymbol_) 
+  //   {}
+  
+
+    
   Symbol getPoseSymbol() const { return poseSymbol_;}
   Symbol getLandmarkSymbol() const{ return landmarkSymbol_;}
   void setLandmarkSymbol(const Symbol& newLandmarkSymbol) {
@@ -71,7 +84,12 @@ namespace gtsam {
    * @param s optional string naming the factor
    */
   void print(const std::string& s="PlaneFactor") const;
-  
+
+    /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+                                                              gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
   virtual Vector evaluateError(const Pose3& pose, const Plane<PointT>& plane, 
 			       boost::optional<Matrix&> H1 = boost::none,
 			       boost::optional<Matrix&> H2 = boost::none)const;
