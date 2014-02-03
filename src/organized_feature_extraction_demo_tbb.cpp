@@ -145,12 +145,15 @@ main (int argc, char** argv)
 
   ni_grabber.start ();
 
+  // Start spinning
+  ofe.spin ();
+
   ProfilerStart("tbb.prof");  
   while (true)
   {
     boost::this_thread::sleep (boost::posix_time::milliseconds (10));
     
-    ofe.spinOnce ();
+    //ofe.spinOnce ();
     
     demo.spinVis ();
   }

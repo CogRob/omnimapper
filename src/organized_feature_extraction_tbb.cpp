@@ -52,6 +52,8 @@ namespace omnimapper
       ne_(new pcl::IntegralImageNormalEstimation<PointT, pcl::Normal>()),
       mps_(new pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label>()),
       euclidean_cluster_comparator_ (new pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>()),
+  min_plane_inliers_ (10000),
+  min_cluster_inliers_ (1000),
       debug_ (true),
       timing_ (false)
     {
@@ -65,7 +67,7 @@ namespace omnimapper
       ne_->setNormalSmoothingSize (20.0f);
 
       // Set up plane segmentation
-      mps_->setMinInliers (10000);
+      mps_->setMinInliers (min_plane_inliers_);
       mps_->setAngularThreshold (pcl::deg2rad (2.0));//2.0
       mps_->setDistanceThreshold (0.02);//0.03
       mps_->setProjectPoints (true);
@@ -93,7 +95,7 @@ namespace omnimapper
       }
 
       //PCL_INFO ("Starting process thread\n");
-      //process_thread = boost::thread (&OrganizedFeatureExtractionTBB::processFrame, this);
+      //process_thread = boost::thread (&OrganizedFeatureExtractionTBB::spin, this);
     }
     
     // Get latest cloud from the sensor
@@ -111,6 +113,53 @@ namespace omnimapper
       }
       //updated_cond_.notify_one ();
     }
+
+  // template <typename PointT> void
+  // OrganizedFeatureExtractionTBB<PointT>::tbbSpin ()
+  // {
+  //   class SpinTask : public tbb::task
+  //   {
+  //   private:
+  //       const OrganizedFeatureExtractionTBB<PointT>* ofe_;
+  //   public:
+  //       SpinTask (OrganizedFeatureExtractionTBB<PointT>* ofe) :
+  //     ofe_ (ofe)
+  //     {
+  //     }
+      
+  //     tbb::task* execute ()
+  //     {
+  //       while (true)
+  //       {
+  //           ofe_.spinOnce ();
+  //           //tbb::this_thread::yield ();
+  //           //tbb::this_thread::sleep_for (5);
+  //         }
+  //       }
+  //   };
+    
+  //   tbb::empty_task* parent = new (tbb::task::allocate_root () ) tbb::empty_task;
+  //   parent->set_ref_count (2);
+  // SpinTask* s = new(parent->allocate_child () ) SpinTask (this);
+  //   parent->enqueue (*s);
+  // }
+  
+  template <typename PointT> void
+  OrganizedFeatureExtractionTBB<PointT>::spin ()
+  {
+    spin_thread = boost::thread (&OrganizedFeatureExtractionTBB<PointT>::spinThread, this);
+  }
+  
+
+  template <typename PointT> void
+  OrganizedFeatureExtractionTBB<PointT>::spinThread ()
+  {
+    while (true)
+    {
+      boost::this_thread::sleep (boost::posix_time::milliseconds (5));
+      spinOnce ();
+    }
+  }
 
     template <typename PointT> void
     OrganizedFeatureExtractionTBB<PointT>::spinOnce()
@@ -466,7 +515,7 @@ namespace omnimapper
     {
       for (size_t i = 0; i < clust_input_label_indices_->size (); i++)
       {
-        if ((*clust_input_label_indices_)[i].indices.size () > 10000)
+        if ((*clust_input_label_indices_)[i].indices.size () > min_plane_inliers_)
         {
           plane_labels[i] = true;
         }
