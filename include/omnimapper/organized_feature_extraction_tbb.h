@@ -163,9 +163,19 @@ class OrganizedFeatureExtractionTBB
     // Cluster Cloud Indices Callback
     std::vector<boost::function<void(std::vector<CloudPtr>, std::vector<pcl::PointIndices>, Time t)> > cluster_cloud_indices_callbacks_;
 
+    // Set min plane inliers
+    void setMinPlaneInliers (int min_inliers) { min_plane_inliers_ = min_inliers; mps_->setMinInliers (min_inliers); }
+    
+    // Set min cluster inliers
+    void setMinClusterInliers (int min_inliers) { min_cluster_inliers_ = min_inliers; }
+
     // Threads
     boost::thread vis_thread;
-    boost::thread process_thread;
+    boost::thread spin_thread;
+
+    // Parameters
+    int min_plane_inliers_;
+    int min_cluster_inliers_;
 
     // Flags
     bool debug_;
@@ -174,6 +184,9 @@ class OrganizedFeatureExtractionTBB
     // Output
     std::ofstream ne_times_file_;
     std::ofstream mps_times_file_;
+
+  private:
+    void spinThread ();
 
   public:
     OrganizedFeatureExtractionTBB ();
@@ -184,7 +197,8 @@ class OrganizedFeatureExtractionTBB
     void publish ();
     void computeClusters ();
     //void computeEdges ();
-    //void spin ();
+    void spin ();
+    //void tbbSpin ();
     void spinOnce();
     void setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn);
     void setPlanarRegionStampedCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, Time)>& fn);
