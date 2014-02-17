@@ -27,6 +27,9 @@ rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+rosbuild_add_library(ofe src/organized_feature_extraction_tbb.cpp)
+target_link_libraries(ofe ${PCL_LIBRARIES} tbb)
+
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
@@ -35,4 +38,7 @@ rosbuild_genmsg()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 rosbuild_add_executable(organized_segmentation_node src/organized_segmentation_node.cpp)
-target_link_libraries(organized_segmentation_node omnimapper ${PCL_LIBRARIES})
+target_link_libraries(organized_segmentation_node omnimapper ${PCL_LIBRARIES} ofe)
+
+add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
+target_link_libraries(organized_feature_extraction_demo_tbb ofe ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)

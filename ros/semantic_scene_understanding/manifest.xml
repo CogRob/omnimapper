@@ -11,6 +11,7 @@
   <depend package="roscpp"/>
   <depend package="visualization_msgs"/>
   <depend package="sensor_msgs"/>
+  <depend package="pointing_object_evaluation"/>
 </package>
 
 
