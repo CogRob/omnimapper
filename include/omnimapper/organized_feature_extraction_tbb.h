@@ -103,7 +103,7 @@ class OrganizedFeatureExtractionTBB
 
     boost::optional<LabelCloudPtr> stage4_labels_;
     boost::optional<LabelCloudPtr> clust_output_labels_;
-    boost::optional<CloudPtr> mps_output_occluding_cloud_;
+    boost::optional<CloudPtr> oed_output_occluding_edge_cloud_;
 
     boost::optional<std::vector<pcl::ModelCoefficients> > stage4_model_coefficients_;
     boost::optional<std::vector<pcl::PointIndices> > stage4_inlier_indices_;
@@ -196,7 +196,7 @@ class OrganizedFeatureExtractionTBB
     void computePlanes ();
     void publish ();
     void computeClusters ();
-    //void computeEdges ();
+    void computeEdges ();
     void spin ();
     //void tbbSpin ();
     void spinOnce();

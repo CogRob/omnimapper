@@ -42,7 +42,7 @@ namespace omnimapper
       pub_cluster_cloud_ (boost::none),
       stage4_labels_ (new LabelCloud ()),
       clust_output_labels_ (boost::none),
-      mps_output_occluding_cloud_ (new Cloud ()),
+  oed_output_occluding_edge_cloud_ (boost::none),
       vis_cloud_ (new Cloud ()),
       vis_labels_ (new LabelCloud ()),
       vis_occluding_cloud_ (new Cloud ()),
@@ -184,6 +184,7 @@ namespace omnimapper
       group.run ([&] { computeNormals (); });
       group.run ([&] { computePlanes (); });
       group.run ([&] { computeClusters (); });
+      group.run ([&] { computeEdges (); });
       group.run ([&] { publish (); });
       group.wait ();
 
@@ -257,6 +258,14 @@ namespace omnimapper
         }
       }
     }
+
+    // Publish Occluding Edges
+    if (occluding_edge_callback_)
+    {
+      if (oed_output_occluding_edge_cloud_)
+        occluding_edge_callback_ (*oed_output_occluding_edge_cloud_);
+    }
+    
     
   }
   
@@ -609,25 +618,30 @@ namespace omnimapper
       printf ("Got %d regions!\n", mps_output_regions_->size ());
   }
 
-
-  /*
   // Extract edges
   template <typename PointT> void
   OrganizedFeatureExtractionTBB<PointT>::computeEdges ()
   {
-    if (stage2_cloud_->points.size () == 0)
+    if (!input_cloud_)
+    {
+      oed_output_occluding_edge_cloud_ = boost::none;
       return;
+    }
     
     double edge_start = pcl::getTime ();
-      pcl::PointCloud<pcl::Label> labels;
-      std::vector<pcl::PointIndices> label_indices;
-      oed.compute (labels, label_indices);
-      double edge_end = pcl::getTime ();
-      std::cout << "edges took: " << double (edge_end - edge_start) << std::endl;
-      mps_output_occluding_cloud_ = CloudPtr(new Cloud ());
-      pcl::copyPointCloud (*stage2_cloud_, label_indices[1], *mps_output_occluding_cloud_);
+    pcl::PointCloud<pcl::Label> labels;
+    std::vector<pcl::PointIndices> label_indices;
+    oed.setInputCloud (*input_cloud_);
+    
+    oed.compute (labels, label_indices);
+    double edge_end = pcl::getTime ();
+    //std::cout << "edges took: " << double (edge_end - edge_start) << std::endl;
+    //oed_output_occluding_edge_cloud_ = CloudPtr(new Cloud ());
+    CloudPtr edge_cloud (new Cloud ());
+    pcl::copyPointCloud (*(*input_cloud_), label_indices[1], *edge_cloud);
+    oed_output_occluding_edge_cloud_ = edge_cloud;
   }
-*/
+
  
     template <typename PointT> void
     OrganizedFeatureExtractionTBB<PointT>::setPlanarRegionCallback (boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>& fn)

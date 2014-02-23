@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 #SET(CMAKE_CXX_FLAGS_DISTRIBUTION "-O3")
 #SET(CMAKE_C_FLAGS_DISTRIBUTION "-O3")
 SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
-SET(CMAKE_C_FLAGS_RELEASE "-O3")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
+SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
 
 #ROS
 #include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
@@ -14,7 +14,7 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 project(omnimapper)
 
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 #set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 
@@ -31,11 +31,19 @@ find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
+option(WITH_CPUTSDF "CPU TSDF Support" TRUE)
+if(WITH_CPUTSDF)
+  find_package(CPUTSDF)
+  if (CPUTSDF_FOUND)
+    set(HAVE_CPUTSDF ON)
+    include_directories(${CPUTSDF_INCLUDE_DIRS})
+    link_directories(${CPUTSDF_LIBRARY_DIRS})
+  endif(CPUTSDF_FOUND)
+endif(WITH_CPUTSDF)
 
-message (MODULE_PATH= ${CMAKE_MODULE_PATH})
-find_package(CPUTSDF REQUIRED)
-include_directories(${CPUTSDF_INCLUDE_DIRS})
-link_directories(${CPUTSDF_LIBRARY_DIRS})
+#find_package(CPUTSDF REQUIRED)
+#include_directories(${CPUTSDF_INCLUDE_DIRS})
+#link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 include_directories(include)
 
@@ -83,6 +91,12 @@ set(srcs
 					     src/transform_helpers.cpp
 					     src/no_motion_pose_plugin.cpp
 					     src/tsdf_output_plugin.cpp)
+
+
+if(CPUTSDF_FOUND)
+  list(APPEND incs include/omnimapper/tsdf_output_plugin.h)
+  list(APPEND srcs src/tsdf_output_plugin.cpp)
+endif()
 
 add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam

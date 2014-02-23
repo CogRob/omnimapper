@@ -51,7 +51,7 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::OmniMapperVisualizerPCL (omnimapper
 {
   // Set up the viewer
   viewer_.setBackgroundColor (0, 0, 0);
-  viewer_.addCoordinateSystem (1.0);
+  viewer_.addCoordinateSystem (1.0, 0);
   viewer_.initCameraParameters ();
   viewer_.registerKeyboardCallback (&omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback, *this, 0);
   debug_ = true;

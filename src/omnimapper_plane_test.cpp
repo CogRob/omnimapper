@@ -133,7 +133,7 @@ testPlanarTransform2 ()
 {
   pcl::visualization::PCLVisualizer viewer_ ("Viewer");
   viewer_.setBackgroundColor (0, 0, 0);
-  viewer_.addCoordinateSystem (1.0);
+  viewer_.addCoordinateSystem (1.0, 0);
   viewer_.initCameraParameters ();
 
   // Make a Plane
