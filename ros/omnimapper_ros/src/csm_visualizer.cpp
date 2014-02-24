@@ -13,7 +13,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz (omnimapper::OmniMapper
 
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("/visualization_marker_array", 0);
 
-  map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("map_cloud", 0);
+  map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("csm_map_cloud", 0);
 
   //draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 }

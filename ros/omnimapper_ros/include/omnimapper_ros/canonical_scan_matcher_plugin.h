@@ -14,6 +14,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace omnimapper
 {
@@ -37,7 +38,7 @@ namespace omnimapper
       void spin();
       bool spinOnce();
       bool getBaseToLaserTf (const std::string& frame_id);
-      bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, bool always_add=true);
+      bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, scan_tools::CanonicalScan& cscan, bool always_add=true);
       bool tryLoopClosure (gtsam::Symbol sym);
       bool ready ();
       void setTriggeredMode (bool triggered_mode) { triggered_mode_ = triggered_mode; }
@@ -51,9 +52,11 @@ namespace omnimapper
       OmniMapperBase* mapper_;
       tf::TransformListener tf_listener_;
       laser_geometry::LaserProjection projector_;
-      scan_tools::CanonicalScan canonical_scan_;
+      scan_tools::CanonicalScan seq_canonical_scan_;
+      scan_tools::CanonicalScan lc_canonical_scan_;
       bool initialized_;
       std::map<gtsam::Symbol, LaserScanPtr> lscans_;
+      std::map<gtsam::Symbol, gtsam::Point3> lscan_centroids_;
       std::map<gtsam::Symbol, sensor_msgs::PointCloud2> clouds_;
       LaserScanPtr current_lscan_;
       bool have_new_lscan_;
@@ -107,5 +110,5 @@ gtsam::Pose3 doCSM_impl ( const sensor_msgs::LaserScan& from_scan,
 
 sensor_msgs::LaserScan SmoothScan (const sensor_msgs::LaserScanConstPtr& msg_in);
 
-gtsam::Point3 GetMeanLaserPoint(const sensor_msgs::PointCloud& cloud);
+gtsam::Point3 GetMeanLaserPoint(boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > cloud);
 
