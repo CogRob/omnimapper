@@ -17,7 +17,7 @@ OmniMapperROS<PointT>::OmniMapperROS ()
     bag_error_plugin_ (&omb_),
     eval_plugin_ (&omb_),
     fake_grabber_ (empty_files_, 1.0, false),
-    organized_feature_extraction_ (fake_grabber_),
+    organized_feature_extraction_ (),
     tf_listener_ (ros::Duration (500.0))
 {
   loadROSParams ();

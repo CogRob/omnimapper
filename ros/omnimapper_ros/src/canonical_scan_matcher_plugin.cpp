@@ -105,21 +105,21 @@ sensor_msgs::LaserScan SmoothScan (const sensor_msgs::LaserScanConstPtr& msg_in)
     return msg_out;
 }
 
-gtsam::Point3 GetMeanLaserPoint(const sensor_msgs::PointCloud& cloud)
+gtsam::Point3 GetMeanLaserPoint(boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > cloud)
 {
     double mean_x = 0.0;
     double mean_y = 0.0;
     double mean_z = 0.0;
-    for (unsigned int i = 0;i<cloud.points.size();i++)
+    for (unsigned int i = 0;i<cloud->points.size();i++)
     {
-        mean_x += cloud.points[i].x;
-        mean_y += cloud.points[i].y;
-        mean_z += cloud.points[i].z;
+        mean_x += cloud->points[i].x;
+        mean_y += cloud->points[i].y;
+        mean_z += cloud->points[i].z;
     }
 
-    return gtsam::Point3 (mean_x / (double)(cloud.points.size()),
-                          mean_y / (double)(cloud.points.size()),
-                          mean_z / (double)(cloud.points.size()));
+    return gtsam::Point3 (mean_x / (double)(cloud->points.size()),
+                          mean_y / (double)(cloud->points.size()),
+                          mean_z / (double)(cloud->points.size()));
 }
 
 
@@ -159,7 +159,8 @@ namespace omnimapper
     triggered_time_ (ros::Time::now ())
     {
       //ros::NodeHandle nh;
-      canonical_scan_.initParams (nh_);
+      seq_canonical_scan_.initParams (nh_);
+      lc_canonical_scan_.initParams (nh_);
       have_new_lscan_ = false;
       first_ = true;
 
@@ -253,13 +254,20 @@ namespace omnimapper
       projector_.transformLaserScanToPointCloud (base_frame_name_, *current_lscan, scan_cloud, tf_listener_);
       //projector_.projectLaser (*current_lscan, scan_cloud);
       clouds_.insert (std::pair<gtsam::Symbol, sensor_msgs::PointCloud2>(current_sym, scan_cloud));
+
+      // TODO: store point cloud, modify csm_visualizer to use these instead of sensor_msgs
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+      pcl::fromROSMsg (scan_cloud, *cloud);
+
+      gtsam::Point3 laser_centroid = GetMeanLaserPoint (cloud);
+      lscan_centroids_.insert (std::pair<gtsam::Symbol, gtsam::Point3>(current_sym, laser_centroid));
     }
      catch (tf::TransformException ex)
      {
        ROS_WARN ("No transform yet!\n");
        return false;
      }
-    
+
 
     if (first_)
     {
@@ -271,7 +279,7 @@ namespace omnimapper
     }
 
     // current pose to previous pose
-    boost::thread latest_icp_thread (&CanonicalScanMatcherPlugin<LScanT>::addConstraint, this, previous_sym_, current_sym, true);
+    boost::thread latest_icp_thread (&CanonicalScanMatcherPlugin<LScanT>::addConstraint, this, previous_sym_, current_sym, seq_canonical_scan_, true);
     latest_icp_thread.join ();
     if (add_loop_closures_)
     {
@@ -282,7 +290,9 @@ namespace omnimapper
       }
       
     }
+    //latest_icp_thread.join ();
     
+
     ros::Time end_time = ros::Time::now ();
     ros::Duration spin_time = end_time - start_time;
     std::cout << "CSMPlugin: spin end: " << spin_time << std::endl;
@@ -321,7 +331,7 @@ namespace omnimapper
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT> bool
-CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2, bool always_add)
+CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2, scan_tools::CanonicalScan& cscan, bool always_add)
   {
     // std::map<gtsam::Symbol, LaserScanPtr>::iterator itr1;
     // std::map<gtsam::Symbol, LaserScanPtr>::iterator itr2;
@@ -376,7 +386,8 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
     tf::StampedTransform base_to_laser_tf;// = tf::StampedTransform(scan1->header.stamp, tf::Transform::identity());
     base_to_laser_tf.setIdentity();
     //base_to_laser_tf = tf::StampedTransform (scan1->header.stamp, base_to_laser_);
-    gtsam::Pose3 relative_pose = doCSM_impl(*scan1, *scan2, initial_guess, worked, noise, canonical_scan_, base_to_laser_, true);
+    //gtsam::Pose3 relative_pose = doCSM_impl(*scan1, *scan2, initial_guess, worked, noise, canonical_scan_, base_to_laser_, true);
+    gtsam::Pose3 relative_pose = doCSM_impl(*scan1, *scan2, initial_guess, worked, noise, cscan, base_to_laser_, true);
 
     //debug
     LaserScanPtr vis_scan1 (new LScan (*scan1));
@@ -514,6 +525,9 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
 	exit(1);
       }
 
+    gtsam::Point3 current_centroid = lscan_centroids_[sym];
+    gtsam::Point3 current_centroid_map = current_pose->transform_from (current_centroid);
+
     // Find the closest pose
     gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = solution.filter<gtsam::Pose3>();
     double min_dist = std::numeric_limits<double>::max ();
@@ -529,12 +543,19 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
         gtsam::Pose3 test_pose (key_value.value);
         double test_dist = current_pose->range (test_pose);
 
+        // Compute distance from scan_centroids
+        gtsam::Point3 test_centroid = lscan_centroids_[test_sym];
+        gtsam::Point3 test_centroid_map = test_pose.transform_from (test_centroid);
+        
+        double centroid_dist = fabs (test_centroid_map.distance (current_centroid_map));
+
         std::map<gtsam::Symbol, LaserScanPtr>::iterator itr1;
         itr1 = lscans_.find (test_sym);
 
         //if ((itr1 == lscans_.end ()) || (itr2 == lscans_.end ()))
 
-        if ((test_dist < min_dist) && (itr1 != lscans_.end ()))
+        //if ((test_dist < min_dist) && (itr1 != lscans_.end ()))
+        if ((centroid_dist < min_dist) && (itr1 != lscans_.end ()))
         {
           printf ("setting min dist to %lf\n",test_dist);
           min_dist = test_dist;
@@ -547,7 +568,7 @@ CanonicalScanMatcherPlugin<LScanT>::addConstraint(gtsam::Symbol sym1, gtsam::Sym
     if (min_dist < loop_closure_dist_thresh_)
     {
        //todo cn:check
-      addConstraint (closest_sym, sym, false);//, score_threshold_);
+      addConstraint (closest_sym, sym, lc_canonical_scan_, false);//, score_threshold_);
       printf ("ADDED LOOP CLOSURE BETWEEN %d and %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
               sym.index (), closest_sym.index ());
       return (true);

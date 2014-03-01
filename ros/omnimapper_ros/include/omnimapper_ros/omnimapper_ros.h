@@ -5,7 +5,7 @@
 #include <omnimapper/object_plugin.h>
 #include <omnimapper/no_motion_pose_plugin.h>
 #include <omnimapper/tsdf_output_plugin.h>
-#include <omnimapper/organized_feature_extraction.h>
+#include <omnimapper/organized_feature_extraction_tbb.h>
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
 #include <omnimapper_ros/OutputMapTSDF.h>
 #include <omnimapper_ros/tum_data_error_plugin.h>
@@ -126,7 +126,7 @@ class OmniMapperROS
     std::vector<std::string> empty_files_;
     pcl::PCDGrabber<PointT> fake_grabber_;
     // Organized Feature Extraction
-    omnimapper::OrganizedFeatureExtraction<PointT> organized_feature_extraction_;
+    omnimapper::OrganizedFeatureExtractionTBB<PointT> organized_feature_extraction_;
 
     // TF Listener  (for initialization)
     tf::TransformListener tf_listener_;

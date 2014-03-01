@@ -4,7 +4,8 @@
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <tf2/LinearMath/btMatrix3x3.h>
+//#include <tf2/LinearMath/btMatrix3x3.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -473,10 +474,10 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 				gtsam::Vector s;
 				gtsam::svd (pose_cov, u, s, v);
 
-				btMatrix3x3 btm (u (0,0), u (0,1), u (0,2),
-						u (1,0), u (1,1), u (1,2),
-						u (2,0), u (2,1), u (2,2));
-				btQuaternion btq;
+        tf2::Matrix3x3 btm (u (0,0), u (0,1), u (0,2),
+                       u (1,0), u (1,1), u (1,2),
+                       u (2,0), u (2,1), u (2,2));
+        tf2::Quaternion btq;
 				btm.getRotation (btq);
 
 				visualization_msgs::Marker pose_cov_marker;
@@ -522,10 +523,10 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
        gtsam::Vector s;
        gtsam::svd (pose_cov, u, s, v);
 
-       btMatrix3x3 btm (u (0,0), u (0,1), u (0,2),
+       tf2::Matrix3x3 btm (u (0,0), u (0,1), u (0,2),
                         u (1,0), u (1,1), u (1,2),
                         u (2,0), u (2,1), u (2,2));
-       btQuaternion btq;
+       tf2::Quaternion btq;
        btm.getRotation (btq);
 
        visualization_msgs::Marker pose_cov_marker;

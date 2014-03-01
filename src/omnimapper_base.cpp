@@ -510,8 +510,11 @@ omnimapper::OmniMapperBase::updateValue (gtsam::Symbol& update_symbol, gtsam::Va
     new_values.update (update_symbol, update_value);
     return;
   }
-  gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
-  state.update (update_symbol, update_value);
+  std::cout << "Update value not supported!" << std::endl;
+  assert (false);
+  exit (1);
+  //gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  //state.update (update_symbol, update_value);
   return;
 }
 
@@ -526,12 +529,16 @@ omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol, gtsam::Po
     new_values.update (update_symbol, to_update);
     return;
   }
-  gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
-  gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT> >(update_symbol);
-  to_update.Extend2 (pose, meas_plane);
-  //to_update.Extend (pose, meas_plane);
 
-  state.update (update_symbol, to_update);
+    std::cout << "Update value not supported!" << std::endl;
+  assert (false);
+  exit (1);
+  //gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  //gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT> >(update_symbol);
+  //to_update.Extend2 (pose, meas_plane);
+  /////to_update.Extend (pose, meas_plane);
+
+  //state.update (update_symbol, to_update);
   return;
 }
 
