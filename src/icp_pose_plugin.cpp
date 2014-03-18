@@ -8,6 +8,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/common/time.h>
+#include <pcl/common/centroid.h>
 
 namespace omnimapper 
 {
@@ -25,7 +26,7 @@ namespace omnimapper
     score_threshold_ (0.5),
     trans_noise_ (1.0),
     rot_noise_ (1.0),
-    debug_ (false),
+    debug_ (true),
     overwrite_timestamps_ (true),
     icp_max_correspondence_distance_ (3.5),
     previous_sym_ (gtsam::Symbol ('x', 0)),
@@ -192,6 +193,7 @@ namespace omnimapper
     {
       if (debug_)
         printf ("ICPPosePlugin: Applying sensor to base transform\n");
+      std::cout << "Timestamp: " << current_time << std::endl;
       Eigen::Affine3d sensor_to_base = (*get_sensor_to_base_)(current_time);
       pcl::transformPointCloud (*current_cloud_filtered, *current_cloud_base, sensor_to_base);
     }
@@ -210,6 +212,13 @@ namespace omnimapper
     //{
     //  boost::mutex::scoped_lock (current_cloud_mutex_);
     clouds_.insert (std::pair<gtsam::Symbol, CloudConstPtr> (current_sym, current_cloud_base));//current_cloud_));
+
+    // Compute and save the cloud centroid, for use in loop closure detection
+    Eigen::Vector4f cloud_centroid;
+    pcl::compute3DCentroid (*current_cloud_base, cloud_centroid);
+    gtsam::Point3 centroid_pt (cloud_centroid[0], cloud_centroid[1], cloud_centroid[2]);
+    cloud_centroids_.insert (std::pair<gtsam::Symbol, gtsam::Point3>(current_sym, centroid_pt));
+
     //}
   
     if (save_full_res_clouds_)
@@ -363,7 +372,8 @@ namespace omnimapper
       // TODO: make these params
       double trans_noise = trans_noise_;// * icp_score;
       double rot_noise = rot_noise_;// * icp_score;
-      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+      //gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
       //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
@@ -486,7 +496,10 @@ namespace omnimapper
       solution = mapper_->getSolution ();
     }
     gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
+    gtsam::Point3 current_centroid = cloud_centroids_[sym];
+    gtsam::Point3 current_centroid_map = current_pose.transform_from (current_centroid);
     
+
     // Find the closest pose
     gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = solution.filter<gtsam::Pose3>();
     double min_dist = std::numeric_limits<double>::max ();
@@ -505,7 +518,13 @@ namespace omnimapper
         gtsam::Pose3 test_pose (key_value.value);
         double test_dist = current_pose.range (test_pose);
         
-        if ((test_dist < min_dist) && (clouds_.count (key_value.key) > 0))
+        // Get centroid dist
+        gtsam::Point3 test_centroid = cloud_centroids_[test_sym];
+        gtsam::Point3 test_centroid_map = test_pose.transform_from (test_centroid);
+        double centroid_dist = fabs (test_centroid_map.distance (current_centroid_map));
+
+        //if ((test_dist < min_dist) && (clouds_.count (key_value.key) > 0))
+        if ((centroid_dist < min_dist) && (clouds_.count (key_value.key) > 0))
         {
           if (debug_)
             printf ("setting min dist to %lf\n",test_dist);

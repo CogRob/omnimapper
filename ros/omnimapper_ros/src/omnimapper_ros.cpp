@@ -1,7 +1,7 @@
 #include <omnimapper_ros/omnimapper_ros.h>
 
 template<typename PointT>
-OmniMapperROS<PointT>::OmniMapperROS ()
+OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
   : n_ ("~"),
     omb_ (),
     tf_plugin_ (&omb_),
@@ -11,6 +11,7 @@ OmniMapperROS<PointT>::OmniMapperROS ()
     plane_plugin_ (&omb_),
     object_plugin_ (&omb_),
     csm_plugin_ (&omb_),
+    ar_marker_plugin_ (&omb_),
     vis_plugin_ (&omb_),
     csm_vis_plugin_ (&omb_),
     tsdf_plugin_ (&omb_),
@@ -20,8 +21,15 @@ OmniMapperROS<PointT>::OmniMapperROS ()
     organized_feature_extraction_ (),
     tf_listener_ (ros::Duration (500.0))
 {
+  if (debug_)
+    ROS_INFO ("OmniMapperROS: Constructing... Loading ROS Params...");
   loadROSParams ();
   
+  // Use ROS Time instead of system clock
+  omnimapper::GetTimeFunctorPtr time_functor_ptr (new omnimapper::GetROSTimeFunctor ());
+  omb_.setTimeFunctor (time_functor_ptr);
+  omb_.setSuppressCommitWindow (suppress_commit_window_);
+
   // Optionally specify an alternate initial pose
   if (use_init_pose_)
   {
@@ -59,11 +67,6 @@ OmniMapperROS<PointT>::OmniMapperROS ()
     gtsam::Pose3 init_pose_inv = init_pose.inverse ();
     omb_.setInitialPose (init_pose);
   }
-  
-  // Use ROS Time instead of system clock
-  omnimapper::GetTimeFunctorPtr time_functor_ptr (new omnimapper::GetROSTimeFunctor ());
-  omb_.setTimeFunctor (time_functor_ptr);
-  omb_.setSuppressCommitWindow (true);
   
   // Optionally use distortion model
   if (use_distortion_model_)
@@ -115,7 +118,7 @@ OmniMapperROS<PointT>::OmniMapperROS ()
   icp_plugin_.setAddLoopClosures (icp_add_loop_closures_);
   icp_plugin_.setTransNoise (icp_trans_noise_);      //10.1
   icp_plugin_.setRotNoise (icp_rot_noise_);      //10.1
-  icp_plugin_.setLoopClosureDistanceThreshold (1.0);
+  icp_plugin_.setLoopClosureDistanceThreshold (icp_loop_closure_distance_threshold_);
   icp_plugin_.setSaveFullResClouds (true);
   icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
@@ -272,6 +275,9 @@ if (use_csm_)
  // if (use_planes_)
  //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
 
+ if (use_organized_feature_extraction_)
+   organized_feature_extraction_.spin ();
+
  // If evaluation mode, start a timer to check on things, and load the files
  if (evaluation_mode_ || use_error_eval_plugin_)
  {
@@ -328,6 +334,8 @@ if (use_csm_)
    eval_timer_ = n_.createTimer (ros::Duration (0.01), &OmniMapperROS::evalTimerCallback, this);
  }
 
+ if (debug_)
+   ROS_INFO ("OmniMapperROS: Constructor complete.");
 }
 
 template <typename PointT> void
@@ -383,6 +391,9 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
       ready = false;
     
     if (use_occ_edge_icp_ && !edge_icp_plugin_.ready ())
+      ready = false;
+
+    if (!organized_feature_extraction_.ready ())
       ready = false;
     
     //printf ("ready: %d idx: %d\n", ready, evaluation_file_idx_);
@@ -499,6 +510,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("icp_rot_noise", icp_rot_noise_, 0.1);
   n_.param ("icp_add_identity_on_fail", icp_add_identity_on_fail_, false);
   n_.param ("icp_add_loop_closures", icp_add_loop_closures_, true);
+  n_.param ("icp_loop_closure_distance_threshold", icp_loop_closure_distance_threshold_, 1.0);
   n_.param ("occ_edge_trans_noise", occ_edge_trans_noise_, 0.1);
   n_.param ("occ_edge_rot_noise", occ_edge_rot_noise_, 0.1);
   n_.param ("occ_edge_score_thresh", occ_edge_score_thresh_, 0.1);
@@ -517,6 +529,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("tf_pitch_noise", tf_pitch_noise_, tf_rot_noise_);
   n_.param ("tf_yaw_noise", tf_yaw_noise_, tf_rot_noise_);
   n_.param ("use_init_pose", use_init_pose_, false);
+  n_.param ("suppress_commit_window", suppress_commit_window_, false);
   n_.param ("init_pose_from_tf", init_pose_from_tf_, false);
   n_.param ("init_x", init_x_, 0.0);
   n_.param ("init_y", init_y_, 0.0);
@@ -703,6 +716,9 @@ OmniMapperROS<PointT>::evalTimerCallback (const ros::TimerEvent& e)
   if (evaluation_mode_paused_)
     ready = false;
 
+  if (use_organized_feature_extraction_ && !organized_feature_extraction_.ready ())
+    ready = false;
+
   if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size ()))
   {
 
@@ -838,7 +854,7 @@ OmniMapperROS<PointT>::resetEvaluation ()
   icp_plugin_.setAddLoopClosures (icp_add_loop_closures_);
   icp_plugin_.setTransNoise (icp_trans_noise_);      //10.1
   icp_plugin_.setRotNoise (icp_rot_noise_);      //10.1
-  icp_plugin_.setLoopClosureDistanceThreshold (1.0);
+  icp_plugin_.setLoopClosureDistanceThreshold (icp_loop_closure_distance_threshold_);
   icp_plugin_.setSaveFullResClouds (true);
 }
 

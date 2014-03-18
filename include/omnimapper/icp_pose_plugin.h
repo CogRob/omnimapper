@@ -62,6 +62,7 @@ namespace omnimapper
       omnimapper::Time last_processed_time_;
       bool initialized_;
       std::map<gtsam::Symbol, CloudConstPtr> clouds_;
+      std::map<gtsam::Symbol, gtsam::Point3> cloud_centroids_;
       //std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;
       std::map<gtsam::Symbol, std::string> full_res_clouds_;
 

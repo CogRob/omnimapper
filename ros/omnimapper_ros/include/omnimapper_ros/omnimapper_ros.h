@@ -16,6 +16,8 @@
 #include <omnimapper_ros/csm_visualizer.h>
 #include <omnimapper/time.h>
 
+#include <omnimapper_ros/ar_marker_plugin.h>
+
 #include <distortion_model/distortion_model_standalone.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -45,7 +47,7 @@ class OmniMapperROS
 
   public:
     // Constructor
-    OmniMapperROS ();
+    OmniMapperROS (ros::NodeHandle nh);
     
     // Load (or reload) ROS Parameters
     void loadROSParams ();
@@ -105,6 +107,9 @@ class OmniMapperROS
     //CSM Plugin
     omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan> csm_plugin_;
 
+    // AR Marker Plugin
+    omnimapper::ARMarkerPlugin ar_marker_plugin_;
+
     // Visualization
     omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
 
@@ -155,6 +160,7 @@ class OmniMapperROS
 
     bool init_pose_from_tf_;
     bool use_init_pose_;
+    bool suppress_commit_window_;
     double init_x_, init_y_, init_z_;
     double init_qx_, init_qy_, init_qz_, init_qw_;
 
@@ -166,6 +172,7 @@ class OmniMapperROS
     double icp_rot_noise_;
     bool icp_add_identity_on_fail_;
     bool icp_add_loop_closures_;
+    double icp_loop_closure_distance_threshold_;
 
     // Occluding Edge ICP Params
     double occ_edge_trans_noise_;
