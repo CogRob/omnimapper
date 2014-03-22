@@ -40,6 +40,7 @@ namespace omnimapper
       clust_input_labels_ (boost::none),
       pub_cluster_labels_ (boost::none),
       pub_cluster_cloud_ (boost::none),
+      pub_occluding_edge_cloud_ (boost::none),
       stage4_labels_ (new LabelCloud ()),
       clust_output_labels_ (boost::none),
   oed_output_occluding_edge_cloud_ (boost::none),
@@ -55,7 +56,8 @@ namespace omnimapper
   min_plane_inliers_ (10000),
   min_cluster_inliers_ (1000),
       debug_ (true),
-      timing_ (false)
+  timing_ (false),
+  ready_ (true)
     {
       if (debug_)
         printf ("Start!\n");
@@ -110,6 +112,7 @@ namespace omnimapper
         FPS_CALC ("cloud_callback");
         prev_sensor_cloud_ = cloud;
         updated_cloud_ = true;
+        ready_ = false;
       }
       //updated_cond_.notify_one ();
     }
@@ -144,6 +147,14 @@ namespace omnimapper
   //   parent->enqueue (*s);
   // }
   
+  template <typename PointT> bool
+  OrganizedFeatureExtractionTBB<PointT>::ready ()
+  {
+    boost::mutex::scoped_lock lock(cloud_mutex);
+    return (ready_);
+  }
+  
+
   template <typename PointT> void
   OrganizedFeatureExtractionTBB<PointT>::spin ()
   {
@@ -175,6 +186,7 @@ namespace omnimapper
         {
           input_cloud_ = prev_sensor_cloud_;
           updated_cloud_ = false;
+          ready_ = false;
         }
         cloud_mutex.unlock();
       }
@@ -193,6 +205,7 @@ namespace omnimapper
       pub_cluster_labels_ = clust_output_labels_;
       pub_clusters_ = clust_output_clusters_;
       pub_cluster_indices_ = clust_output_cluster_indices_;
+      pub_occluding_edge_cloud_ = oed_output_occluding_edge_cloud_;
 
       clust_input_cloud_ = mps_input_cloud_;
       clust_input_regions_ = mps_output_regions_;
@@ -205,6 +218,13 @@ namespace omnimapper
       mps_input_normals_ = ne_output_normals_;
       mps_input_cloud_ = input_cloud_;
 
+      if(!ne_output_normals_ && !mps_output_labels_ && !clust_output_labels_ && !pub_cluster_labels_ && !oed_output_occluding_edge_cloud_ && !pub_occluding_edge_cloud_)
+      {
+        boost::mutex::scoped_lock (cloud_mutex);
+        {
+          ready_ = true;
+        }
+      }
 
       //mps_input_cloud_ = ne_input_cloud_;
       //ne_input_cloud_ = boost::none;
@@ -262,8 +282,12 @@ namespace omnimapper
     // Publish Occluding Edges
     if (occluding_edge_callback_)
     {
-      if (oed_output_occluding_edge_cloud_)
-        occluding_edge_callback_ (*oed_output_occluding_edge_cloud_);
+      std::cout << "Have occ edge callbacks!" << std::endl;
+      if (pub_occluding_edge_cloud_)
+      {
+        std::cout << "publishing occ edges!" << std::endl;
+        occluding_edge_callback_ (*pub_occluding_edge_cloud_);
+      }
     }
     
     
@@ -624,6 +648,7 @@ namespace omnimapper
   {
     if (!input_cloud_)
     {
+      std::cout << "edges returning early" << std::endl;
       oed_output_occluding_edge_cloud_ = boost::none;
       return;
     }
@@ -635,7 +660,7 @@ namespace omnimapper
     
     oed.compute (labels, label_indices);
     double edge_end = pcl::getTime ();
-    //std::cout << "edges took: " << double (edge_end - edge_start) << std::endl;
+    std::cout << "edges took: " << double (edge_end - edge_start) << std::endl;
     //oed_output_occluding_edge_cloud_ = CloudPtr(new Cloud ());
     CloudPtr edge_cloud (new Cloud ());
     pcl::copyPointCloud (*(*input_cloud_), label_indices[1], *edge_cloud);

@@ -4,7 +4,8 @@ int main (int argc, char** argv)
 {
   ros::init (argc, argv, "OmniMapperROSNode");
   //ProfilerStart ("omnimapper_ros_node.prof");
-  OmniMapperROS<PointT> omnimapper;
+  ros::NodeHandle nh ("~");
+  OmniMapperROS<PointT> omnimapper (nh);
   ros::spin ();
   //ProfilerStop ();
 }

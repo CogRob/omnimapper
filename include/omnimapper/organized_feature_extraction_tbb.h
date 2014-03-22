@@ -92,6 +92,7 @@ class OrganizedFeatureExtractionTBB
 
     boost::optional<LabelCloudPtr> pub_cluster_labels_;
     boost::optional<CloudConstPtr> pub_cluster_cloud_;
+    boost::optional<CloudPtr> pub_occluding_edge_cloud_;
     boost::optional<std::vector<CloudPtr> > pub_clusters_;
     boost::optional<std::vector<pcl::PointIndices> > pub_cluster_indices_;
     
@@ -180,6 +181,7 @@ class OrganizedFeatureExtractionTBB
     // Flags
     bool debug_;
     bool timing_;
+    bool ready_;
 
     // Output
     std::ofstream ne_times_file_;
@@ -197,6 +199,7 @@ class OrganizedFeatureExtractionTBB
     void publish ();
     void computeClusters ();
     void computeEdges ();
+    bool ready ();
     void spin ();
     //void tbbSpin ();
     void spinOnce();

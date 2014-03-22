@@ -63,10 +63,14 @@ rosbuild_add_library(${PROJECT_NAME}
 				     src/canonical_scan.cpp
 				     src/csm_math_functions.cpp 
 				     src/csm_visualizer.cpp
-				     src/omnimapper_ros.cpp)
+				     src/omnimapper_ros.cpp
+				     src/ar_marker_plugin.cpp)
 target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES} tcmalloc profiler tbb csm)
 
 rosbuild_add_executable(time_test src/time_test.cpp)
+
+rosbuild_add_library(omnimapper_ros_nodelet src/omnimapper_ros_nodelet.cpp)
+target_link_libraries(omnimapper_ros_nodelet ${PROJECT_NAME})
 
 #rosbuild_add_executable(omnimapper_ros_handheld src/omnimapper_ros_handheld.cpp)
 #target_link_libraries(omnimapper_ros_handheld ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam)
@@ -74,8 +78,14 @@ rosbuild_add_executable(time_test src/time_test.cpp)
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
 target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 
 
-#rosbuild_add_executable(benchmark_icp_seq src/benchmark_icp_seq.cpp)
-#target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler tbb) 
+rosbuild_add_executable(benchmark_icp_seq src/benchmark_icp_seq.cpp)
+target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler tbb) 
 
-#rosbuild_add_executable(benchmark_icp_lc src/benchmark_icp_lc.cpp)
-#target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler tbb) 
+rosbuild_add_executable(benchmark_icp_lc src/benchmark_icp_lc.cpp)
+target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler tbb) 
+
+rosbuild_add_executable(omnimapper_pcd src/omnimapper_ros_pcd.cpp)
+target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc tbb)
+
+rosbuild_add_executable(omnimapper_openni src/omnimapper_ros_openni.cpp)
+target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc tbb)

@@ -42,7 +42,7 @@ namespace omnimapper
       pub_cluster_cloud_ (boost::none),
       stage4_labels_ (new LabelCloud ()),
       clust_output_labels_ (boost::none),
-      mps_output_occluding_cloud_ (new Cloud ()),
+  // mps_output_occluding_cloud_ (new Cloud ()),
       vis_cloud_ (new Cloud ()),
       vis_labels_ (new LabelCloud ()),
       vis_occluding_cloud_ (new Cloud ()),
