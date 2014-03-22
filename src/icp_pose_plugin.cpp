@@ -363,7 +363,7 @@ namespace omnimapper
       // TODO: make these params
       double trans_noise = trans_noise_;// * icp_score;
       double rot_noise = rot_noise_;// * icp_score;
-      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+      gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
       
       //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
       omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
@@ -396,7 +396,7 @@ namespace omnimapper
         gtsam::Pose3 relative_pose = gtsam::Pose3::identity ();//(tform4d);
         double trans_noise = trans_noise_;
         double rot_noise = rot_noise_;
-        gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+        gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
         omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
         mapper_->addFactor (between);
       }

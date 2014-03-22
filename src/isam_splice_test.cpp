@@ -23,14 +23,14 @@ int main (int argc, char** argv)
   // Initial Pose and prior
   gtsam::Symbol init_sym('x', 0);
   gtsam::Pose3 init_pose = gtsam::Pose3 (gtsam::Rot3::ypr (0.0, 0.0, 0.0), gtsam::Point3 (0.0, 0.0, 0.0));
-  gtsam::PriorFactor<gtsam::Pose3> pose_prior (init_sym, init_pose, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+  gtsam::PriorFactor<gtsam::Pose3> pose_prior (init_sym, init_pose, gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector_ (6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
   new_values.insert (init_sym, init_pose);
   new_graph.add (pose_prior);
 
   // First measurement, 1m in x
   gtsam::Symbol sym1 ('x', 1);
   gtsam::Pose3 movement1 (gtsam::Rot3::identity (), gtsam::Point3 (1.0, 0.0, 0.0));
-  gtsam::SharedDiagonal noise1 = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0));
+  gtsam::SharedDiagonal noise1 = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (6) << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0));
   gtsam::Pose3 pose1 = gtsam::Pose3 (gtsam::Rot3::ypr (0.0, 0.0, 0.0), gtsam::Point3 (1.0, 0.0, 0.0));
   gtsam::BetweenFactor<gtsam::Pose3> between1 (init_sym, sym1, movement1, noise1);
   new_values.insert (sym1, pose1);
@@ -38,7 +38,7 @@ int main (int argc, char** argv)
   
   // Add something to pull it out of line
   gtsam::Pose3 movement2 (gtsam::Rot3::identity (), gtsam::Point3 (1.1, 0.0, 0.0));
-  gtsam::SharedDiagonal noise2 = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  gtsam::SharedDiagonal noise2 = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
   gtsam::BetweenFactor<gtsam::Pose3> between2 (init_sym, sym1, movement2, noise2);
   new_graph.add (between2);
 
@@ -60,7 +60,7 @@ int main (int argc, char** argv)
   new_graph = gtsam::NonlinearFactorGraph ();
   gtsam::Symbol sym2 ('x', 2);
   gtsam::Pose3 movement02 (gtsam::Rot3::identity (), gtsam::Point3 (0.5, 0.0, 0.0));
-  gtsam::SharedDiagonal noise02 = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5));
+  gtsam::SharedDiagonal noise02 = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (6) << 0.5, 0.5, 0.5, 0.5, 0.5, 0.5));
   gtsam::Pose3 pose2 = gtsam::Pose3 (gtsam::Rot3::ypr (0.0, 0.0, 0.0), gtsam::Point3 (0.5, 0.0, 0.0));
   gtsam::BetweenFactor<gtsam::Pose3> between02 (init_sym, sym2, movement02, noise02);
   gtsam::BetweenFactor<gtsam::Pose3> between21 (sym2, sym1, movement02, noise02);

@@ -440,7 +440,7 @@ namespace omnimapper
     gtsam::Symbol obj_symbol = object.sym;
     gtsam::SharedDiagonal measurement_noise;
     measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-        gtsam::Vector_ (3, 0.05, 0.05, 0.05));
+        (gtsam::Vector (3) << 0.05, 0.05, 0.05));
 
 
     for (it = cluster.begin (); it != cluster.end (); it++)
@@ -703,7 +703,7 @@ namespace omnimapper
         gtsam::Symbol object_symbol = object.sym;
         gtsam::SharedDiagonal measurement_noise;
         measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-            gtsam::Vector_ (3, 5.5, 5.5, 5.5));
+            (gtsam::Vector (3) << 5.5, 5.5, 5.5));
 
         gtsam::Symbol match_symbol = gtsam::Symbol ('o', obj.first);  // matching object symbol
 
@@ -741,7 +741,7 @@ namespace omnimapper
           gtsam::Symbol object_symbol = object.sym;
           gtsam::SharedDiagonal measurement_noise;
           measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-              gtsam::Vector_ (3, 0.5, 0.5, 0.5));
+              (gtsam::Vector (3) << 0.5, 0.5, 0.5));
 
           if(verbose_)
           match_symbol.print ("[ObjectPlugin] object matched\n");
