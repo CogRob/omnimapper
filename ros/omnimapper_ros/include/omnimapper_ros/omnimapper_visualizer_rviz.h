@@ -31,6 +31,8 @@ namespace omnimapper
     public:
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
+      void spinOnce ();
+      void spin ();
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
       void drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx);
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
@@ -66,6 +68,12 @@ namespace omnimapper
       
       // A reference to a mapper instance
       OmniMapperBase* mapper_;
+
+      // Latest Map Information
+      boost::mutex state_mutex_;
+      boost::shared_ptr<gtsam::Values> vis_values_;
+      boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph_;
+      bool updated_;
 
       // Interactive Markers
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
@@ -116,6 +124,12 @@ namespace omnimapper
       bool draw_icp_clouds_;
 
       bool draw_icp_clouds_always_;
+
+      double draw_icp_clouds_interval_;
+
+      double draw_icp_clouds_prev_time_;
+
+      bool draw_icp_clouds_downsampled_;
       
       bool draw_planar_landmarks_;
 

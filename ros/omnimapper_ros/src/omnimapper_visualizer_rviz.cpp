@@ -11,10 +11,16 @@ template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     mapper_ (mapper),
+    vis_values_ (new gtsam::Values ()),
+    vis_graph_ (new gtsam::NonlinearFactorGraph ()),
+    updated_ (false),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
     menu_handler_ (new interactive_markers::MenuHandler ()),
     draw_icp_clouds_ (false),
     draw_icp_clouds_always_ (false),
+    draw_icp_clouds_interval_ (1.0),
+    draw_icp_clouds_prev_time_ (pcl::getTime ()),
+    draw_icp_clouds_downsampled_ (true),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
     draw_pose_graph_ (true),
@@ -202,19 +208,60 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::drawBBox (pcl::PointCloud<pcl::Poi
 template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
-  gtsam::Values current_solution = *vis_values;
-  gtsam::NonlinearFactorGraph current_graph = *vis_graph;
+  boost::lock_guard<boost::mutex> lock (state_mutex_);
+  vis_values_ = vis_values;
+  vis_graph_ = vis_graph;
+  updated_ = true;
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::spin ()
+{
+  while (true)
+  {
+    boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    spinOnce ();
+  }
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
+{
+  boost::shared_ptr<gtsam::Values> current_solution (new gtsam::Values ());
+  boost::shared_ptr<gtsam::NonlinearFactorGraph> current_graph (new gtsam::NonlinearFactorGraph ());
+  bool got_data = false;
+
+  if (state_mutex_.try_lock ())
+  {
+    if (updated_)
+    {
+      current_solution = vis_values_;
+      current_graph = vis_graph_;
+      updated_ = false;
+      got_data = true;
+    }
+    state_mutex_.unlock ();
+  }
+
+  // Not updated, or could not get lock
+  if (!got_data)
+    return;
+
+  //gtsam::Values current_solution = *vis_values;
+  //gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
   // Optionally output a graphviz
   if (output_graphviz_)
   {
     std::ofstream of;
     of.open ("/tmp/omnimapper_graph.dot");
-    current_graph.saveGraph (of);
+    current_graph->saveGraph (of);
     of.close ();
     output_graphviz_ = false;
   }
   
+  if (draw_icp_clouds_always_ && ((pcl::getTime () - draw_icp_clouds_prev_time_) > draw_icp_clouds_interval_))
+    draw_icp_clouds_ = true;
 
   // Draw the cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -236,15 +283,15 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
   int obj_id = 0;
   
-  gtsam::Values::ConstFiltered<gtsam::Point3> object_filtered = current_solution.filter<gtsam::Point3>();
+  gtsam::Values::ConstFiltered<gtsam::Point3> object_filtered = current_solution->filter<gtsam::Point3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Point3>::KeyValuePair& key_value, object_filtered)
    {
 
    }
 
 
-  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
-  gtsam::Values::ConstFiltered<gtsam::Point3> point_filtered = current_solution.filter<gtsam::Point3>();
+  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution->filter<gtsam::Pose3>();
+  gtsam::Values::ConstFiltered<gtsam::Point3> point_filtered = current_solution->filter<gtsam::Point3>();
 
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -374,7 +421,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     object_object_graph.scale.x = 0.01;
 
 
-    BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
+    BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, (*current_graph))
     {
       // check for poses
       const std::vector<gtsam::Key> keys = factor->keys ();
@@ -384,8 +431,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
       {
         if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
         {
-          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
-          gtsam::Pose3 p2 = current_solution.at<gtsam::Pose3>(keys[1]);
+          gtsam::Pose3 p1 = current_solution->at<gtsam::Pose3>(keys[0]);
+          gtsam::Pose3 p2 = current_solution->at<gtsam::Pose3>(keys[1]);
           
           geometry_msgs::Point p1_msg;
           p1_msg.x = p1.x ();
@@ -404,8 +451,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 
         if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'o'))
         {
-          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
-          gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+          gtsam::Pose3 p1 = current_solution->at<gtsam::Pose3>(keys[0]);
+          gtsam::Point3 p2 = current_solution->at<gtsam::Point3>(keys[1]);
 
           p1.print("Current Pose:\n");
           p2.print("Current Object:\n");
@@ -425,8 +472,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 
         if ((gtsam::symbolChr (keys[0]) == 'o') && (gtsam::symbolChr (keys[1]) == 'o'))
             {
-              gtsam::Point3 p1 = current_solution.at<gtsam::Point3>(keys[0]);
-              gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+              gtsam::Point3 p1 = current_solution->at<gtsam::Point3>(keys[0]);
+              gtsam::Point3 p2 = current_solution->at<gtsam::Point3>(keys[1]);
 
               p1.print("Object1:\n");
               p2.print("Object2:\n");
@@ -455,7 +502,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Optionally draw the pose marginals
    if (draw_pose_marginals_)
    {
-     gtsam::Marginals marginals (*vis_graph, *vis_values);
+     //gtsam::Marginals marginals (*vis_graph, *vis_values);
+     gtsam::Marginals marginals (*current_graph, *current_solution);
 
      visualization_msgs::MarkerArray pose_cov_markers;
 
@@ -566,14 +614,29 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)
   {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
     sensor_msgs::PointCloud2 cloud_msg;
-    pcl::toROSMsg (*aggregate_cloud, cloud_msg);
+    if (draw_icp_clouds_downsampled_)
+    {
+      pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+      double leaf_size = 0.025;
+      grid.setLeafSize (leaf_size, leaf_size, leaf_size);
+      grid.setInputCloud (aggregate_cloud);
+      grid.filter (*filtered_cloud);
+      pcl::toROSMsg (*filtered_cloud, cloud_msg);
+    }
+    else
+    {
+      pcl::toROSMsg (*aggregate_cloud, cloud_msg);
+    }
+    
     //pcl_conversions::moveFromPCL (*aggregate_cloud, cloud_msg);
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now ();
     map_cloud_pub_.publish (cloud_msg);
-    if (!draw_icp_clouds_always_)
-      draw_icp_clouds_ = false;
+    //if (!draw_icp_clouds_always_)
+    draw_icp_clouds_ = false;
+    draw_icp_clouds_prev_time_ = pcl::getTime ();
   }
 
   // Draw object observations
@@ -593,7 +656,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   {
     visualization_msgs::MarkerArray marker_array;
     CloudPtr plane_boundary_cloud (new Cloud ());
-    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution->filter<gtsam::Plane<PointT> >();
     int id = 0;
     BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
     {

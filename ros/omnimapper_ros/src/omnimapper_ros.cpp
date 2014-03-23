@@ -272,6 +272,9 @@ if (use_csm_)
    boost::thread icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
  if (use_occ_edge_icp_)
    boost::thread edge_icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
+ if (use_rviz_plugin_)
+   boost::thread rviz_plugin_thread (&omnimapper::OmniMapperVisualizerRViz<PointT>::spin, &vis_plugin_);
+ 
  // if (use_planes_)
  //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
 
