@@ -95,7 +95,8 @@ class OrganizedFeatureExtractionTBB
     boost::optional<CloudPtr> pub_occluding_edge_cloud_;
     boost::optional<std::vector<CloudPtr> > pub_clusters_;
     boost::optional<std::vector<pcl::PointIndices> > pub_cluster_indices_;
-    
+    boost::optional<std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > > pub_mps_regions_;    
+
     boost::optional<CloudConstPtr> stage4_cloud_;
     CloudConstPtr dummy_cloud_;
 
