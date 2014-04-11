@@ -13,7 +13,7 @@
   </node>
 
       <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
-      	    <param name="use_planes" value="false"/>
+      	    <param name="use_planes" value="true"/>
 	    <param name="use_icp" value="true"/>
 	    <param name="use_csm" value="false"/>
 	    <param name="use_objects" value="false"/>

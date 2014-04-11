@@ -36,7 +36,7 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   //new_values.insert (init_symbol, init_pose);
   new_values.insert (init_symbol, initial_pose_);
   //gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, init_pose, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
-  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, initial_pose_, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, initial_pose_, gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
   new_factors.add (posePrior);
   PoseChainNode init_node (t, init_symbol);
   init_node.status = omnimapper::PoseChainNode::COMMITTED;

@@ -387,7 +387,7 @@ namespace gtsam {
     pred[2] = normal_out.z();
     pred[3] = a_*xr.x() + b_*xr.y() + c_*xr.z() + d_;
     
-    return gtsam::Vector_(4,
+    return (gtsam::Vector(4) <<
 			  pred[0],
 			  pred[1],
 			  pred[2],
@@ -452,7 +452,7 @@ namespace gtsam {
 
   template <typename PointT>
   gtsam::Vector Plane<PointT>::GetXf()const {
-    return gtsam::Vector_(4,a_,b_,c_,d_);
+    return (gtsam::Vector(4) << a_,b_,c_,d_);
   }
 
   // gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
@@ -596,7 +596,7 @@ namespace gtsam {
 				      boost::optional<Matrix&> dhbydxf) const{
 
     gtsam::Vector xo = GetXo(xr);
-    gtsam::Vector normal = gtsam::Vector_(4,
+    gtsam::Vector normal = (gtsam::Vector(4) << 
 					  measured.a(),
 					  measured.b(),
 					  measured.c(),

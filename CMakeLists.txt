@@ -13,24 +13,30 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
 
 project(omnimapper)
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-#set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
+#set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 
 
-# Eigen (required)
-#find_package(Eigen REQUIRED)
-#include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
-#add_definitions(-DEIGEN_USE_NEW_STDVECTOR
-#                -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET)
-
-#include_directories(/usr/local/include/pcl-1.7/)
-#set(PCL_DIR "/home/siddharth/Research/projects/workspace/pcl_alex/share/pcl-1.7/")
+###########################################################################
+# Find PCL
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 
+###########################################################################
+# Find GTSAM
+find_package(GTSAM REQUIRED)
+#include_directories(${GTSAM_INCLUDE_DIR})
+
+###########################################################################
+# Use GTSAM's Eigen
+# Use generic Eigen include paths e.g. <Eigen/Core>
+set(EIGEN_INCLUDE_DIRS ${GTSAM_DIR}/../../../include/gtsam/3rdparty/Eigen/)
+message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})    
+
+
+###########################################################################
+# Find CPUTSDF
 option(WITH_CPUTSDF "CPU TSDF Support" TRUE)
 if(WITH_CPUTSDF)
   find_package(CPUTSDF)
@@ -41,12 +47,10 @@ if(WITH_CPUTSDF)
   endif(CPUTSDF_FOUND)
 endif(WITH_CPUTSDF)
 
-#find_package(CPUTSDF REQUIRED)
-#include_directories(${CPUTSDF_INCLUDE_DIRS})
-#link_directories(${CPUTSDF_LIBRARY_DIRS})
+
+
 
 include_directories(include)
-
 set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/measurement_plugin.h 
 					     include/omnimapper/pose_plugin.h
@@ -113,11 +117,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION sha
 
 
 #add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
-#target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+#target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES})
 
 
 add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so tbb)
+target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES}  tbb)
 
 #add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
 #target_link_libraries(omnimapper_handheld_pcd omnimapper

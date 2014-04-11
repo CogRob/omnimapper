@@ -27,11 +27,11 @@ gtsam::Pose3 GetPose(const tf::StampedTransform& transform) {
 			  axis[1]*axis[1] + 
 			  axis[2]*axis[2]);
   if (fabs(axis_norm - 1.0) < 0.01) {
-    gtsam_axis = gtsam::Vector_(3,axis[0]/axis_norm,axis[1]/axis_norm,axis[2]/axis_norm);
+    gtsam_axis = (gtsam::Vector(3) << axis[0]/axis_norm,axis[1]/axis_norm,axis[2]/axis_norm);
   } else {
     printf("Axis failure !  Axis length %lf\n", 
 	   axis_norm);
-    gtsam_axis = gtsam::Vector_(3,0,0,1);
+    gtsam_axis = (gtsam::Vector (3) << 0,0,1);
   }
   double angle = transform.getRotation().getAngle();
   return gtsam::Pose3(gtsam::Rot3::rodriguez(gtsam_axis,angle),
@@ -129,7 +129,7 @@ GetOdoCovariance( const gtsam::Pose3& odo,
 			ypr[2]*ypr[2])/1.5;
   if (a_scale < 0.1) a_scale = 0.1;
   
-  return gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector_(6,
+  return gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) <<
 					    a_scale*(sroll),
 					    a_scale*(spitch),
 					    a_scale*(syaw),
