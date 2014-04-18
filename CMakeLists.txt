@@ -60,9 +60,12 @@ set(incs  include/omnimapper/omnimapper_base.h
 					     include/omnimapper/organized_feature_extraction.h
 					     include/omnimapper/organized_feature_extraction_tbb.h
 					     include/omnimapper/plane.h
+					     include/omnimapper/BoundedPlane3.h
 					     include/omnimapper/plane_factor.h
+					     include/omnimapper/BoundedPlaneFactor.h
 					     include/omnimapper/landmark_factor.h
 					     include/omnimapper/plane_plugin.h
+					     include/omnimapper/bounded_plane_plugin.h
 					     include/omnimapper/object_plugin.h
 					     include/omnimapper/object.h
 					     include/omnimapper/object_segment_propagation.h
@@ -84,9 +87,12 @@ set(srcs
 					     src/organized_feature_extraction.cpp
 					     src/organized_feature_extraction_tbb.cpp
 					     src/plane.cpp
+					     src/BoundedPlane3.cpp
 					     src/object.cpp
 					     src/plane_factor.cpp
+					     src/BoundedPlaneFactor.cpp
 					     src/plane_plugin.cpp
+					     src/bounded_plane_plugin.cpp
 					     src/object_plugin.cpp
 					     src/object_segment_propagation.cpp
 					     src/object_recognition.cpp

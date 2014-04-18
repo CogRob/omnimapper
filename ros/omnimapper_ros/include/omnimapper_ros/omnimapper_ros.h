@@ -2,6 +2,7 @@
 #include <omnimapper_ros/tf_pose_plugin.h>
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/plane_plugin.h>
+#include <omnimapper/bounded_plane_plugin.h>
 #include <omnimapper/object_plugin.h>
 #include <omnimapper/no_motion_pose_plugin.h>
 #include <omnimapper/tsdf_output_plugin.h>
@@ -101,6 +102,9 @@ class OmniMapperROS
     // Plane Plugin
     omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin_;
 
+    // Bounded Plane Plugin
+    omnimapper::BoundedPlanePlugin<PointT> bounded_plane_plugin_;
+
     // Object Plugin
     omnimapper::ObjectPlugin<PointT> object_plugin_;
 
@@ -145,6 +149,7 @@ class OmniMapperROS
 
     // Mapper config
     bool use_planes_;
+    bool use_bounded_planes_;
     bool use_objects_;
     bool use_csm_;
     bool use_icp_;
