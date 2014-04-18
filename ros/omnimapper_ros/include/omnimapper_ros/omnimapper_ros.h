@@ -230,6 +230,7 @@ class OmniMapperROS
     bool use_rgbd_sensor_base_tf_functor_;
     std::string distortion_model_path_;
     bool debug_;
+    bool ar_mode_;
 
     // Evaluation Mode
     bool evaluation_mode_;

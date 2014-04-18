@@ -190,6 +190,13 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_cb = boost::bind (&omnimapper::BoundedPlanePlugin<PointT>::planarRegionCallback, &bounded_plane_plugin_, _1, _2);
     organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
   }
+  
+  // Optionally use planes in the visualizer
+  if (ar_mode_)
+  {
+    boost::function<void (std::vector<pcl::PlanarRegion<PointT>,  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_vis_cb = boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback, &vis_plugin_, _1, _2);
+    organized_feature_extraction_.setPlanarRegionStampedCallback (plane_vis_cb);
+  }
 
   // Optionally draw label cloud
   if (draw_label_cloud_)
@@ -287,6 +294,9 @@ if (use_csm_)
    boost::thread icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
  if (use_occ_edge_icp_)
    boost::thread edge_icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
+ if (use_rviz_plugin_)
+   boost::thread rviz_plugin_thread (&omnimapper::OmniMapperVisualizerRViz<PointT>::spin, &vis_plugin_);
+ 
  // if (use_planes_)
  //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
 
@@ -509,7 +519,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("use_objects", use_objects_, true);
   n_.param ("use_csm", use_csm_, true);
   n_.param ("use_icp", use_icp_, true);
-  n_.param ("use_occ_edge_icp", use_occ_edge_icp_, true);
+  n_.param ("use_occ_edge_icp", use_occ_edge_icp_, false);
   n_.param ("use_tf", use_tf_, true);
   n_.param ("use_tsdf_plugin", use_tsdf_plugin_, true);
   n_.param ("use_error_plugin", use_error_plugin_, false);
@@ -558,6 +568,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("draw_pose_array", draw_pose_array_, true);
   n_.param ("draw_pose_graph", draw_pose_graph_, true);
   n_.param ("draw_label_cloud", draw_label_cloud_, true);
+  n_.param ("draw_clusters", draw_clusters_, false);
   n_.param ("draw_icp_clouds_always", draw_icp_clouds_always_, false);
   n_.param ("use_label_cloud", use_label_cloud_, true);
   n_.param ("add_pose_per_cloud", add_pose_per_cloud_, true);
@@ -591,6 +602,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("object_min_height", object_min_height_, 0.3);
   n_.param ("use_organized_feature_extraction", use_organized_feature_extraction_, true);
   n_.param ("debug", debug_, false);
+  n_.param ("ar_mode", ar_mode_, false);
 }
 
 template<typename PointT> void 
