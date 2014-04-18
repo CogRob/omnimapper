@@ -6,6 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 //#include <tf2/LinearMath/btMatrix3x3.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <pcl/filters/passthrough.h>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -21,7 +22,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_object_observation_cloud_ (true),
     draw_object_observation_bboxes_ (true),
     draw_pose_marginals_ (false),
-    output_graphviz_ (false)
+    output_graphviz_ (false),
+    passthrough_filter_map_cloud_ (true)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -566,6 +568,18 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)
   {
+    if (passthrough_filter_map_cloud_)
+    {
+      //CloudPtr filtered_cloud (new Cloud ());
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
+      pcl::PassThrough<pcl::PointXYZRGB> passthrough;
+      passthrough.setInputCloud (aggregate_cloud);
+      passthrough.setFilterFieldName ("z");
+      passthrough.setFilterLimits (-0.2, 2.0);
+      passthrough.filter (*filtered_cloud);
+      aggregate_cloud = filtered_cloud;
+    }
+    
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg (*aggregate_cloud, cloud_msg);
     //pcl_conversions::moveFromPCL (*aggregate_cloud, cloud_msg);

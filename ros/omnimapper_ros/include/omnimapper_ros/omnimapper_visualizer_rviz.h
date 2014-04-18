@@ -130,5 +130,7 @@ namespace omnimapper
       bool draw_pose_marginals_;
 
       bool output_graphviz_;
+
+      bool passthrough_filter_map_cloud_;
   };
 }
