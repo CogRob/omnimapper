@@ -41,6 +41,7 @@ namespace omnimapper
       pub_cluster_labels_ (boost::none),
       pub_cluster_cloud_ (boost::none),
       pub_occluding_edge_cloud_ (boost::none),
+      pub_mps_regions_ (boost::none),
       stage4_labels_ (new LabelCloud ()),
       clust_output_labels_ (boost::none),
   oed_output_occluding_edge_cloud_ (boost::none),
@@ -73,7 +74,7 @@ namespace omnimapper
       mps_->setAngularThreshold (pcl::deg2rad (2.0));//2.0
       mps_->setDistanceThreshold (0.02);//0.03
       mps_->setProjectPoints (true);
-      mps_->setRemoveDuplicatePoints (true);
+      mps_->setRemoveDuplicatePoints (false);
       pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>::Ptr plane_compare (new pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>());
       plane_compare->setAngularThreshold (pcl::deg2rad (2.0));//3.0
       plane_compare->setDistanceThreshold (0.01, true);//0.02, true
@@ -206,6 +207,7 @@ namespace omnimapper
       pub_clusters_ = clust_output_clusters_;
       pub_cluster_indices_ = clust_output_cluster_indices_;
       pub_occluding_edge_cloud_ = oed_output_occluding_edge_cloud_;
+      pub_mps_regions_ = mps_output_regions_;
 
       clust_input_cloud_ = mps_input_cloud_;
       clust_input_regions_ = mps_output_regions_;
@@ -252,6 +254,17 @@ namespace omnimapper
       {
         plane_label_cloud_callback_ (*clust_input_cloud_, *clust_input_labels_);
       }      
+    }
+
+    // Publish plane regions
+    if (planar_region_stamped_callbacks_.size () > 0)
+    {
+      if (pub_mps_regions_)
+      {
+        Time timestamp = stamp2ptime ((*clust_input_cloud_)->header.stamp);
+        for (int i = 0; i < planar_region_stamped_callbacks_.size (); i++)
+          planar_region_stamped_callbacks_[i](*pub_mps_regions_, timestamp);
+      }
     }
 
     // Publish Cluster Labels
@@ -595,11 +608,16 @@ namespace omnimapper
     
     if ((!mps_input_cloud_) || (!mps_input_normals_))
     {
-      mps_output_labels_ = boost::none; 
+      mps_output_labels_ = boost::none;
+      mps_output_regions_ = boost::none;
       return;
     }
     if ((*mps_input_cloud_)->points.size () == 0)
+    {
+      mps_output_labels_ = boost::none;
+      mps_output_regions_ = boost::none;
       return;
+    }
     
     mps_->setInputNormals (*mps_input_normals_);
     mps_->setInputCloud (*mps_input_cloud_);

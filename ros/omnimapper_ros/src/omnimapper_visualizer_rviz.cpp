@@ -1,5 +1,6 @@
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
 #include <omnimapper_ros/ros_time_utils.h>
+#include <omnimapper/transform_helpers.h>
 #include <geometry_msgs/PoseArray.h>
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
@@ -12,10 +13,16 @@ template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     mapper_ (mapper),
+    vis_values_ (new gtsam::Values ()),
+    vis_graph_ (new gtsam::NonlinearFactorGraph ()),
+    updated_ (false),
     marker_server_ (new interactive_markers::InteractiveMarkerServer ("OmniMapper", "", false)),
     menu_handler_ (new interactive_markers::MenuHandler ()),
     draw_icp_clouds_ (false),
     draw_icp_clouds_always_ (false),
+    draw_icp_clouds_interval_ (5.0),
+    draw_icp_clouds_prev_time_ (pcl::getTime ()),
+    draw_icp_clouds_downsampled_ (true),
     draw_planar_landmarks_ (true),
     draw_pose_array_ (true),
     draw_pose_graph_ (true),
@@ -44,6 +51,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 
   draw_object_observation_cloud_srv_ = nh_.advertiseService ("draw_object_observations", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud, this);
+
+  publish_model_srv_ = nh_.advertiseService ("publish_model", &omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel, this);
 
   pose_covariances_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/pose_covariances", 0);
 
@@ -204,19 +213,60 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::drawBBox (pcl::PointCloud<pcl::Poi
 template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
-  gtsam::Values current_solution = *vis_values;
-  gtsam::NonlinearFactorGraph current_graph = *vis_graph;
+  boost::lock_guard<boost::mutex> lock (state_mutex_);
+  vis_values_ = vis_values;
+  vis_graph_ = vis_graph;
+  updated_ = true;
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::spin ()
+{
+  while (true)
+  {
+    boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    spinOnce ();
+  }
+}
+
+template <typename PointT> void
+omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
+{
+  boost::shared_ptr<gtsam::Values> current_solution (new gtsam::Values ());
+  boost::shared_ptr<gtsam::NonlinearFactorGraph> current_graph (new gtsam::NonlinearFactorGraph ());
+  bool got_data = false;
+
+  if (state_mutex_.try_lock ())
+  {
+    if (updated_)
+    {
+      current_solution = vis_values_;
+      current_graph = vis_graph_;
+      updated_ = false;
+      got_data = true;
+    }
+    state_mutex_.unlock ();
+  }
+
+  // Not updated, or could not get lock
+  if (!got_data)
+    return;
+
+  //gtsam::Values current_solution = *vis_values;
+  //gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
   // Optionally output a graphviz
   if (output_graphviz_)
   {
     std::ofstream of;
     of.open ("/tmp/omnimapper_graph.dot");
-    current_graph.saveGraph (of);
+    current_graph->saveGraph (of);
     of.close ();
     output_graphviz_ = false;
   }
   
+  if (draw_icp_clouds_always_ && ((pcl::getTime () - draw_icp_clouds_prev_time_) > draw_icp_clouds_interval_))
+    draw_icp_clouds_ = true;
 
   // Draw the cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -238,15 +288,15 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   unsigned char blu [6] = {  0,   0, 255,   0, 255, 255};
   int obj_id = 0;
   
-  gtsam::Values::ConstFiltered<gtsam::Point3> object_filtered = current_solution.filter<gtsam::Point3>();
+  gtsam::Values::ConstFiltered<gtsam::Point3> object_filtered = current_solution->filter<gtsam::Point3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Point3>::KeyValuePair& key_value, object_filtered)
    {
 
    }
 
 
-  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
-  gtsam::Values::ConstFiltered<gtsam::Point3> point_filtered = current_solution.filter<gtsam::Point3>();
+  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution->filter<gtsam::Pose3>();
+  gtsam::Values::ConstFiltered<gtsam::Point3> point_filtered = current_solution->filter<gtsam::Point3>();
 
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
@@ -275,8 +325,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     // Optionally Draw clouds too
     if (draw_icp_clouds_)
     {
-      CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr (key_symbol);
-      //CloudConstPtr frame_cloud = icp_plugin_->getFullResCloudPtr (key_symbol);
+      //CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr (key_symbol);
+      CloudConstPtr frame_cloud = icp_plugin_->getFullResCloudPtr (key_symbol);
       char frame_name[1024];
       CloudPtr map_cloud (new Cloud ());
       //pose.print ("SAM Pose: ");
@@ -376,7 +426,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     object_object_graph.scale.x = 0.01;
 
 
-    BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
+    BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, (*current_graph))
     {
       // check for poses
       const std::vector<gtsam::Key> keys = factor->keys ();
@@ -386,8 +436,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
       {
         if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'x'))
         {
-          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
-          gtsam::Pose3 p2 = current_solution.at<gtsam::Pose3>(keys[1]);
+          gtsam::Pose3 p1 = current_solution->at<gtsam::Pose3>(keys[0]);
+          gtsam::Pose3 p2 = current_solution->at<gtsam::Pose3>(keys[1]);
           
           geometry_msgs::Point p1_msg;
           p1_msg.x = p1.x ();
@@ -406,8 +456,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 
         if ((gtsam::symbolChr (keys[0]) == 'x') && (gtsam::symbolChr (keys[1]) == 'o'))
         {
-          gtsam::Pose3 p1 = current_solution.at<gtsam::Pose3>(keys[0]);
-          gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+          gtsam::Pose3 p1 = current_solution->at<gtsam::Pose3>(keys[0]);
+          gtsam::Point3 p2 = current_solution->at<gtsam::Point3>(keys[1]);
 
           p1.print("Current Pose:\n");
           p2.print("Current Object:\n");
@@ -427,8 +477,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 
         if ((gtsam::symbolChr (keys[0]) == 'o') && (gtsam::symbolChr (keys[1]) == 'o'))
             {
-              gtsam::Point3 p1 = current_solution.at<gtsam::Point3>(keys[0]);
-              gtsam::Point3 p2 = current_solution.at<gtsam::Point3>(keys[1]);
+              gtsam::Point3 p1 = current_solution->at<gtsam::Point3>(keys[0]);
+              gtsam::Point3 p2 = current_solution->at<gtsam::Point3>(keys[1]);
 
               p1.print("Object1:\n");
               p2.print("Object2:\n");
@@ -457,7 +507,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Optionally draw the pose marginals
    if (draw_pose_marginals_)
    {
-     gtsam::Marginals marginals (*vis_graph, *vis_values);
+     //gtsam::Marginals marginals (*vis_graph, *vis_values);
+     gtsam::Marginals marginals (*current_graph, *current_solution);
 
      visualization_msgs::MarkerArray pose_cov_markers;
 
@@ -568,6 +619,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   // Optionally publish the ICP Clouds
   if (draw_icp_clouds_)
   {
+
     if (passthrough_filter_map_cloud_)
     {
       //CloudPtr filtered_cloud (new Cloud ());
@@ -581,13 +633,27 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
     }
     
     sensor_msgs::PointCloud2 cloud_msg;
-    pcl::toROSMsg (*aggregate_cloud, cloud_msg);
+    if (draw_icp_clouds_downsampled_)
+    {
+      pcl::VoxelGrid<pcl::PointXYZRGB> grid;
+      double leaf_size = 0.0025;
+      grid.setLeafSize (leaf_size, leaf_size, leaf_size);
+      grid.setInputCloud (aggregate_cloud);
+      grid.filter (*filtered_cloud);
+      pcl::toROSMsg (*filtered_cloud, cloud_msg);
+    }
+    else
+    {
+      pcl::toROSMsg (*aggregate_cloud, cloud_msg);
+    }
+    
     //pcl_conversions::moveFromPCL (*aggregate_cloud, cloud_msg);
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now ();
     map_cloud_pub_.publish (cloud_msg);
-    if (!draw_icp_clouds_always_)
-      draw_icp_clouds_ = false;
+    //if (!draw_icp_clouds_always_)
+    draw_icp_clouds_ = false;
+    draw_icp_clouds_prev_time_ = pcl::getTime ();
   }
 
   // Draw object observations
@@ -607,7 +673,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
   {
     visualization_msgs::MarkerArray marker_array;
     CloudPtr plane_boundary_cloud (new Cloud ());
-    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution.filter<gtsam::Plane<PointT> >();
+    gtsam::Values::ConstFiltered<gtsam::Plane<PointT> > plane_filtered = current_solution->filter<gtsam::Plane<PointT> >();
     int id = 0;
     BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
     {
@@ -685,6 +751,9 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::update (boost::shared_ptr<gtsam::V
 template <typename PointT> void
 omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
 {
+  latest_planes_ = regions;
+  return;
+
   // Display the segmented planar regions
   pcl::PointCloud<PointT> aggregate_cloud;
   for (int i = 0; i < regions.size (); i++)
@@ -966,6 +1035,124 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud (omnima
   draw_object_observation_cloud_ = true;
   return (true);
 }
+
+template <typename PointT> bool
+omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel (omnimapper_ros::PublishModel::Request &req, omnimapper_ros::PublishModel::Response &res)
+{
+  // Figure out where to spawn the model, by plane intersection
+  
+  // Get z-axis of latest pose
+  Eigen::Vector3f camera_origin (0.0, 0.0, 0.0);
+  Eigen::Vector3f camera_z (0.0, 0.0, 1.0);
+
+  // compute intersection of camera viewpoint with all planes in the scene
+  std::vector<Eigen::Vector3f> intersections;
+  for (int i = 0; i < latest_planes_.size (); i++)
+  {
+    Eigen::Vector4f model = latest_planes_[i].getCoefficients ();
+    Eigen::Vector3f centroid = latest_planes_[i].getCentroid ();
+    Eigen::Vector3f norm3 (model[0], model[1], model[2]);
+    double u = norm3.dot ((centroid - camera_origin)) / norm3.dot ((camera_z - camera_origin));
+    Eigen::Vector3f intersection = camera_origin + u * (camera_z - camera_origin);
+    intersections.push_back (intersection);
+  }
+
+  if (intersections.size () == 0)
+  {
+    ROS_WARN ("OmniMapper RViz: No interesctions found!");
+    return (false);
+  }
+
+  // Find the closest intersection
+  Eigen::Vector3f closest_intersection (0.0, 0.0, 0.0);
+  double closest_dist = 999999.9;
+  int best_idx = 0;
+  for (int i = 0; i < intersections.size (); i++)
+  {
+    if (intersections[i].norm () < closest_dist)
+    {
+      best_idx = i;
+      closest_dist = intersections[i].norm ();
+      closest_intersection = intersections[i];
+    }
+  }
+
+  // Test
+  Eigen::Vector4f target_planef = latest_planes_[best_idx].getCoefficients ();
+  Eigen::Vector4d target_plane (target_planef[0], target_planef[1], target_planef[2], target_planef[3]);
+  Eigen::Vector4d to_align (0.0, 0.0, 1.0, 0.0);
+  Eigen::Affine3d align = planarAlignmentTransform (target_plane, to_align);
+  gtsam::Pose3 pose = transformToPose3 (align.cast<float>());
+  gtsam::Quaternion quat = pose.rotation ().toQuaternion ();
+
+  visualization_msgs::MarkerArray marker_array;
+  
+  // Draw the intersection
+  visualization_msgs::Marker intersect_marker;
+  intersect_marker.header.frame_id = "/oculus_optical";
+  intersect_marker.header.stamp = ros::Time();
+  intersect_marker.ns = "intersection";
+  //intersect_marker.mesh_resource = "package://omnimapper_ros/mesh/r2_small.dae";
+  //intersect_marker.mesh_use_embedded_materials = true;
+  intersect_marker.id = 1;
+  intersect_marker.type = visualization_msgs::Marker::SPHERE;
+  intersect_marker.action = visualization_msgs::Marker::ADD;
+  //mesh_marker.points.push_back (start);
+  //mesh_marker.points.push_back (end);
+  intersect_marker.pose.position.x = closest_intersection.x ();
+  intersect_marker.pose.position.y = closest_intersection.y ();
+  intersect_marker.pose.position.z = closest_intersection.z ();
+  intersect_marker.pose.orientation.x = quat.x ();//0.0;
+  intersect_marker.pose.orientation.y = quat.y ();//0.0;
+  intersect_marker.pose.orientation.z = quat.z ();//0.0;
+  intersect_marker.pose.orientation.w = quat.w ();//1.0;
+  intersect_marker.scale.x = 0.1;
+  intersect_marker.scale.y = 0.1;
+  intersect_marker.scale.z = 0.1;
+  intersect_marker.color.a = 1.0;
+  intersect_marker.color.r = 1.0;
+  intersect_marker.color.g = 0.0;
+  intersect_marker.color.b = 0.0;
+  marker_array.markers.push_back (intersect_marker);
+
+  // Draw the mesh
+  visualization_msgs::Marker mesh_marker;
+  mesh_marker.header.frame_id = "/oculus_optical";
+  mesh_marker.header.stamp = ros::Time();
+  mesh_marker.ns = "mesh";
+  mesh_marker.mesh_resource = "package://omnimapper_ros/mesh/r2_small.dae";
+  mesh_marker.mesh_use_embedded_materials = true;
+  mesh_marker.id = 1;
+  mesh_marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+  mesh_marker.action = visualization_msgs::Marker::ADD;
+  //mesh_marker.points.push_back (start);
+  //mesh_marker.points.push_back (end);
+  mesh_marker.pose.position.x = closest_intersection.x ();
+  mesh_marker.pose.position.y = closest_intersection.y ();
+  mesh_marker.pose.position.z = closest_intersection.z ();
+  mesh_marker.pose.orientation.x = quat.x ();//1.0;
+  mesh_marker.pose.orientation.y = quat.y ();//0.0;
+  mesh_marker.pose.orientation.z = quat.z ();//0.0;
+  mesh_marker.pose.orientation.w = quat.w ();//1.0;
+  mesh_marker.scale.x = 0.3;
+  mesh_marker.scale.y = 0.3;
+  mesh_marker.scale.z = 0.3;
+  //mesh_marker.color.a = 1.0;
+  //mesh_marker.color.r = 1.0;
+  //mesh_marker.color.g = 0.0;
+  //mesh_marker.color.b = 0.0;
+  marker_array.markers.push_back (mesh_marker);
+    
+  marker_array_pub_.publish (marker_array);
+  
+  return (true);
+}
+
+  // template <typename PointT> void
+  // omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
+  // {
+    
+  // }
 
 
 //template class omnimapper::OmniMapperVisualizerRViz<pcl::PointXYZ>;

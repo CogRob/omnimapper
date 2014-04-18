@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
 #include <omnimapper_ros/VisualizeFullCloud.h>
+#include <omnimapper_ros/PublishModel.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
 #include <pcl/segmentation/planar_region.h>
@@ -31,6 +32,8 @@ namespace omnimapper
     public:
       OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
+      void spinOnce ();
+      void spin ();
       void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
       void drawBBox (pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_, int obj_idx);
       void labelCloudCallback (const CloudConstPtr& cloud, const LabelCloudConstPtr& labels);
@@ -39,6 +42,7 @@ namespace omnimapper
       void setObjectPlugin (boost::shared_ptr<omnimapper::ObjectPlugin<PointT> >& object_plugin) { object_plugin_ = object_plugin; }
       bool drawObjectObservationCloud (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
+      bool publishModel (omnimapper_ros::PublishModel::Request &req, omnimapper_ros::PublishModel::Response &res);
       void setDrawPoseArray (bool draw_pose_array) { draw_pose_array_ = draw_pose_array; }
       void setDrawPoseGraph (bool draw_pose_graph) { draw_pose_graph_ = draw_pose_graph; }
       void setOutputGraphviz (bool output_graphviz) { output_graphviz_ = output_graphviz; }
@@ -60,12 +64,22 @@ namespace omnimapper
 
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
       void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
+      
+      // For drawing planes, and use in AR application
+      //void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
+
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;
       
       // A reference to a mapper instance
       OmniMapperBase* mapper_;
+
+      // Latest Map Information
+      boost::mutex state_mutex_;
+      boost::shared_ptr<gtsam::Values> vis_values_;
+      boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph_;
+      bool updated_;
 
       // Interactive Markers
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer> marker_server_;
@@ -107,15 +121,25 @@ namespace omnimapper
 
       ros::ServiceServer draw_object_observation_cloud_srv_;
 
+      ros::ServiceServer publish_model_srv_;
+
       // ICP Plugin Ref
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
 
       // Object Plugin Ref
       boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > object_plugin_;
 
+      std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > latest_planes_;
+
       bool draw_icp_clouds_;
 
       bool draw_icp_clouds_always_;
+
+      double draw_icp_clouds_interval_;
+
+      double draw_icp_clouds_prev_time_;
+
+      bool draw_icp_clouds_downsampled_;
       
       bool draw_planar_landmarks_;
 
