@@ -4,11 +4,15 @@ template <typename PointT> bool
 omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out)
 {
   // Load these into pointvectors
-  PointVector poly1vec;
-  poly1vec.resize (poly1.points.size ());
-  PointVector poly2vec;
-  poly2vec.resize (poly2.points.size ());
+  //PointVector poly1vec;
+  //poly1vec.resize (poly1.points.size ());
+  //PointVector poly2vec;
+  //poly2vec.resize (poly2.points.size ());
   
+  PointVector poly1vec(poly1.points);
+  PointVector poly2vec(poly2.points);
+
+  /*
   for (size_t i = 0 ; i < poly1.points.size (); i++)
   {
     poly1vec[i].x = poly1.points[i].x;
@@ -53,19 +57,50 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
       }
     }
   }
-  
+  */
+
   boost::geometry::correct (poly1vec);
   boost::geometry::correct (poly2vec);
 
+  PointVector simple1;
+  boost::geometry::simplify(poly1vec, simple1, 0.01);
+  bool simple1_intersect = boost::geometry::intersects (simple1);
+  if (simple1_intersect)
+    printf("Simple1 intersects!\n");
+  else
+    printf("Simple1 no intersects\n");
+
+  PointVector simple2;
+  boost::geometry::simplify(poly2vec, simple2, 0.01);
+  bool simple2_intersect = boost::geometry::intersects (simple2);
+  if (simple2_intersect)
+    printf("Simple2 intersects!\n");
+  else
+    printf("Simple2 no intersects\n");
+
   // Check for self intersection
-  //bool intersect1 = boost::geometry::intersects (poly1vec);
-  //bool intersect2 = boost::geometry::intersects (poly2vec);
-  //bool intersect3 = boost::geometry::intersects (poly1vec, poly2vec);
+  bool intersect1 = boost::geometry::intersects (poly1vec);
+  bool intersect2 = boost::geometry::intersects (poly2vec);
+  bool intersect3 = boost::geometry::intersects (poly1vec, poly2vec);
+  bool i1 = boost::geometry::intersects (poly1.points);
+  bool i2 = boost::geometry::intersects (poly2.points);
+
+  if (i1)
+    printf("I1\n");
+  if (i2)
+    printf("I2\n");
+  if (intersect1)
+    printf("Intersect1\n");
+  if (intersect2)
+    printf("Intersect2\n");
+  if (intersect3)
+    printf("Intersect3\n");
 
   std::vector<PointVector> union_pts;
   try
   {
-    boost::geometry::union_ (poly1vec, poly2vec, union_pts);
+    //boost::geometry::union_ (poly1vec, poly2vec, union_pts);
+    boost::geometry::union_ (poly1.points, poly2.points, union_pts);
   }
   catch (boost::geometry::overlay_invalid_input_exception& e)
   {

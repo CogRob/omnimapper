@@ -74,7 +74,7 @@ namespace omnimapper
       mps_->setAngularThreshold (pcl::deg2rad (2.0));//2.0
       mps_->setDistanceThreshold (0.02);//0.03
       mps_->setProjectPoints (true);
-      mps_->setRemoveDuplicatePoints (false);
+      mps_->setRemoveDuplicatePoints (true);
       pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>::Ptr plane_compare (new pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>());
       plane_compare->setAngularThreshold (pcl::deg2rad (2.0));//3.0
       plane_compare->setDistanceThreshold (0.01, true);//0.02, true

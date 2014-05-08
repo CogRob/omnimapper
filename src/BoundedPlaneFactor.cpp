@@ -10,6 +10,9 @@ namespace omnimapper
   {
     BoundedPlane3<PointT> predicted_plane = BoundedPlane3<PointT>::Transform (plane, pose, H1, H2);
     gtsam::Vector error = predicted_plane.error (measured_p_);
+    std::cout << "BoundedPlaneFactor: error: " << error << std::endl;
     return (error);
   }
 }
+
+template class omnimapper::BoundedPlaneFactor<pcl::PointXYZRGBA>;

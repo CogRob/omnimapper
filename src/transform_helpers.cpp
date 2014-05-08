@@ -13,9 +13,11 @@ gtsam::Pose3 transformToPose3(const Eigen::Affine3f& tform)
 
 Eigen::Affine3f pose3ToTransform(const gtsam::Pose3& pose)
 {
-  gtsam::Vector ypr = pose.rotation().ypr();
-  Eigen::Affine3f t = pcl::getTransformation(pose.x(), pose.y(), pose.z(), ypr[2], ypr[1], ypr[0]);
-  return t;
+  Eigen::Affine3f transform (pose.matrix ().cast<float>());
+  return (transform);
+  //gtsam::Vector ypr = pose.rotation().ypr();
+  //Eigen::Affine3f t = pcl::getTransformation(pose.x(), pose.y(), pose.z(), ypr[2], ypr[1], ypr[0]);
+  //return t;
 }
 
 Eigen::Affine3d planarAlignmentTransform (const Eigen::Vector4d& target, const Eigen::Vector4d& to_align)
@@ -26,7 +28,16 @@ Eigen::Affine3d planarAlignmentTransform (const Eigen::Vector4d& target, const E
   Eigen::Vector3d axis = align_norm.cross (target_norm);
   axis.normalize ();
   Eigen::Affine3d transform;
-  transform = Eigen::AngleAxisd (angle, axis);
-  transform.translation () = target_norm * (target[3] - to_align[3]);
+  // If the normal is near identical, we'll get an invalid transform, and should instead use identity
+  if ((pcl_isfinite (angle)) && (pcl_isfinite (axis[0])) && (pcl_isfinite (axis[1])) && (pcl_isfinite (axis[2])))
+  {
+    transform = Eigen::AngleAxisd (angle, axis);
+  }
+  else
+  {
+    transform = Eigen::Affine3d::Identity ();
+  }
+  //transform = Eigen::AngleAxisd (angle, axis);
+  transform.translation () = target_norm * -1 * (target[3] - to_align[3]);
   return (transform);
 }
