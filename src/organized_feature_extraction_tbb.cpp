@@ -74,14 +74,14 @@ namespace omnimapper
       mps_->setAngularThreshold (pcl::deg2rad (2.0));//2.0
       mps_->setDistanceThreshold (0.02);//0.03
       mps_->setProjectPoints (true);
-      mps_->setRemoveDuplicatePoints (true);
+      mps_->setRemoveDuplicatePoints (false);
       pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>::Ptr plane_compare (new pcl::PlaneCoefficientComparator<pcl::PointXYZRGBA, pcl::Normal>());
       plane_compare->setAngularThreshold (pcl::deg2rad (2.0));//3.0
       plane_compare->setDistanceThreshold (0.01, true);//0.02, true
       mps_->setComparator (plane_compare);
 
       pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label>::Ptr refine_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGBA, pcl::Normal, pcl::Label> ());
-      refine_compare->setDistanceThreshold (0.01, true);//0.01, true//0.0025
+      refine_compare->setDistanceThreshold (0.005, false);//0.01, true//0.0025
       mps_->setRefinementComparator (refine_compare);
 
       // Set up edge detection
@@ -196,8 +196,10 @@ namespace omnimapper
       tbb::task_group group;
       group.run ([&] { computeNormals (); });
       group.run ([&] { computePlanes (); });
-      group.run ([&] { computeClusters (); });
-      group.run ([&] { computeEdges (); });
+      if ((cluster_cloud_callbacks_.size () > 0) || (cluster_label_cloud_callbacks_.size () > 0))
+        group.run ([&] { computeClusters (); });
+      if (occluding_edge_callback_)
+        group.run ([&] { computeEdges (); });
       group.run ([&] { publish (); });
       group.wait ();
 

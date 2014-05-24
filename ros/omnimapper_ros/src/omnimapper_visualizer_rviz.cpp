@@ -9,6 +9,7 @@
 //#include <tf2/LinearMath/btMatrix3x3.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <pcl/filters/passthrough.h>
+#include <fstream>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -31,7 +32,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_object_observation_bboxes_ (true),
     draw_pose_marginals_ (false),
     output_graphviz_ (false),
-    passthrough_filter_map_cloud_ (true)
+    passthrough_filter_map_cloud_ (false),
+    write_trajectory_text_file_ (false)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -54,6 +56,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   draw_object_observation_cloud_srv_ = nh_.advertiseService ("draw_object_observations", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud, this);
 
   publish_model_srv_ = nh_.advertiseService ("publish_model", &omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel, this);
+
+  write_trajectory_srv_ = nh_.advertiseService ("write_trajectory", &omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile, this);
 
   pose_covariances_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/pose_covariances", 0);
 
@@ -638,7 +642,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
     if (draw_icp_clouds_downsampled_)
     {
       pcl::VoxelGrid<pcl::PointXYZRGB> grid;
-      double leaf_size = 0.0025;
+      double leaf_size = 0.005;
       grid.setLeafSize (leaf_size, leaf_size, leaf_size);
       grid.setInputCloud (aggregate_cloud);
       grid.filter (*filtered_cloud);
@@ -1231,6 +1235,39 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel (omnimapper_ros::Publ
   
   return (true);
 }
+
+template <typename PointT> bool 
+omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile(omnimapper_ros::WriteTrajectoryFile::Request &req, omnimapper_ros::WriteTrajectoryFile::Response &res)
+{
+  gtsam::Values current_solution = mapper_->getSolution ();//mapper_->getSolution ();
+
+  std::ofstream optimized_poses;
+  optimized_poses.open(req.filename.c_str());
+
+  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
+  BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+  {
+    geometry_msgs::Pose pose;
+    
+    gtsam::Symbol key_symbol (key_value.key);
+    gtsam::Pose3 sam_pose = key_value.value;
+
+    std::string sym_str = boost::lexical_cast<std::string> (key_symbol.chr())
+    + boost::lexical_cast<std::string> (key_symbol.index());
+    optimized_poses << sym_str << std::endl;
+    optimized_poses << sam_pose.matrix() << std::endl;
+    // optimized_poses <<
+    // optimized_poses << sam_pose.matrix () << std::endl;
+    // std::string pcd_fname = "/home/siddharth/kinect/pcd_files/"
+    // + boost::lexical_cast<std::string> (key_symbol.chr ())
+    // + boost::lexical_cast<std::string> (key_symbol.index ()) + ".pcd";
+    // pcl::io::savePCDFileBinary (pcd_fname, *frame_cloud);
+  }
+  optimized_poses.close();
+
+  return (true);
+}
+
 
   // template <typename PointT> void
   // omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)

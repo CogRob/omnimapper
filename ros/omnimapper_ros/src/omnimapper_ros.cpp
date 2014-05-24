@@ -833,7 +833,7 @@ OmniMapperROS<PointT>::publishMapToOdom ()
   {
 //        tf_listener_.transformPose ("/odom", tf::Stamped<tf::Pose> (tf::btTransform (tf::btQuaternion (current_quat[1], current_quat[2], current_quat[3], current_quat[0]), btVector3 (current_pose.x (), current_pose.y (), current_pose.z ())).inverse (), current_time_ros, "/base_link"), odom_to_map);
     tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_,
-                                   current_time_ros, ros::Duration (0.02));
+                                   current_time_ros, ros::Duration (0.05));
     tf_listener_.transformPose (odom_frame_name_,
                                 tf::Stamped<tf::Pose> (current_pose_ros.inverse (),
                                                        current_time_ros, base_frame_name_), odom_to_map);

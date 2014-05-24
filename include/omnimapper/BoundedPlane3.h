@@ -23,8 +23,6 @@ namespace omnimapper
     protected:
       gtsam::Sphere2 n_;
       double d_;
-      //using OrientedPlane3::n_;
-      //using OrientedPlane3::d_;
       
       CloudPtr boundary_;
       boost::shared_ptr<boost::mutex> plane_mutex_;

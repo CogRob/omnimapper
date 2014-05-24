@@ -261,7 +261,7 @@ namespace omnimapper
     {
       if (clouds_.size () >= 3)
       {
-        boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous3_sym_, true);
+        boost::thread prev2_icp_thread (&ICPPoseMeasurementPlugin<PointT>::addConstraint, this, previous_sym_, previous2_sym_, true);
         prev2_icp_thread.join ();
         if (debug_)
           printf ("PREV 2 COMPLETE!\n");

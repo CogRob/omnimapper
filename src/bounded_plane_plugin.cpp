@@ -3,6 +3,7 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <omnimapper/geometry.h>
+#include <pcl/io/pcd_io.h>
 
 namespace omnimapper
 {
@@ -35,6 +36,53 @@ namespace omnimapper
     return false;
   }
 
+  template <typename PointT> bool
+  BoundedPlanePlugin<PointT>::polygonsOverlapBoost (Eigen::Vector4d& coeffs1, CloudPtr boundary1, Eigen::Vector4d& coeffs2, CloudPtr boundary2)
+  {
+    Eigen::Vector4d z_axis (0.0, 0.0, 1.0, 0.0);
+    Eigen::Vector4d minus_z_axis (0.0, 0.0, -1.0, 0.0);
+    
+    //Move to xy
+    Eigen::Affine3d p1_to_xy = planarAlignmentTransform(z_axis, coeffs1);
+    CloudPtr p1_xy(new Cloud());
+    pcl::transformPointCloud(*boundary1, *p1_xy, p1_to_xy);
+
+    Eigen::Affine3d p2_to_xy = planarAlignmentTransform(z_axis, coeffs2);
+    CloudPtr p2_xy(new Cloud());
+    pcl::transformPointCloud(*boundary2, *p2_xy, p2_to_xy);
+
+    bool intersects = boost::geometry::intersects(p1_xy->points, p2_xy->points);
+
+    return (intersects);
+  }
+
+  template <typename PointT> void
+  BoundedPlanePlugin<PointT>::removeDuplicatePoints (pcl::PointCloud<PointT>& boundary_cloud)
+   {
+     for (size_t i = 1; i < boundary_cloud.points.size ()-1; i++)
+     {
+       for (size_t j = i+1; j < boundary_cloud.points.size ()-1; j++)
+       {
+         if ((boundary_cloud.points[i].x == boundary_cloud.points[j].x) && (boundary_cloud.points[i].y == boundary_cloud.points[j].y))
+         {
+           if(j-i > (boundary_cloud.points.size ()/2.0))
+           {
+             boundary_cloud.points.erase (boundary_cloud.points.begin ()+j, boundary_cloud.points.end ());
+             boundary_cloud.points.erase (boundary_cloud.points.begin (), boundary_cloud.points.begin ()+i);
+             i = 1;
+             j = i+1;
+           }
+           else {
+             boundary_cloud.points.erase (boundary_cloud.points.begin ()+i,boundary_cloud.points.begin ()+j);
+             i = 1;
+             j = i+1;
+           }
+         }
+       }
+     }
+   }
+ 
+
   template <typename PointT> void
   BoundedPlanePlugin<PointT>::regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time t, std::vector<omnimapper::BoundedPlane3<PointT> >& plane_measurements)
   {
@@ -58,11 +106,22 @@ namespace omnimapper
       border_cloud->points = border;
       pcl::PointCloud<PointT> empty_inliers;
 
+      printf("border before: %d\n", border.size());
+      removeDuplicatePoints(*border_cloud);
+      border = border_cloud->points;
+      printf("border after: %d\n", border.size());
+
       // TODO : remove debug
       //PointVector poly(border);
       bool intersects = boost::geometry::intersects(border);
       if (intersects)
+      {
         printf("BoundedPlanePlugin: regions->measurements: GOT INVALID MEASUREMENT!\n");
+        char meas_name[2048];  
+        sprintf (meas_name, "invalid_meas.pcd");
+        pcl::io::savePCDFileBinaryCompressed (meas_name, *border_cloud);
+        //exit(1);
+      }
       else
         printf("BoundedPlanePlugin: GOT VALID MEASUREMENT!\n");
       // Remove debug
@@ -149,14 +208,37 @@ namespace omnimapper
       pcl::transformPointCloud(*meas_boundary, *meas_boundary_map, pose2map);
 
       // TODO : remove debug
+      Eigen::Vector4d meas_map_coeffs = omnimapper::BoundedPlane3<PointT>::TransformCoefficients (meas_plane, new_pose_inv);
+      for (int i = 0; i < meas_boundary_map->points.size (); i++)
+      {
+       printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n", 
+         meas_boundary_map->points[i].x ,
+         meas_boundary_map->points[i].y ,
+         meas_boundary_map->points[i].z );
+
+       double ptp_dist = fabs (meas_map_coeffs[0] * meas_boundary_map->points[i].x +
+                               meas_map_coeffs[1] * meas_boundary_map->points[i].y +
+                               meas_map_coeffs[2] * meas_boundary_map->points[i].z +
+                               meas_map_coeffs[3]);
+       if (ptp_dist > 0.01)
+       {
+        printf ("ERROR: Initializing boundary at bad place: Point is %lf from plane.\n", ptp_dist);
+        exit(1);
+       }
+      }
+
       //PointVector poly(border);
-      bool valid = boost::geometry::intersects(meas_boundary_map->points);
-      if (!valid)
+      bool intersects = boost::geometry::intersects(meas_boundary_map->points);
+      if (intersects)
         printf("BoundedPlanePlugin: map_meas: GOT INVALID MEASUREMENT!\n");
       // Remove debug
       
       if (meas_d < 0.1)
         continue;
+
+        Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
+        if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_)
+         continue;
 
 //      BOOST_FOREACH (const typename gtsam::Values::Filtered<gtsam::OrientedPlane3>::KeyValuePair& key_value, plane_filtered)
       BOOST_FOREACH (const typename gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value, plane_filtered)
@@ -178,12 +260,21 @@ namespace omnimapper
         {
           double error = angular_error + range_error;
           // polygon overlap
-          if (polygonsOverlap(plane.boundary(), meas_boundary_map))
-
-          if ((error < lowest_error))
+          //if (polygonsOverlap(plane.boundary(), meas_boundary_map))
+          // TODO: this should not be in the map frame due to lever-arm
+          CloudPtr match_map_boundary = plane.boundary();
+          Eigen::Vector4d match_map_coeffs = plane.planeCoefficients();
+          if (polygonsOverlapBoost (match_map_coeffs, match_map_boundary, meas_map_coeffs, meas_boundary_map))
           {
-            lowest_error = error;
-            best_symbol = key_symbol;
+            if ((error < lowest_error))
+            {
+              lowest_error = error;
+              best_symbol = key_symbol;
+            }
+          }
+          else
+          {
+            printf("POLYGON OVERLAP FAILED!\n");
           }
         }
       }

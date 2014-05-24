@@ -20,4 +20,7 @@ namespace omnimapper
 {
   template <typename PointT>
   bool fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out);
+
+  template <typename PointT>
+  bool fusePlanarPolygonsConvexXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out);
 }

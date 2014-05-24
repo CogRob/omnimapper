@@ -4,6 +4,8 @@
 #include <omnimapper/impl/geometry.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/common/io.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/geometry/polygon_operations.h>
 
 /* ************************************************************************* */
 /// The print fuction
@@ -45,6 +47,24 @@ omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
   //pcl::transformPointCloud(*boundary_, *boundary_, transform);
   //*boundary_ = *new_boundary;
   //boundary_.swap(new_boundary);
+
+  for (int i = 0; i < new_boundary->points.size (); i++)
+  {
+   // printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n", 
+   //   meas_boundary_map->points[i].x ,
+   //   meas_boundary_map->points[i].y ,
+   //   meas_boundary_map->points[i].z );
+
+   double ptp_dist = fabs (new_coeffs[0] * new_boundary->points[i].x +
+                           new_coeffs[1] * new_boundary->points[i].y +
+                           new_coeffs[2] * new_boundary->points[i].z +
+                           new_coeffs[3]);
+   if (ptp_dist > 0.001)
+   {
+    printf ("ERROR: Retract fail: Point is %lf from plane.\n", ptp_dist);
+    exit(1);
+    }
+  }
 
  //return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted, boundary_, plane_mutex_));
   return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted, new_boundary, plane_mutex_));
@@ -149,6 +169,9 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
   boost::lock_guard<boost::mutex> lock (*plane_mutex_);
   Eigen::Vector4d z_axis (0.0, 0.0, 1.0, 0.0);
   //return;
+
+  bool check_input = false;
+
   //  Move map cloud to the pose
   Eigen::Affine3d map_to_pose = pose3ToTransform (pose).cast<double>();
   Eigen::Affine3d pose_to_map = map_to_pose.inverse ();
@@ -156,7 +179,8 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
   Eigen::Affine3d lm_to_xy = planarAlignmentTransform(z_axis, lm_coeffs);
   Eigen::Affine3d xy_to_lm = planarAlignmentTransform(lm_coeffs, z_axis);
   Eigen::Affine3d lm_combined = lm_to_xy * pose_to_map;//map_to_pose * lm_to_xy;
-  Eigen::Affine3d lm_combined_inv = map_to_pose * xy_to_lm;
+  Eigen::Affine3d lm_combined_inv = lm_combined.inverse();
+  //Eigen::Affine3d lm_combined_inv = map_to_pose * xy_to_lm;
   CloudPtr map_xy (new Cloud());
   printf ("BoundedPlane3: transforming landmark to pose.\n");
   pcl::transformPointCloud (*boundary_, *map_xy, lm_combined);
@@ -165,81 +189,129 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
   // Move the measurement to the xy plane
   Eigen::Vector4d meas_coeffs = plane.planeCoefficients();
   CloudPtr meas_boundary = plane.boundary();
-  //Eigen::Affine3d meas_to_xy = planarAlignmentTransform(z_axis, meas_coeffs);
-  Eigen::Affine3d meas_to_xy = planarAlignmentTransform(meas_coeffs, z_axis);
+  Eigen::Affine3d meas_to_xy = planarAlignmentTransform(z_axis, meas_coeffs);
+  //Eigen::Affine3d meas_to_xy = planarAlignmentTransform(meas_coeffs, z_axis);
   CloudPtr meas_xy(new Cloud());
   printf("BoundedPlane3: transforming measurement to xy.\n");
   pcl::transformPointCloud(*meas_boundary, *meas_xy, meas_to_xy);
   printf("BoundedPlane3: transformed.  Merging.\n");
 
   // TEST
-  for (int i = 0; i < boundary_->points.size (); i++)
+  if (check_input)
   {
-   printf ("Internal Boundary: Boundary Point: %lf %lf %lf\n", 
-     meas_xy->points[i].x ,
-     meas_xy->points[i].y ,
-     meas_xy->points[i].z );
+    Eigen::Vector4d map_coeffs = planeCoefficients();
+    for (int i = 0; i < boundary_->points.size (); i++)
+    {
+     //printf ("Internal Boundary: Boundary Point: %lf %lf %lf\n", 
+       // boundary_->points[i].x ,
+       // boundary_->points[i].y ,
+       // boundary_->points[i].z );
 
-   double ptp_dist = fabs (z_axis[0] * meas_xy->points[i].x +
-     z_axis[1] * meas_xy->points[i].y +
-     z_axis[2] * meas_xy->points[i].z +
-     z_axis[3]);
-   printf ("MeasXY: Point is %lf from plane.\n", ptp_dist);
+     double ptp_dist = fabs (map_coeffs[0] * boundary_->points[i].x +
+                             map_coeffs[1] * boundary_->points[i].y +
+                             map_coeffs[2] * boundary_->points[i].z +
+                             map_coeffs[3]);
+     if (ptp_dist > 0.01)
+     {
+      printf ("ERROR: Boundary: Point is %lf from plane.\n", ptp_dist);
+      exit(1);
+     }
+    }
+
+    for (int i = 0; i < meas_xy->points.size (); i++)
+    {
+     //printf ("MeasXY: Boundary Point: %lf %lf %lf\n", 
+       // meas_xy->points[i].x ,
+       // meas_xy->points[i].y ,
+       // meas_xy->points[i].z );
+
+     double ptp_dist = fabs (z_axis[0] * meas_xy->points[i].x +
+       z_axis[1] * meas_xy->points[i].y +
+       z_axis[2] * meas_xy->points[i].z +
+       z_axis[3]);
+     if (ptp_dist > 0.001)
+     {
+      printf ("ERROR: MeasXY: Point is %lf from plane.\n", ptp_dist);
+      exit(1);
+     }
+    }
+
+   for (int i = 0; i < map_xy->points.size (); i++)
+   {
+     //printf ("MapXY: Boundary Point: %lf %lf %lf\n", 
+       // map_xy->points[i].x ,
+       // map_xy->points[i].y ,
+       // map_xy->points[i].z );
+
+     double ptp_dist = fabs (z_axis[0] * map_xy->points[i].x +
+       z_axis[1] * map_xy->points[i].y +
+       z_axis[2] * map_xy->points[i].z +
+       z_axis[3]);
+     if (ptp_dist > 0.001)
+     {
+      printf ("ERROR: MapXY: Point is %lf from plane.\n", ptp_dist);
+      exit(1);
+     }
+   }
+
+   bool boundary_intersects = boost::geometry::intersects(boundary_->points);
+   if (boundary_intersects)
+   {
+    printf("BoundedPlane3: map boundary intersects!\n");
+    exit(1);
+   }
+   bool meas_boundary_intersects = boost::geometry::intersects(meas_boundary->points);
+   if (meas_boundary_intersects)
+    printf("BoundedPlane3: meas boundary intersects!\n");
+
+    printf("BoundedPlane3: Attempting to merge meas_xy (%d) with map_xy (%d)\n", meas_xy->points.size(), map_xy->points.size());
+    bool meas_xy_intersect = boost::geometry::intersects(meas_xy->points);
+    if (meas_xy_intersect)
+      printf("BoundedPlane3: Meas_xy_intersects!\n");
+    bool map_xy_intersect = boost::geometry::intersects(map_xy->points);
+    if (map_xy_intersect)
+      printf("BoundedPlane3: Map_xy intersects!\n");
   }
 
-  for (int i = 0; i < meas_xy->points.size (); i++)
-  {
-   printf ("MeasXY: Boundary Point: %lf %lf %lf\n", 
-     meas_xy->points[i].x ,
-     meas_xy->points[i].y ,
-     meas_xy->points[i].z );
+  double map_area = boost::geometry::area(map_xy->points);
+  double meas_area = boost::geometry::area(meas_xy->points);
 
-   double ptp_dist = fabs (z_axis[0] * meas_xy->points[i].x +
-     z_axis[1] * meas_xy->points[i].y +
-     z_axis[2] * meas_xy->points[i].z +
-     z_axis[3]);
-   printf ("MeasXY: Point is %lf from plane.\n", ptp_dist);
-  }
+ char meas_name[2048];
+ char lm_name[2048];
+ sprintf (meas_name, "meas.pcd");
+ sprintf (lm_name, "lm.pcd");
+ pcl::io::savePCDFileBinaryCompressed (meas_name, *meas_xy);
+ pcl::io::savePCDFileBinaryCompressed (lm_name, *map_xy);
 
- for (int i = 0; i < map_xy->points.size (); i++)
- {
-   printf ("MapXY: Boundary Point: %lf %lf %lf\n", 
-     map_xy->points[i].x ,
-     map_xy->points[i].y ,
-     map_xy->points[i].z );
-
-   double ptp_dist = fabs (z_axis[0] * map_xy->points[i].x +
-     z_axis[1] * map_xy->points[i].y +
-     z_axis[2] * map_xy->points[i].z +
-     z_axis[3]);
-   printf ("MapXY: Point is %lf from plane.\n", ptp_dist);
- }
-
- bool boundary_intersects = boost::geometry::intersects(boundary_->points);
- if (boundary_intersects)
-  printf("BoundedPlane3: map boundary intersects!\n");
- bool meas_boundary_intersects = boost::geometry::intersects(meas_boundary->points);
- if (meas_boundary_intersects)
-  printf("BoundedPlane3: meas boundary intersects!\n");
-
-  printf("BoundedPlane3: Attempting to merge meas_xy (%d) with map_xy (%d)\n", meas_xy->points.size(), map_xy->points.size());
-  bool meas_xy_intersect = boost::geometry::intersects(meas_xy->points);
-  if (meas_xy_intersect)
-    printf("BoundedPlane3: Meas_xy_intersects!\n");
-  bool map_xy_intersect = boost::geometry::intersects(map_xy->points);
-  if (map_xy_intersect)
-    printf("BoundedPlane3: Map_xy intersects!\n");
   // TEST
 
   // Fuse
   CloudPtr merged_xy(new Cloud());
-  bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (*meas_xy, *map_xy, *merged_xy);
+  bool worked = omnimapper::fusePlanarPolygonsConvexXY<PointT> (*meas_xy, *map_xy, *merged_xy);
   if (!worked)
   {
     printf("BoundedPlane3: Error inside extend!\n");
+    return;
+    //exit(1);
+  }
+
+  printf("BoundedPlane3: Merged: map: %d meas: %d combined: %d \n", map_xy->points.size(), meas_xy->points.size(), merged_xy->points.size());
+  double merged_area = boost::geometry::area(merged_xy->points);
+  if ((merged_area < meas_area) || (merged_area < map_area))
+  {
+    printf("BoundedPlane3: meas_area: %lf map_area: %lf merged_area: %lf \n", meas_area, map_area, merged_area);
+    //exit(1);
+  }
+
+  bool merged_intersects = boost::geometry::intersects(merged_xy->points);
+  if (merged_intersects)
+  {
+    printf("BoundedPlane3: merged intersects!\n");
+     char merged_name[2048];
+     sprintf (merged_name, "merged.pcd");
+     pcl::io::savePCDFileBinaryCompressed (merged_name, *merged_xy);
     exit(1);
   }
-  printf("BoundedPlane3: Merged: map: %d meas: %d combined: %d \n", map_xy->points.size(), meas_xy->points.size(), merged_xy->points.size());
 
   // Now move it back to the map
   CloudPtr merged_map (new Cloud());
@@ -248,21 +320,29 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
   //Eigen::Affine3d lm_combined_inv = map_to_pose * xy_to_lm;
   pcl::transformPointCloud(*merged_xy, *merged_map, lm_combined_inv);
 
+  CloudPtr simple_merged_map (new Cloud());
+  pcl::approximatePolygon2D<PointT> (merged_map->points, simple_merged_map->points, 0.005, false, true);
+
   Eigen::Vector4d map_lm_coeffs = planeCoefficients();
    for (int i = 0; i < merged_map->points.size (); i++)
    {
-     printf ("Merged Map: Boundary Point: %lf %lf %lf\n", 
-       merged_map->points[i].x ,
-       merged_map->points[i].y ,
-       merged_map->points[i].z );
+     //printf ("Merged Map: Boundary Point: %lf %lf %lf\n", 
+       // merged_map->points[i].x ,
+       // merged_map->points[i].y ,
+       // merged_map->points[i].z );
 
      double ptp_dist = fabs (map_lm_coeffs[0] * merged_map->points[i].x +
                              map_lm_coeffs[1] * merged_map->points[i].y +
                              map_lm_coeffs[2] * merged_map->points[i].z +
                              map_lm_coeffs[3]);
-     printf ("Merged Map: Point is %lf from plane.\n", ptp_dist);
+     if (ptp_dist > 0.001)
+     {
+      printf ("ERROR: Merged Map: Point is %lf from plane.\n", ptp_dist);
+      exit(1);
+     }
    }
 
+   //pcl::copyPointCloud(*simple_merged_map, *boundary_);
    pcl::copyPointCloud(*merged_map, *boundary_);
    //boundary_.swap(merged_map);
   //*boundary_ = *merged_map;

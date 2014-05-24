@@ -1,18 +1,22 @@
 #include <omnimapper/geometry.h>
+#include <pcl/surface/convex_hull.h>
 
 template <typename PointT> bool
 omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out)
 {
-  // Load these into pointvectors
-  //PointVector poly1vec;
-  //poly1vec.resize (poly1.points.size ());
-  //PointVector poly2vec;
-  //poly2vec.resize (poly2.points.size ());
-  
   PointVector poly1vec(poly1.points);
   PointVector poly2vec(poly2.points);
 
+  // Load these into pointvectors
   /*
+  PointVector poly1vec;
+  poly1vec.resize (poly1.points.size ());
+  PointVector poly2vec;
+  poly2vec.resize (poly2.points.size ());
+  
+
+
+  
   for (size_t i = 0 ; i < poly1.points.size (); i++)
   {
     poly1vec[i].x = poly1.points[i].x;
@@ -29,7 +33,7 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
 
     for (size_t i = 1; i < poly1vec.size ()-1; i++)
   {
-    pcl::PointXYZRGB pt1 = poly1vec[i];
+    pcl::PointXYZRGBA pt1 = poly1vec[i];
     for (size_t j = i+1; j < poly1vec.size (); j++)
     {
       if((poly1vec[j].x == pt1.x) && (poly1vec[j].y == pt1.y) && (poly1vec[j].z == pt1.z))
@@ -45,7 +49,7 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
   //printf ("Checking polygon of size: %d\n",poly2vec.size ());
   for (size_t i = 1; i < poly2vec.size ()-1; i++)
   {
-    pcl::PointXYZRGB pt1 = poly2vec[i];
+    pcl::PointXYZRGBA pt1 = poly2vec[i];
     for (size_t j = i+1; j < poly2vec.size (); j++)
     {
       if((poly2vec[j].x == pt1.x) && (poly2vec[j].y == pt1.y) && (poly2vec[j].z == pt1.z))
@@ -99,14 +103,20 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
   std::vector<PointVector> union_pts;
   try
   {
-    //boost::geometry::union_ (poly1vec, poly2vec, union_pts);
-    boost::geometry::union_ (poly1.points, poly2.points, union_pts);
+    boost::geometry::union_ (poly1vec, poly2vec, union_pts);
+    //boost::geometry::union_ (poly1.points, poly2.points, union_pts);
   }
   catch (boost::geometry::overlay_invalid_input_exception& e)
   {
     printf ("PCL Polymerge: Exception!\n");
     union_pts.push_back (poly2vec);
     return (false);
+  }
+
+  if (union_pts.size() != 1)
+  {
+    printf("PolyMerge: More than one output polygon!\n");
+    //exit(1);
   }
 
   //pcl::PointCloud<PointT> output_cloud;
@@ -126,5 +136,18 @@ omnimapper::fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pc
     poly_out.points[i] = pt;
   }
 
+  return (true);
+}
+
+
+template <typename PointT> bool
+omnimapper::fusePlanarPolygonsConvexXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out)
+{
+  boost::shared_ptr<pcl::PointCloud<PointT> > merged_cloud(new pcl::PointCloud<PointT>());
+  *merged_cloud += poly1;
+  *merged_cloud += poly2;
+  pcl::ConvexHull<PointT> hull;
+  hull.setInputCloud(merged_cloud);
+  hull.reconstruct(poly_out);
   return (true);
 }
