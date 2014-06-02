@@ -1,0 +1,170 @@
+<launch>
+
+<!--
+    Launch file that runs omnimapper in a gazebo environment. 	
+-->
+
+<!-- Description of your robot platform in this case it is a Kobuki robot. -->
+  <arg name="base"       value="$(optenv TURTLEBOT_BASE kobuki)"/>  			<!-- Robot:  Kobuki -->
+  <arg name="stacks"     value="$(optenv TURTLEBOT_STACKS hexagons)"/>  		<!-- Shape:  hexagons -->
+  <arg name="3d_sensor"  value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  		<!-- Sensor: kinect, asus_xtion_pro -->
+  <arg name="battery"	 value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- Reading of the battery: /proc/acpi/battery/BAT0 -->
+
+ <!-- These are the arguments you can pass this launch file -->
+  <arg name="paused" 		default="false"/>		<!-- Gazebo will start in paused mode -->			
+  <arg name="use_sim_time" 	default="true"/>		<!-- We will use simulation time -->
+  <arg name="gui" 		default="true"/>		<!-- The GUI will be enable -->
+  <arg name="headless" 		default="false"/>
+  <arg name="debug" 		default="false"/>		<!-- Debug mode is disable -->
+ <!-- <arg name="world_name" default="worlds/empty.world"/> --> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+  <arg name="rviz_gui" 		default="true"/>		<!-- We can open rviz from this launch file -->
+  <arg name="worldT"		value="empty"/>			<!-- Worlds to load in gazebo (empty, willowGarage, house) -->
+
+ <!-- set command arguments -->
+  <arg unless="$(arg paused)" 	name="command_arg1" value=""/>
+  <arg     if="$(arg paused)" 	name="command_arg1" value="-u"/>
+  <arg unless="$(arg headless)" name="command_arg2" value=""/>
+  <arg     if="$(arg headless)" name="command_arg2" value="-r"/>
+  <arg unless="$(arg debug)" 	name="script_type" value="gzserver"/> 
+  <arg     if="$(arg debug)" 	name="script_type" value="debug"/>
+
+<!-- Loading world: Willow Garage -->
+ <include file="$(find gazebo_ros)/launch/empty_world.launch"> 
+    <arg name="use_sim_time" value="true"/>
+    <arg name="debug" value="false"/> 
+    <arg name="world_name" value="/usr/share/gazebo-1.9/worlds/willowgarage.world"/>
+ </include> 
+
+<!-- kobuki.launch.xml  -->
+ <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find turtlebot_description)/robots/$(arg base)_$(arg stacks)_$(arg 3d_sensor).urdf.xacro'" />
+  <param name="robot_description" command="$(arg urdf_file)" />
+
+<!-- Robot pose -->
+  <arg name="x" 	value="-0.000252"/>
+  <arg name="y"	 	value="0.000004"/>
+  <arg name="z" 	value="-0.000174"/>
+  <arg name="roll" 	value="0.000812"/>
+  <arg name="pitch" 	value="0.000182"/>
+  <arg name="yaw" 	value="-0.000194"/>
+
+<!-- Gazebo model spawner -->
+<node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model" 
+             args="-x $(arg x) -y $(arg y) -z $(arg z)
+              -R $(arg roll) -P $(arg pitch) -Y $(arg yaw) -unpause -urdf -param robot_description -model mobile_base"/>
+<!-- $(optenv ROBOT_INITIAL_POSE) -->
+
+ <!-- Velocity muxer -->
+  <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
+
+<!-- Teleoperation of the Kobuki robot using keyboard -->
+  <node pkg="kobuki_keyop" type="keyop" name="keyop" output="screen">
+    <remap from="keyop/motor_power" to="mobile_base/commands/motor_power"/>
+    <remap from="keyop/cmd_vel" to="mobile_base/commands/velocity"/>          <!-- remap the cmd_velocity to move the robot (hydro) -->
+    <param name="linear_vel_step"  value="0.05" type="double"/>
+    <param name="linear_vel_max"   value="1.5"  type="double"/>
+    <param name="angular_vel_step" value="0.33" type="double"/>
+    <param name="angular_vel_max"  value="6.6"  type="double"/>
+    <param name="wait_for_connection_" value="true" type="bool"/>
+  </node>
+    
+<!-- Teleoperation of the kobuki robot using a joystick -->    
+<node pkg="turtlebot_teleop" type="turtlebot_teleop_joy" name="turtlebot_teleop_joystick">
+    <param name="scale_angular" value="1.5"/>
+    <param name="scale_linear" value="0.5"/>
+    <param name="axis_deadman" value="10"/>
+    <param name="axis_linear" value="1"/>
+    <param name="axis_angular" value="0"/>
+    <remap from="turtlebot_teleop_joystick/cmd_vel" to="mobile_base/commands/velocity"/>
+    <!--<remap from="turtlebot_teleop_joystick/cmd_vel" to="cmd_vel_mux/input/teleop_raw"/>--> 
+  </node>
+
+  <node pkg="joy" type="joy_node" name="joystick"/>                                                                                                                                                                                     
+                                                                                                                                                                                    
+  <!-- Bumper/cliff to pointcloud (not working, as it needs sensors/core messages) -->
+  <include file="$(find turtlebot_bringup)/launch/includes/kobuki/bumper2pc.launch.xml"/>
+
+<!-- Run openni in order to use Kinect -->
+<include file="$(find openni_launch)/launch/openni.launch">
+    <param name="load_driver" value="false"/>
+    <arg name="publish_tf" value="false" /> 
+    <param name="depth_registration" value="false"/>
+    <param name="tf_prefix" value="/mobile_base" />
+ </include> 
+
+<!-- Robot state publisher to get the current data from the robot -->
+ <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="30.0" />
+  </node>
+
+  <!-- We will use the kinect data to hae a fake laser -->
+  <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
+
+  <node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
+        args="load depthimage_to_laserscan/DepthImageToLaserScanNodelet laserscan_nodelet_manager">
+    <param name="scan_height" value="10"/>
+    <param name="output_frame_id" value="/camera_depth_frame"/>
+    <param name="range_min" value="0.45"/>
+    <remap from="image" to="/camera/depth/image_raw"/>
+    <remap from="scan" to="/scan"/>
+  </node>
+
+<!-- Running omnimapper -->
+<node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
+ <param name="use_planes" value="false"/>
+ <param name="use_icp" value="true"/>
+    <param name="use_csm" value="true"/>
+    <param name="use_objects" value="false"/>
+    <param name="object_loop_closures" value="false"/>
+    <param name="object_landmarks" value="true"/>
+    <param name="object_x_noise" value="0.05" />
+    <param name="object_y_noise" value="0.05" />
+    <param name="object_z_noise" value="0.05" />
+    <param name="objobj_x_noise" value="0.5" />
+    <param name="objobj_y_noise" value="0.5" />
+    <param name="objobj_z_noise" value="0.5" />
+    <param name="use_occ_edge_icp" value="false"/>
+    <param name="use_tf" value="true"/>
+    <param name="use_error_plugin" value="false"/>
+    <param name="use_tsdf_plugin" value="true"/>
+    <param name="use_init_pose" value="false"/>
+    <param name="init_pose_from_tf" value="true"/>
+    <param name="odom_frame_name" value="/odom"/>
+    <param name="base_frame_name" value="/base_link"/>
+    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
+    <remap from="/odom" to="/new_odom" />
+    <param name="icp_leaf_size" value="0.05"/>
+    <param name="icp_max_correspondence_distance" value="0.2"/>
+    <param name="icp_trans_noise" value="0.15"/>
+    <param name="icp_rot_noise" value="0.15"/>
+    <param name="plane_range_threshold" value="0.1"/>
+    <param name="plane_angular_threshold" value="0.174532925"/>
+   <param name="plane_range_noise" value="0.5"/>
+    <param name="plane_angular_noise" value="1.174532925"/>
+    <param name="tf_trans_noise" value="0.05"/>
+    <param name="tf_roll_noise" value="0.001"/>
+    <param name="tf_pitch_noise" value="0.001"/>
+    <param name="tf_yaw_noise" value="0.2"/>
+    <param name="add_pose_per_cloud" value="true"/>
+    <param name="broadcast_map_to_odom" value="true"/>
+    <param name="draw_pose_array" value="true"/>
+    <param name="draw_pose_graph" value="true"/>
+    <param name="draw_label_cloud" value="true"/>
+    <param name="draw_clusters" value="true"/>
+    <param name="draw_icp_clouds_always" value="true"/>
+    <param name="distortion_model_path" value="/Research/kinect/distortion_model/new_distortion_model" />
+    <param name="evaluation_mode" value="false"/>
+    <param name="evaluation_pcd_path" value="true"/>
+    <param name="evaluation_associated_txt_path" value=""/>
+    <param name="evaluation_ground_truth_txt_path" value="/Research/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/groundtruth.txt"/>
+    <param name="evaluation_output_trajectory_txt_path" value="/Research/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/output.txt"/>
+    <param name="object_database_location" value="/Research/kinect/" />
+    <param name="use_organized_feature_extraction" value="false"/>
+</node>
+
+
+<!-- If rviz is enable, it will display at the same time as gazebo.  If you don't have enough memory
+     you should set false at the beginning of the launch file-->
+  <node if="$(arg rviz_gui)" name="rviz" pkg="rviz" type="rviz" args="-d ~/.rviz/kobuki_cn.rviz" />
+
+
+</launch>

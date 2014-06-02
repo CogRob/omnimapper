@@ -1,0 +1,4 @@
+float32 grid_size
+int32 resolution
+---
+bool done
