@@ -53,5 +53,8 @@
    <param name="suppress_commit_window" value="false"/>
    <param name="add_pose_per_cloud" value="false"/>
   </node>
+  
+  <!-- RVIZ to view the visualization -->
+  <node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find omnimapper_ros)/rviz/omnimapper_jeeves_demo.rviz" />
 
 </launch>

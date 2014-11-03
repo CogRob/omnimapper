@@ -43,6 +43,9 @@
 	<param name="suppress_commit_window" value="true"/>
 	<param name="use_organized_segmentation" value="false"/>
       </node>
+      
+      <!-- RVIZ to view the visualization -->
+      <node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find omnimapper_ros)/rviz/omnimapper_jeeves_demo.rviz" />
 
 	 <!-- <node name="tf_world" pkg="tf" type="static_transform_publisher" args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100" respawn="false" output="screen"/> -->
 </launch>
