@@ -6,7 +6,7 @@
 # Based on Ubuntu
 ############################################################
 
-FROM ruffsl/omnimapper-gui
+FROM cogrob/omnimapper-gui
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
 #Install qtcreator IDE

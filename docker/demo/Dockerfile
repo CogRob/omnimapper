@@ -6,7 +6,7 @@
 # Based on Ubuntu
 ############################################################
 
-FROM ruffsl/omnimapper-dox
+FROM cogrob/omnimapper-dox
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
 USER dox

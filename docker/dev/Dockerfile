@@ -9,7 +9,7 @@
 # Based on Ubuntu
 ############################################################
 
-FROM ruffsl/omnimapper-dep
+FROM cogrob/omnimapper-dep
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
 RUN apt-get install -y \

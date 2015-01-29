@@ -6,7 +6,7 @@
 # Based on Ubuntu
 ############################################################
 
-FROM ruffsl/omnimapper-dev
+FROM cogrob/omnimapper-dev
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
 # Intall some basic GUI and sound libs

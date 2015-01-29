@@ -6,7 +6,7 @@
 # Based on Ubuntu
 ############################################################
 
-FROM ruffsl/omnimapper-demo
+FROM cogrob/omnimapper-demo
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
 RUN sudo apt-get install -y \
