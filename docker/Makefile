@@ -17,8 +17,8 @@ build:
 	@docker build --tag=cogrob/omnimapper-gui gui/.
 	@docker build --tag=cogrob/omnimapper-dox dox/.
 	@docker build --tag=cogrob/omnimapper-demo demo/.
-	@( cd nvidia ; bash build.sh)
-	@docker build --tag=cogrob/omnimapper-nvidia nvidia/.
+	# @( cd nvidia ; bash build.sh)
+	# @docker build --tag=cogrob/omnimapper-nvidia nvidia/.
 
 clone:
 	@docker clone cogrob/omnimapper-dep
@@ -26,7 +26,7 @@ clone:
 	@docker clone cogrob/omnimapper-gui
 	@docker clone cogrob/omnimapper-dox
 	@docker clone cogrob/omnimapper-demo
-	@docker clone cogrob/omnimapper-nvidia
+	# @docker clone cogrob/omnimapper-nvidia
 	
 clean:
 	@docker rmi -f cogrob/omnimapper-dep
@@ -34,7 +34,7 @@ clean:
 	@docker rmi -f cogrob/omnimapper-gui
 	@docker rmi -f cogrob/omnimapper-dox
 	@docker rmi -f cogrob/omnimapper-demo
-	@docker rmi -f cogrob/omnimapper-nvidia
+	# @docker rmi -f cogrob/omnimapper-nvidia
 
 terminator bash:
 	@bash run.sh -i -t cogrob/omnimapper-dox $@
