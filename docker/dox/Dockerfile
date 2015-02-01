@@ -23,19 +23,23 @@ RUN apt-get install -y firefox
 
 #Add basic user
 ENV USERNAME dox
-ENV HOME /home/$USERNAME
 ENV PULSE_SERVER /run/pulse/native
-RUN mkdir -p $HOME \
-	&& useradd $USERNAME \
-	&& echo "$USERNAME:$USERNAME" | chpasswd \
-	&& echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-	&& chown -R $USERNAME:$USERNAME $HOME
+RUN useradd -m $USERNAME && \
+	echo "$USERNAME:$USERNAME" | chpasswd && \
+	usermod --shell /bin/bash $USERNAME && \
+	usermod -aG sudo $USERNAME && \
+	echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$USERNAME && \
+	chmod 0440 /etc/sudoers.d/$USERNAME && \
+	# Replace 1000 with your user/group id
+	usermod  --uid 1000 $USERNAME && \
+	groupmod --gid 1000 $USERNAME
 
 #Setup .bashrc for ROS
-RUN echo "source /opt/ros/indigo/setup.bash" >> /home/$USERNAME/.bashrc 
-
-#Fix for qt and X server errors
-RUN echo "export QT_X11_NO_MITSHM=1" >> /home/$USERNAME/.bashrc 
+RUN echo "source /opt/ros/indigo/setup.bash" >> /home/$USERNAME/.bashrc && \
+	#Fix for qt and X server errors
+	echo "export QT_X11_NO_MITSHM=1" >> /home/$USERNAME/.bashrc && \
+	# cd to home on login
+	echo "cd" >> /home/$USERNAME/.bashrc 
 
 #Change user
 USER dox
