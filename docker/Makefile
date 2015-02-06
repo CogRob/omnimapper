@@ -5,7 +5,7 @@ help:
 	@echo "-- Help Menu"
 	@echo ""
 	@echo "   1. make build            - build all cogrob images"
-	@echo "   1. make clone            - clone all cogrob images"
+	@echo "   1. make pull             - pull all cogrob images"
 	@echo "   1. make clean            - remove all cogrob images"
 	@echo "   2. make terminator       - run terminator on omnimapper-dox"
 	@echo "   2. make bash             - run bash on omnimapper-dox"
@@ -20,13 +20,13 @@ build:
 	# @( cd nvidia ; bash build.sh)
 	# @docker build --tag=cogrob/omnimapper-nvidia nvidia/.
 
-clone:
-	@docker clone cogrob/omnimapper-dep
-	@docker clone cogrob/omnimapper-dev
-	@docker clone cogrob/omnimapper-gui
-	@docker clone cogrob/omnimapper-dox
-	@docker clone cogrob/omnimapper-demo
-	# @docker clone cogrob/omnimapper-nvidia
+pull:
+	@docker pull cogrob/omnimapper-dep
+	@docker pull cogrob/omnimapper-dev
+	@docker pull cogrob/omnimapper-gui
+	@docker pull cogrob/omnimapper-dox
+	@docker pull cogrob/omnimapper-demo
+	# @docker pull cogrob/omnimapper-nvidia
 	
 clean:
 	@docker rmi -f cogrob/omnimapper-dep

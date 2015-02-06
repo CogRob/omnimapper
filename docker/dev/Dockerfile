@@ -25,4 +25,5 @@ RUN apt-get install -y \
 RUN apt-get install -y \
 	libeigen3-dev \
 	ros-indigo-perception-pcl \
-	ros-indigo-openni-launch
+	ros-indigo-openni-launch \
+	ros-indigo-turtlebot-simulator

@@ -5,8 +5,8 @@ source /opt/ros/indigo/setup.bash
 echo "export ROS_PACKAGE_PATH=/home/dox/omnimapper/ros/:${ROS_PACKAGE_PATH}" >> ~/.bash_aliases
 source ~/.bashrc
 
-# source /opt/ros/indigo/setup.bash
-# export ROS_PACKAGE_PATH=/home/dox/omnimapper/ros/:${ROS_PACKAGE_PATH}
+source /opt/ros/indigo/setup.bash
+export ROS_PACKAGE_PATH=/home/dox/omnimapper/ros/:${ROS_PACKAGE_PATH}
 
 sudo rosdep init
 
