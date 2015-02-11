@@ -9,8 +9,7 @@
 FROM cogrob/omnimapper-demo
 MAINTAINER Cognitive Robotics "http://cogrob.org/"
 
-RUN sudo apt-get update
-RUN sudo apt-get install -y \
+RUN sudo apt-get update && sudo apt-get install -y \
 	x-window-system \
 	binutils \
 	mesa-utils \
