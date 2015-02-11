@@ -1,6 +1,6 @@
 <launch>
 
-<--! NOTE: If you have DVO, try the launch file that uses it instead -- performance with ICP alone is not robust! -->
+<!-- NOTE: If you have DVO, try the launch file that uses it instead -- performance with ICP alone is not robust! -->
 
 <!--  <node name="camera_tracker" pkg="dvo_ros" type="camera_tracker" respawn="false" output="screen">
   </node> -->
