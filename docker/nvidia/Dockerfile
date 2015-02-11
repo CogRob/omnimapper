@@ -1,5 +1,5 @@
 #From inside this folder
-docker build -t cogrob/omnimapper-nvidia .
+#docker build -t cogrob/omnimapper-nvidia .
 
 ############################################################
 # Dockerfile to build OmiMapper images
