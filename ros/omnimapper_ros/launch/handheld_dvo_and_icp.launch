@@ -1,6 +1,6 @@
 <launch>
 
-<--! NOTE: This requires DVO -- download and install separately! -->
+<!-- NOTE: This requires DVO -- download and install separately! -->
 
   <node name="camera_tracker" pkg="dvo_ros" type="camera_tracker" respawn="false" output="screen">
   </node>
