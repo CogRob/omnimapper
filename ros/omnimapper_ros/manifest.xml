@@ -17,6 +17,7 @@
   <depend package="csm"/>
   <depend package="laser_geometry"/>
   <depend package="nodelet"/>
+  <depend package="apriltags"/>
   <export>
     <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
     <cpp cflags="-I${prefix}/include -I${prefix}/cfg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lomnimapper_ros"/>

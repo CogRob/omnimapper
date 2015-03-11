@@ -1,0 +1,90 @@
+<launch>
+
+    <node pkg="apriltags" type="apriltags" name="apriltags">
+        <param name="~default_tag_size" value="0.1524"/>
+        <param name="~viewer" value="true"/>
+
+        <remap from="~image" to="/camera/rgb/image_rect_color"/>
+        <remap from="~camera_info" to="/camera/rgb/camera_info"/>
+        <remap from="~marker_array" to="/apriltags/marker_array"/>
+        <remap from="~detections" to="/apriltags/detections"/>
+    </node>
+    
+    <include file="$(find openni_launch)/launch/openni.launch">
+        <arg name="load_driver" value="true" />
+        <!-- <arg name="depth_registration" value="true" /> -->
+        <!-- <arg name="num_worker_threads" value="4" /> -->
+    </include>
+
+    <param name="/use_sim_time" value="false"/>
+
+    <node name="omnimapper_ros_node" pkg="omnimapper_ros" type="omnimapper_ros_node" respawn="false" output="screen">
+    	
+    <!-- PLUGIN SELECTION -->
+    <param name="use_icp" value="false"/>
+    <param name="use_csm" value="false"/>
+    <param name="use_occ_edge_icp" value="false"/>
+    <param name="use_tf" value="true"/>
+    <param name="use_no_motion" value="true"/>
+    <param name="use_error_plugin" value="false"/>
+    <param name="use_tsdf_plugin" value="false"/>
+    <param name="use_organized_segmentation" value="false"/>
+
+    <!-- INITIALIZATION -->
+    <param name="use_init_pose"     value="false"/>	
+    <param name="init_pose_from_tf" value="true"/>
+    <param name="odom_frame_name"   value="odom"/>
+    <param name="base_frame_name"   value="base_link"/>
+    <!-- <param name="cloud_topic_name"  value="/camera/depth_registered/points"/> -->
+    <param name="cloud_topic_name"  value="/camera/none"/> <!-- if icp is not wanted, you can set a false topic to speed up openni's rgb fps -->
+
+    <!-- ICP PLUGIN -->
+    <param name="icp_leaf_size" value="0.05"/>
+    <param name="icp_max_correspondence_distance" value="2.2"/>
+    <param name="icp_trans_noise" value="0.15"/>
+    <param name="icp_rot_noise" value="0.15"/>
+    <param name="icp_loop_closure_distance_threshold" value="3.0"/>
+    <param name="icp_score_threshold" value="0.8"/>
+    <param name="icp_loop_closure_score_threshold" value="0.8"/>
+    <param name="icp_loop_closure_pose_index_threshold" value="10"/>
+    <param name="icp_save_full_res_clouds" value="false"/>
+
+    <!-- APRILTag PLUGIN -->
+    <param name="use_apriltag"              value="true"/>
+    <param name="apriltag_topic_name"       value="/apriltags/detections"/>
+    <param name="apriltag_use_pose"         value="true"/>
+    <param name="apriltag_use_projection"   value="true"/>
+    <param name="apriltag_unique_ids"       value="true"/>
+    <param name="apriltag_trans_noise"      value="0.05"/>
+    <param name="apriltag_rot_noise"        value="0.5"/>
+    <param name="draw_apriltags"            value="true"/>
+    <param name="apriltag_loop_closure_distance_threshold" value="0.5"/>
+
+    <param name="debug"              value="true"/>
+
+    <!-- TF PLUGIN -->
+    <param name="tf_trans_noise" value="0.05"/>
+    <param name="tf_roll_noise"  value="0.001"/>
+    <param name="tf_pitch_noise" value="0.001"/>
+    <param name="tf_yaw_noise"   value="0.2"/>
+
+    <!-- VISUALIZATION -->
+    <param name="broadcast_map_to_odom" value="true"/>
+    <param name="draw_pose_array"       value="true"/>
+    <param name="draw_pose_graph"       value="true"/>
+    <param name="draw_label_cloud"      value="true"/>
+    <param name="draw_clusters"         value="true"/>
+
+    <!-- CONFIG -->
+    <param name="suppress_commit_window" value="false"/>
+    <param name="add_pose_per_cloud"     value="false"/>
+    </node>
+
+	<!-- Dummy tfs for camera to odom -->
+   <node pkg="tf" type="static_transform_publisher" name="camera_link_broadcaster" args="0 0 1 0 0 0  base_link camera_link 100" />
+   <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="-1 0 0 0 0 0  odom base_link 100" />
+
+    <!-- RVIZ to view the visualization -->
+    <node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find omnimapper_ros)/rviz/apriltags.rviz"/>
+
+</launch>

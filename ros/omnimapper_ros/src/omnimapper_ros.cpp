@@ -45,6 +45,7 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     tf_plugin_ (&omb_),
     no_motion_plugin_ (&omb_),
     icp_plugin_ (&omb_),
+    apriltag_plugin_ (&omb_),
     edge_icp_plugin_ (&omb_),
     //bounded_plane_plugin_ (&omb_), // Comning soon...
     csm_plugin_ (&omb_),
@@ -161,6 +162,19 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
   edge_icp_plugin_.setSaveFullResClouds (false);
   edge_icp_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
+
+  // Set up apriltag plugin
+  apriltag_plugin_.setUsePose (apriltag_use_pose_);
+  apriltag_plugin_.setUseProjection (apriltag_use_projection_);
+  apriltag_plugin_.setTransNoise (apriltag_trans_noise_);
+  apriltag_plugin_.setRotNoise (apriltag_rot_noise_);
+  apriltag_plugin_.setUniqueIds (apriltag_unique_ids_);
+  apriltag_plugin_.setLoopClosureDistanceThreshold (apriltag_loop_closure_distance_threshold_);
+  apriltag_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
+
+  // Set up edge CSM plugin
+  csm_plugin_.setBaseFrameName (base_frame_name_);
+
   /*
   // Set up the Bounded Plane Plugin
   bounded_plane_plugin_.setRangeThreshold (plane_range_threshold_);
@@ -229,6 +243,10 @@ if (use_csm_)
  // Subscribe to Point Clouds
  pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperROS::cloudCallback, this);  //("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
  
+ // Subscribe to AprilTags
+ apriltag_sub_ = n_.subscribe (apriltag_topic_name_, 1, &OmniMapperROS::apriltagCallback, this);
+
+
  // Install the visualizer
  if (use_rviz_plugin_)
  {
@@ -255,6 +273,8 @@ if (use_csm_)
  boost::thread omb_thread (&omnimapper::OmniMapperBase::spin, &omb_);
  if (use_icp_)
    boost::thread icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
+ if (use_apriltag_)
+   boost::thread apriltag_thread (&omnimapper::AprilTagPoseMeasurementPlugin::spin, &apriltag_plugin_);
  if (use_occ_edge_icp_)
    boost::thread edge_icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
  if (use_rviz_plugin_)
@@ -276,6 +296,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("use_objects", use_objects_, true);
   n_.param ("use_csm", use_csm_, true);
   n_.param ("use_icp", use_icp_, true);
+  n_.param ("use_apriltag", use_apriltag_, true);
   n_.param ("use_occ_edge_icp", use_occ_edge_icp_, false);
   n_.param ("use_tf", use_tf_, true);
   n_.param ("use_tsdf_plugin", use_tsdf_plugin_, true);
@@ -360,6 +381,105 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("use_organized_segmentation", use_organized_segmentation_, true);
   n_.param ("debug", debug_, false);
   n_.param ("ar_mode", ar_mode_, false);
+
+
+  n_.param ("apriltag_topic_name",      apriltag_topic_name_,       std::string ("/apriltags/detections"));
+  n_.param ("apriltag_use_pose",        apriltag_use_pose_,         true);
+  n_.param ("apriltag_use_projection",  apriltag_use_projection_,   false);
+  n_.param ("apriltag_trans_noise",     apriltag_trans_noise_,      0.1);
+  n_.param ("apriltag_rot_noise",       apriltag_rot_noise_,        0.1);
+  n_.param ("apriltag_unique_ids",      apriltag_unique_ids_,       true);
+  n_.param ("apriltag_loop_closure_distance_threshold", apriltag_loop_closure_distance_threshold_, 3.0);
+  n_.param ("draw_apriltags",           draw_apriltags_,            true);
+}
+template<typename PointT> void
+OmniMapperROS<PointT>::apriltagCallback (const apriltags::AprilTagDetections &msg)
+{
+  if (debug_)
+    ROS_INFO("OmniMapperROS got a apriltagmessage.");
+  double start_cb = pcl::getTime ();
+  double start_copy = pcl::getTime ();
+  APRILTagMessagePtr apriltagmessage (new APRILTagMessage ());
+
+  for(unsigned int i = 0; i < msg.detections.size(); ++i)
+  {
+      APRILTagDetection detection;
+
+      detection.id = msg.detections[i].id;
+
+      geometry_msgs::Pose m = msg.detections[i].pose;
+      Eigen::Affine3d e = Eigen::Translation3d(m.position.x,
+                                               m.position.y,
+                                               m.position.z) *
+              Eigen::Quaterniond(m.orientation.w,
+                                 m.orientation.x,
+                                 m.orientation.y,
+                                 m.orientation.z);
+      gtsam::Pose3 pose = transformToPose3(e.cast<float>());
+      detection.pose = pose;
+
+      apriltagmessage->detections.push_back(detection);
+  }
+
+  apriltagmessage->header.seq = msg.header.seq;
+  apriltagmessage->header.frame_id = msg.header.frame_id;
+  apriltagmessage->header.stamp = pcl_conversions::toPCL(msg.header.stamp);
+  double end_copy = pcl::getTime ();
+
+  omnimapper::Time message_stamp = omnimapper::stamp2ptime (apriltagmessage->header.stamp);
+
+  if (debug_)
+  {
+    std::cout << "OmniMapperRos: Got apriltagmessage from: " << message_stamp
+              << std::endl;
+  }
+
+  if (debug_)
+  {
+    std::cout << "apriltagmessageCallback: conversion took "
+              << double (end_copy - start_copy) << std::endl;
+  }
+
+  if (use_apriltag_)
+  {
+    if (debug_)
+    {
+      std::cout << "Calling APRILTag Plugin with stamp: "
+                << omnimapper::stamp2ptime (apriltagmessage->header.stamp) << std::endl;
+    }
+
+    apriltag_plugin_.apriltagCallback(apriltagmessage);
+  }
+//  if (add_pose_per_apriltagmessage)
+  if (true)
+  {
+    double start_getpose = pcl::getTime ();
+    gtsam::Symbol sym;
+    boost::posix_time::ptime header_time = omnimapper::stamp2ptime (apriltagmessage->header.stamp);
+    if (debug_)
+      std::cout << "header time: " << header_time << std::endl;
+    omb_.getPoseSymbolAtTime (header_time, sym);
+    double end_getpose = pcl::getTime ();
+    if (debug_)
+      std::cout << "cloudCallback: get_pose took " << double (end_getpose - start_getpose) << std::endl;
+  }
+  if (broadcast_map_to_odom_)
+  {
+    double start_pub = pcl::getTime ();
+    publishMapToOdom ();
+    double end_pub = pcl::getTime ();
+    if (debug_)
+      std::cout << "apriltagmessageCallback: pub took " << double (end_pub - start_pub) << std::endl;
+  }
+
+  if (broadcast_current_pose_)
+  {
+    publishCurrentPose ();
+  }
+
+  double end_cb = pcl::getTime ();
+  if (debug_)
+    std::cout << "apriltagmessageCallback: cb took: " << double (end_cb - start_cb) << std::endl;
 }
 
 template<typename PointT> void 
@@ -393,7 +513,7 @@ OmniMapperROS<PointT>::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& ms
       std::cout << "Calling ICP Plugin with stamp: "
                 << omnimapper::stamp2ptime (cloud->header.stamp) << std::endl;
     }
-        
+
     icp_plugin_.cloudCallback (cloud);
   }
       

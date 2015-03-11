@@ -66,6 +66,10 @@
 #include <tf/transform_broadcaster.h>
 #include <google/profiler.h>
 
+#include <omnimapper/transform_tools.h>
+#include <omnimapper/apriltag_plugin/apriltag_plugin.h>
+#include <apriltags/AprilTagDetections.h>
+
 template<typename PointT>
 class OmniMapperROS
 {
@@ -77,6 +81,14 @@ class OmniMapperROS
   typedef typename LabelCloud::Ptr LabelCloudPtr;
   typedef typename LabelCloud::ConstPtr LabelCloudConstPtr;
 
+    typedef omnimapper::AprilTagPoseMeasurementPlugin::APRILTagDetection APRILTagDetection;
+    typedef APRILTagDetection::Ptr APRILTagDetectionPtr;
+    typedef APRILTagDetection::ConstPtr APRILTagDetectionConstPtr;
+
+    typedef omnimapper::AprilTagPoseMeasurementPlugin::APRILTagMessage APRILTagMessage;
+    typedef APRILTagMessage::Ptr APRILTagMessagePtr;
+    typedef APRILTagMessage::ConstPtr APRILTagMessageConstPtr;
+
   public:
     // Constructor
     OmniMapperROS (ros::NodeHandle nh);
@@ -86,7 +98,10 @@ class OmniMapperROS
 
     // Point Cloud Callback
     void cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg);
-    
+
+    // APRILTag Callback
+    void apriltagCallback (const apriltags::AprilTagDetections &msg);
+
     // Laser Scan Callback
     void laserScanCallback (const sensor_msgs::LaserScanConstPtr& msg);
     
@@ -128,6 +143,9 @@ class OmniMapperROS
     // ICP Plugin
     omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin_;
 
+    // AprilTag Plugin
+    omnimapper::AprilTagPoseMeasurementPlugin apriltag_plugin_;
+
     // Edge ICP Plugin
     omnimapper::ICPPoseMeasurementPlugin<PointT> edge_icp_plugin_;
 
@@ -164,6 +182,7 @@ class OmniMapperROS
     // Subscribers
     ros::Subscriber pointcloud_sub_;
     ros::Subscriber laserScan_sub_;
+    ros::Subscriber apriltag_sub_;
 
     ros::ServiceServer generate_tsdf_srv_;
 
@@ -173,6 +192,7 @@ class OmniMapperROS
     bool use_objects_;
     bool use_csm_;
     bool use_icp_;
+    bool use_apriltag_;
     bool use_occ_edge_icp_;
     bool use_tf_;
     bool use_no_motion_;
@@ -182,6 +202,7 @@ class OmniMapperROS
     std::string base_frame_name_;
     std::string rgbd_frame_name_;
     std::string cloud_topic_name_;
+    std::string apriltag_topic_name_;
 
     bool init_pose_from_tf_;
     bool use_init_pose_;
@@ -201,6 +222,15 @@ class OmniMapperROS
     double icp_loop_closure_score_threshold_;
     int icp_loop_closure_pose_index_threshold_;
     bool icp_save_full_res_clouds_;
+
+    // APRILTag Params
+    bool apriltag_use_pose_;
+    bool apriltag_use_projection_;
+    double apriltag_trans_noise_;
+    double apriltag_rot_noise_;
+    bool apriltag_unique_ids_;
+    double apriltag_loop_closure_distance_threshold_;
+    bool draw_apriltags_;
 
     // Occluding Edge ICP Params
     double occ_edge_trans_noise_;

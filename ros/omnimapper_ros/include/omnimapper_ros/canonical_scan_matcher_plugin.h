@@ -48,6 +48,9 @@ namespace omnimapper
       LaserScanPConstPtr getLaserScanPtr (gtsam::Symbol sym);
       sensor_msgs::PointCloud2 getPC2 (gtsam::Symbol sym);
 
+      /** \brief setBaseFrameName sets the CSM base frame name. */
+      void setBaseFrameName (const std::string& frame_id) { base_frame_name_ = frame_id; }
+
 
     protected:
       ros::NodeHandle nh_;
