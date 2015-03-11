@@ -48,10 +48,13 @@ set (base_srcs base/src/omnimapper_base.cpp
 include_directories (plugins/include)
 
 set (plugins_incs plugins/include/omnimapper/icp_plugin.h
-				  plugins/include/omnimapper/no_motion_pose_plugin.h)
+                                  plugins/include/omnimapper/apriltag_plugin/apriltag_base.h
+                                  plugins/include/omnimapper/apriltag_plugin/apriltag_plugin.h
+                                  plugins/include/omnimapper/no_motion_pose_plugin.h)
 
 set (plugins_srcs plugins/src/icp_plugin.cpp
-				  plugins/src/no_motion_pose_plugin.cpp)
+                                  plugins/src/apriltag_plugin.cpp
+                                  plugins/src/no_motion_pose_plugin.cpp)
 
 
 set (incs ${base_incs} ${plugins_incs})

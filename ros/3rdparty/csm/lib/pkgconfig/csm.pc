@@ -1,0 +1,10 @@
+prefix=/home/tox/git/omnimapper/ros/3rdparty/csm
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: csm
+Description: The C(anonical) Scan Matcher
+Requires: gsl
+Version: 
+Libs: -L. -L/usr/lib -L/usr/lib -lgsl -lgslcblas -lm /usr/lib/x86_64-linux-gnu/libcairo.so -L${libdir} -lcsm-static 
+Cflags:  -I/usr/include  -I/usr/include/cairo -I${includedir}
