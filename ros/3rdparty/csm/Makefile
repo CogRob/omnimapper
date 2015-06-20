@@ -5,16 +5,18 @@ SOURCE_DIR = $(BUILD_DIR)/csm-git
 
 ########
 ## Install from git
-#GIT_URL = http://github.com/AndreaCensi/csm.git
-#GIT_REVISION = 23703a998fff57250322
-#include $(shell rospack find mk)/git_checkout.mk
+GIT_DIR = $(SOURCE_DIR)
+GIT_URL = http://github.com/AndreaCensi/csm.git
+GIT_REVISION = 23703a998fff57250322
+#GIT_PATCH = (patch_a patch_b patch_c)
+include $(shell rospack find mk)/git_checkout.mk
 ## Install from tarball
-TARBALL     = build/csm-git-23703a998fff57250322.tar.gz
-TARBALL_URL = https://code.ros.org/svn/release/download/thirdparty/csm-git-23703a998fff57250322.tar.gz
-UNPACK_CMD  = tar zxf
-MD5SUM_FILE = csm-git-23703a998fff57250322.tar.gz.md5sum
-include $(shell rospack find mk)/download_unpack_build.mk
-########
+#TARBALL     = build/csm-git-23703a998fff57250322.tar.gz
+#TARBALL_URL = https://code.ros.org/svn/release/download/thirdparty/csm-git-23703a998fff57250322.tar.gz
+#UNPACK_CMD  = tar zxf
+#MD5SUM_FILE = csm-git-23703a998fff57250322.tar.gz.md5sum
+#include $(shell rospack find mk)/download_unpack_build.mk
+#########
 
 patch:
 ifneq (,$(wildcard $(BUILD_DIR)/.patched))
@@ -27,7 +29,7 @@ else
 	@echo CSM previously patched, use 'make wipe' to completely remove build directory.
 endif
 
-installed: $(SOURCE_DIR)/unpacked patch
+installed: download patch
 	cd $(SOURCE_DIR) && mkdir -p deploy
 	cd $(SOURCE_DIR) && cmake -DCMAKE_INSTALL_PREFIX:PATH=$(CURDIR) -DCMAKE_C_FLAGS:STRING="-fPIC"
 	cd $(SOURCE_DIR) && make
