@@ -11,11 +11,35 @@
 namespace fsr_or
 {
   template <typename PointT>
-  void FSRHashMapDescription<PointT>::addModelToFile (CloudConstPtr &cloud_input,
-                                                 std::string &model_name, int &model_type, int &model_view,
-                                                 std::ofstream &mfile)
+  FSRHashMapDescription<PointT>::FSRHashMapDescription (float d,
+                                                        float delta_d,
+                                                        float K,
+                                                        float angle_step)
+  : d_ (d),
+    delta_d_ (delta_d),
+    K_ (K),
+    angle_step_ (angle_step),
+    m_ (0),
+    H_ (new FeatureHashMap<PointT>),
+    modelDiams_ (new ObjectMap<float>),
+    modelSizes_ (new ObjectMap<int>)
+  {
+    H_->clear ();
+    modelDiams_->clear ();
+    modelSizes_->clear ();
+  }
+
+  template <typename PointT>
+  void FSRHashMapDescription<PointT>::addModelToFile (CloudPtr &cloud_input,
+                                                      std::string model_name, int model_type, int model_view,
+                                                      std::ofstream &mfile)
   {
     /// TODO: add resolution invariance
+
+    #if FSR_HASHDESCRIPTION_VERBOSE
+    std::cout << "[fsr_or::FSRHashMapDescription::addModelToFile()]: adding model " << model_name << " of type "
+              << model_type << " of view " << model_view << "." << std::endl;
+    #endif // FSR_HASHDESCRIPTION_VERBOSE
 
     if (!validateCloudForProcessing (cloud_input))
     {
@@ -66,59 +90,61 @@ namespace fsr_or
     #if FSR_HASHDESCRIPTION_DEBUG
     tbb::concurrent_vector<std::string> errs;
     #endif // FSR_HASHDESCRIPTION_DEBUG
-    //for (size_t i = 0; i < ne_indices.size (); i++)
-    tbb::parallel_for(0, static_cast<int>(ne_indices.size ()), 1, [&] (int i)
+    tbb::parallel_for (size_t(0), ne_indices.size (),
+                      [&] (size_t i)
     {
-      //for (size_t j = i + 1; j < ne_indices.size (); j++)
-      tbb::parallel_for(i + 1, static_cast<int>(ne_indices.size ()), 1, [&] (int j)
+      tbb::parallel_for (tbb::blocked_range<size_t> (i + 1, ne_indices.size (), 1000),
+                         [&] (const tbb::blocked_range<size_t> &r)
       {
-        float f1, f2, f3, f4;
-        PointPair<PointT> ptpair;
-        ptpair.first.p = cloud_input->points[ne_indices[i]];
-        ptpair.first.n = cloud_normals->points[i];
-        ptpair.second.p = cloud_input->points[ne_indices[j]];
-        ptpair.second.n = cloud_normals->points[j];
-        if (computeOPFFeature (ptpair.first.p.getVector4fMap (),
-                               ptpair.first.n.getNormalVector4fMap (),
-                               ptpair.second.p.getVector4fMap (),
-                               ptpair.second.n.getNormalVector4fMap (),
-                               f1, f2, f3, f4,
-                               d))
+        for(size_t j = r.begin (); j != r.end (); ++j)
         {
-          int d2, d3, d4;
-          Eigen::Matrix4f F;
-          d2 = static_cast<int> (floor (f2 / angle_step_));
-          d3 = static_cast<int> (floor (f3 / angle_step_));
-          d4 = static_cast<int> (floor (f4 / angle_step_));
-          if (computeF(ptpair, F))
+          float f1, f2, f3, f4;
+          PointPair<PointT> ptpair;
+          ptpair.pu.p = cloud_input->points[ne_indices[i]];
+          ptpair.pu.n = cloud_normals->points[i];
+          ptpair.pv.p = cloud_input->points[ne_indices[j]];
+          ptpair.pv.n = cloud_normals->points[j];
+          if (computeOPFFeature (ptpair.pu.p.getVector4fMap (),
+                                 ptpair.pu.n.getNormalVector4fMap (),
+                                 ptpair.pv.p.getVector4fMap (),
+                                 ptpair.pv.n.getNormalVector4fMap (),
+                                 f1, f2, f3, f4,
+                                 d))
           {
-            typename FeatureHashMapSingle::accessor a;
-            FSRFeature feature (d2, d3, d4);
-            mapformodel.insert (a, feature);
-            a->second.push_back(PointPairSystem<PointT> (ptpair, F));
-            a.release ();
-          }
-          #if FSR_HASHDESCRIPTION_DEBUG
-          else
-          {
-            std::stringstream ss;
-            ss.clear ();
-            ss.str (std::string ());
-            ss << "[fsr_or::FSRHashMapDescription::addModelToFile()]: something went wrong trying to compute F for pair "
-                      << ptpair.display () << "!" << "\n";
-            errs.push_back(ss.str ());
-          }
-          #endif // FSR_HASHDESCRIPTION_DEBUG
-
-          {
-            DiamMutex::scoped_lock lock (dmutex);
-            if (f1 > maxdist)
+            int d2, d3, d4;
+            Eigen::Matrix4f F;
+            d2 = static_cast<int> (floor (f2 / angle_step_));
+            d3 = static_cast<int> (floor (f3 / angle_step_));
+            d4 = static_cast<int> (floor (f4 / angle_step_));
+            if (computeF(ptpair, F))
             {
-              maxdist = f1;
+              typename FeatureHashMapSingle::accessor a;
+              FSRFeature feature (d2, d3, d4);
+              mapformodel.insert (a, feature);
+              a->second.push_back(PointPairSystem<PointT> (ptpair, F));
+            }
+            #if FSR_HASHDESCRIPTION_DEBUG
+            else
+            {
+              std::stringstream ss;
+              ss.clear ();
+              ss.str (std::string ());
+              ss << "[fsr_or::FSRHashMapDescription::addModelToFile()]: something went wrong trying to compute F for pair "
+                 << ptpair.display () << "!" << "\n";
+              errs.push_back(ss.str ());
+            }
+            #endif // FSR_HASHDESCRIPTION_DEBUG
+
+            {
+              DiamMutex::scoped_lock lock (dmutex_);
+              if (f1 > maxdist)
+              {
+                maxdist = f1;
+              }
             }
           }
         }
-      });
+      }, tbb::simple_partitioner ());
     });
 
     #if FSR_HASHDESCRIPTION_DEBUG
@@ -126,7 +152,7 @@ namespace fsr_or
     {
       std::cout << errs[i] << std::endl;
     }
-    std::cout << "[fsr_or::FSRHashMapDescription::addModelToFile()]: there were " << errs.size () << std::endl;
+    std::cout << "[fsr_or::FSRHashMapDescription::addModelToFile()]: there were " << errs.size () << " errors" << std::endl;
     #endif // FSR_HASHDESCRIPTION_DEBUG
 
     trimFeaturesFromSingleTable (mapformodel);
@@ -140,11 +166,6 @@ namespace fsr_or
     mfile << ss.str ();
     writeModel (mapformodel, mfile);
     mfile << "}\n";
-
-    #if FSR_HASHDESCRIPTION_VERBOSE
-    std::cout << "[fsr_or::FSRHashMapDescription::addModelToFile()]: added model " << model_name << " of type "
-              << model_type << " of view " << model_view << "." << std::endl;
-    #endif // FSR_HASHDESCRIPTION_VERBOSE
   }
 
   template <typename PointT>
@@ -206,26 +227,21 @@ namespace fsr_or
     int mtype = std::stoi (value);
     std::getline (ss, value, ',');
     int mview = std::stoi (value);
+
+    /// get model diameter and number of points in model
+    OMKey key (mname, mtype, mview);
     std::getline (ss, value, ',');
     float mdiam = std::stof (value);
-    modelDiams_->insert (mname, mtype, mview, mdiam);
+    modelDiams_->insert_model (key, mdiam);
     std::getline(ss, value, ',');
     int msize = std::stoi (value);
-    modelSizes_->insert (mname, mtype, mview, msize);
+    modelSizes_->insert_model (key, msize);
     m_ += msize;
 
-    #if FSR_HASHDESCRIPTION_DEBUG
-    float tempf = 1.0f;
-    if (!(modelDiams_->at (mname, mtype, mview, tempf)))
-    {
-      std::cout << "[fsr_or::FSRHashMapDescription::readModel()]: something went wrong with ObjectMap<float>::insert()!" << std::endl;
-    }
-    int tempi = 1;
-    if (!(modelSizes_->at (mname, mtype, mview, tempi)))
-    {
-      std::cout << "[fsr_or::FSRHashMapDescription::readModel()]: something went wrong with ObjectMap<int>::insert()!" << std::endl;
-    }
-    #endif // FSR_HASHDESCRIPTION_DEBUG
+    #if FSR_HASHDESCRIPTION_VERBOSE
+    std::cout << "[fsr_or::FSRHashMapDescription::readModel()]: reading model " << mname << " of type "
+              << mtype << " of view " << mview << "." << std::endl;
+    #endif // FSR_HASHDESCRIPTION_VERBOSE
 
     std::getline (mfile, line);
     FSRFeature feature;
@@ -247,24 +263,11 @@ namespace fsr_or
         std::getline (ss2, value, ',');
       }
 
-      H_->insert (feature, mname, mtype, mview, systems);
-
-      #if FSR_HASHDESCRIPTION_DEBUG
-      std::vector<PointPairSystem<PointT> > tempsys = std::vector<PointPairSystem<PointT> > ();
-      if (!(H_->at (feature, mname, mtype, mview, tempsys)))
-      {
-        std::cout << "[fsr_or::FSRHashMapDescription::readModel()]: something went wrong with ObjectMap<std::vector<PointPairSystem<PointT> > >::insert()!" << std::endl;
-      }
-      #endif // FSR_HASHDESCRIPTION_DEBUG
+      H_->insert_model (feature, key, systems);
 
       std::getline (mfile, line);
     }
     while (line.compare ("}") != 0);
-
-    #if FSR_HASHDESCRIPTION_VERBOSE
-    std::cout << "[fsr_or::FSRHashMapDescription::readModel()]: read model " << mname << " of type "
-              << mtype << " of view " << mview << "." << std::endl;
-    #endif // FSR_HASHDESCRIPTION_VERBOSE
 
     return true;
   }
@@ -303,7 +306,7 @@ namespace fsr_or
   }
 
   template <typename PointT>
-  bool FSRHashMapDescription<PointT>::validateCloudForProcessing (CloudConstPtr &cloud)
+  bool FSRHashMapDescription<PointT>::validateCloudForProcessing (CloudPtr &cloud)
   {
     std::vector<int> pt_indices;
     CloudPtr cloud_test (new Cloud ());
