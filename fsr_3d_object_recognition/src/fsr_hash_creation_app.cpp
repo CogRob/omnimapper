@@ -1,7 +1,11 @@
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/progress.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
 #include <iostream>
+#include <sstream>
 
 #include <fsr_threedorlib/fsr_hashdescription.h>
 
@@ -9,8 +13,8 @@
 #define FSR_OBJDESC_VERBOSE 1
 
 bool describeDatabase (std::string database, bool append);
-bool createDescription (std::string view, std::string viewfolder, std::ofstream &dfile);
-bool getViewInfo(std::string fname, std::string &class_name, std::string &class_num, std::string &view_num);
+bool createDescription (std::string model, std::string viewfolder, std::ofstream &dfile);
+bool getViewInfo(std::string fname, std::string &class_name, std::string &class_num);
 
 namespace fs = boost::filesystem;
 
@@ -18,8 +22,8 @@ fsr_or::FSRHashMapDescription<pcl::PointXYZ> hashmapsearch;
 
 int main (int argc, char **argv)
 {
-  std::cout << "this program creates a hashtable of model descriptions from partial views of models " << std::endl;
-  std::string command, viewpath, savepath, view;
+  std::cout << "this program creates a hashtable of model descriptions from clouds of models " << std::endl;
+  std::string command, modelpath, savepath, model;
   bool done = false;
   while (!done)
   {
@@ -32,9 +36,9 @@ int main (int argc, char **argv)
     if (command.compare("all") == 0)
     {
       std::cout << "enter the full directory path of the database: ";
-      std::cin >> viewpath;
+      std::cin >> modelpath;
       std::cout << std::endl;
-      if (!describeDatabase (viewpath, false))
+      if (!describeDatabase (modelpath, false))
       {
         std::cout << "something was wrong with your input" << std::endl;
       }
@@ -42,16 +46,16 @@ int main (int argc, char **argv)
     else if (command.compare ("single") == 0)
     {
       std::cout << "enter the filename of the model: ";
-      std::cin >> view;
+      std::cin >> model;
       std::cout << std::endl;
 
       std::stringstream ss;
       std::ofstream file;
-      std::string fname = view.substr (0, view.find_last_of ("."));
-      ss << "desc_" << fname << ".txt";
+      std::string fname = model.substr (model.find_last_of ("/") + 1, model.find_last_of ("."));
+      ss << "desc_" << model << ".txt";
       file.open (ss.str().c_str ());
 
-      if (!createDescription (view, "", file))
+      if (!createDescription (model, "", file))
       {
         std::cout << "something was wrong with your input" << std::endl;
       }
@@ -120,8 +124,8 @@ bool describeDatabase (std::string database, bool append)
             {
               dfile << "\n";
               ++count_proc;
-              std::cout << "created descripton for view " << dir_iter->path().filename().string () << "." << std::endl;
-              ss << "created descripton for view " << dir_iter->path().filename().string () << ".\n";
+              std::cout << "created description for view " << dir_iter->path().filename().string () << "." << std::endl;
+              ss << "created description for view " << dir_iter->path().filename().string () << ".\n";
             }
           }
           else
@@ -162,36 +166,37 @@ bool describeDatabase (std::string database, bool append)
   return !error;
 }
 
-bool createDescription (std::string view, std::string viewfolder, std::ofstream &dfile)
+bool createDescription (std::string model, std::string viewfolder, std::ofstream &dfile)
 {
   std::stringstream ss;
-  std::string cname, cnum, vnum;
-
-  if (!getViewInfo(view, cname, cnum, vnum))
-  {
-    return false;
-  }
+  std::string cfull, cname, cnum;
 
   if (viewfolder.compare("") == 0)
   {
-    ss << view;
+    cfull = model.substr (model.find_last_of ("/") + 1, model.size ());
+    ss << model;
   }
   else
   {
-    ss << viewfolder << "/" << view;
+    cfull = model;
+    ss << viewfolder << "/" << model;
+  }
+
+  if (!getViewInfo(cfull, cname, cnum))
+  {
+    return false;
   }
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ> ());
   pcl::io::loadPCDFile (ss.str().c_str (), *cloud);
 
   int icnum = std::stoi (cnum);
-  int ivnum = std::stoi (vnum);
-  hashmapsearch.addModelToFile (cloud, cname, icnum, ivnum, dfile);
+  hashmapsearch.addModelToFile (cloud, cname, icnum, dfile);
 
   return true;
 }
 
-bool getViewInfo(std::string fname, std::string &class_name, std::string &class_num, std::string &view_num)
+bool getViewInfo(std::string fname, std::string &class_name, std::string &class_num)
 {
   std::stringstream ss;
   std::string digits = "0123456789";
@@ -231,26 +236,15 @@ bool getViewInfo(std::string fname, std::string &class_name, std::string &class_
   ss.str (std::string ());
 
   /// get class number
-  stop = fname.find ('_', i); /// i = first digit in class number
+  stop = fname.find ('.', i); /// i = first digit in class number
   if (stop == std::string::npos)
   {
     return false;
   }
 
-  ss << fname.substr (i, stop - i); /// i = first digit, stop = first '_' after class number
+  ss << fname.substr (i, stop - i); /// i = first digit, stop = '.' before file extension
   //std::cout << ss.str() << std::endl;
   class_num = ss.str ();
-
-  ss.clear ();
-  ss.str (std::string ());
-
-  /// get view number
-  i = stop + 1; /// set i to first digit in view number
-  stop = fname.find ('.', i);
-
-  ss << fname.substr (i, stop - i);
-  //std::cout << ss.str() << std::endl;
-  view_num = ss.str ();
 
   return true;
 }

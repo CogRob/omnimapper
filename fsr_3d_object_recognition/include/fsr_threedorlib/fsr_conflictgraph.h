@@ -8,11 +8,12 @@
 
 namespace fsr_or
 {
+
   typedef std::pair<int, int> CNPoint;
 
   struct ConflictNode
   {
-    OMKey id;
+    OMKey::Ptr id;
     int m_v;
     int m_p;
     boost::unordered_set<CNPoint> explainedPoints;
@@ -20,11 +21,19 @@ namespace fsr_or
 
     ConflictNode () {}
 
-    ConflictNode (OMKey id, int m_v, int m_p, boost::unordered_set<CNPoint> explainedPoints)
+    ConflictNode (OMKey::Ptr &id, int m_v, int m_p, boost::unordered_set<CNPoint> &explainedPoints)
     : id (id),
       m_v (m_v),
       m_p (m_p),
       explainedPoints (explainedPoints),
+      suppressed (false)
+    {}
+
+    ConflictNode (OMKey::Ptr &id)
+    : id (id),
+      m_v (0),
+      m_p (0),
+      explainedPoints (),
       suppressed (false)
     {}
   };
@@ -54,9 +63,9 @@ namespace fsr_or
       edges (tbb::concurrent_vector<ConflictEdge> ())
     {}
 
-    inline void addNode (OMKey id, int m_v, int m_p, boost::unordered_set<CNPoint> points)
+    inline void addNode (ConflictNode &node)
     {
-        nodes.push_back (ConflictNode (id, m_v, m_p, points));
+      nodes.push_back (node);
     }
 
     void addEdge (int f, int t)
@@ -81,28 +90,38 @@ namespace fsr_or
       }
     }
 
-    void suppressNode (int i)
+    inline void suppressNodeOnEdgeFrom (int i)
     {
       ConflictNode from = nodes[edges[i].from];
       ConflictNode to = nodes[edges[i].to];
-      if (from.m_p < to.m_p)
+
+      /// suppress point if its neighbor explains more points
+      if (to.m_p > from.m_p)
       {
         from.suppressed = true;
       }
-      else if (from.m_p == to.m_p)
+      /// break ties by picking the one that occludes less points
+      else if (to.m_p == from.m_p && to.m_v < from.m_v)
       {
-        if (from.m_v > to.m_v)
-        {
-          from.suppressed = true;
-        }
-        else
+        from.suppressed = true;
+      }
+    }
+
+    inline void suppressNodeOnEdgeTo (int i)
+    {
+      ConflictNode from = nodes[edges[i].from];
+      ConflictNode to = nodes[edges[i].to];
+
+      if (!to.suppressed)
+      {
+        if (to.m_p < from.m_p)
         {
           to.suppressed = true;
         }
-      }
-      else
-      {
-        to.suppressed = true;
+        else if (to.m_p == from.m_p && to.m_v > from.m_v)
+        {
+          to.suppressed = true;
+        }
       }
     }
 
@@ -111,14 +130,27 @@ namespace fsr_or
       return nodes[i].suppressed;
     }
 
-    inline OMKey getNodeID (int i)
+    inline void getNodeID (int i, OMKey::Ptr &id)
     {
-      return nodes[i].id;
+      id = nodes[i].id;
+    }
+
+    /// for debugging puposes
+    inline ConflictNode& getNodeByID (OMKey::Ptr &id)
+    {
+      for (tbb::concurrent_vector<ConflictNode>::iterator it = nodes.begin (); it != nodes.end (); ++it)
+      {
+        if (*(it->id) == *id)
+        {
+          return *it;
+        }
+      }
     }
 
     inline size_t size () { return nodes.size (); }
     inline size_t edgeCapacity () { return edges.size (); }
   };
+
 }
 
 #endif // FSR_RECOGNITION
