@@ -21,21 +21,30 @@ namespace fsr_or
   }
 
   template <typename PointT>
-  void ModelCache<PointT>::getModel (const OMKey::Ptr &key, CloudPtr &cloud)
+  float ModelCache<PointT>::getModel (const OMKey::Ptr &key, CloudPtr &cloud, const float &resolution)
   {
+    float m;
     typename tbb::concurrent_unordered_map <OMKey::Ptr, CloudPtr, om_hash>::iterator it = cache_.find(key);
     if (it != cache_.end ())
     {
       cloud = it->second;
+      m = static_cast<float> (cloud->points.size ());
     }
     else
     {
       pcl::PointCloud<pcl::PointXYZ>::Ptr temp (new pcl::PointCloud<pcl::PointXYZ> ());
+      typename pcl::PointCloud<PointT>::Ptr temp2 (new pcl::PointCloud<PointT> ());
+
       pcl::io::loadPCDFile (key->objectFileName().c_str (), *temp);
-      pcl::copyPointCloud (*temp, *cloud);
+      pcl::copyPointCloud (*temp, *temp2);
+
+      m = static_cast<float> (scaleCloudToResolution<PointT> (temp2, cloud, resolution));
+
       cache_[key] = cloud;
     }
     track_[key] = true;
+
+    return m;
   }
 
   template <typename PointT>

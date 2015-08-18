@@ -9,7 +9,6 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/task_group.h>
-#include <boost/unordered_set.hpp>
 #include <boost/thread.hpp>
 
 /// need this include to prevent linker errors associated with pcl not precompiling
@@ -70,7 +69,9 @@ namespace fsr_or
       /// the size of the octree leaves
       float L_;
       /// distances from the front and back of voxels, used for hypothesis acceptance
-      float L_space_eps_;
+      float L_front_;
+      float L_back_;
+      float L_eps_;
       /// the desired probability of success for RANSAC
       float P_s_;
       /// percentage of points kept during feature description
@@ -90,12 +91,10 @@ namespace fsr_or
       /// focal length of the capture device used to create pcd files
       float focallength_;
       /// the density of the points in the scene
-      float scene_resolution_;
+      double scene_resolution_;
 
       FeatureHashMapPtr H_;
       std::vector<OMKey::Ptr> omkey_box_;
-
-      ObjectMap<int>::Ptr modelSizes_;
 
       CloudConstPtr cloud_sensor_;
       boost::optional<CloudConstPtr> cloud_input_;
@@ -175,14 +174,7 @@ namespace fsr_or
       }
 
       void setHashMap (const FeatureHashMapPtr &fhmp) { H_ = fhmp; }
-      void setModelSizes (const ObjectMap<int>::Ptr &oms) { modelSizes_ = oms; }
-      void setModelKeyBox (const ObjectMap<int>::Ptr &om)
-      {
-        for (typename ObjectMap<int>::iterator it = om->begin (); it != om->end (); ++it)
-        {
-          omkey_box_.push_back((it->first).makeShared ());
-        }
-      }
+      void setModelKeyBox (const std::vector<OMKey::Ptr> &omkb) { omkey_box_ = omkb; }
 
       void setSceneReducedCallback (boost::function<void (const CloudConstPtr&, CloudPtr&, Time)> &f)
       {

@@ -16,9 +16,12 @@ static DBGMutex dbg_out_mutex;
 static std::ofstream dbg_file;
 #endif // FSR_RECOGNITION_DEBUG
 
+#include <vtkSmartPointer.h>
+#include <vtkImageData.h>
+#include <vtkPNGWriter.h>
+
 namespace fsr_or
 {
-
   template <typename PointT>
   FSRRecognition<PointT>::FSRRecognition (float L, float L_eps,
                                           float P_s,float C,
@@ -30,7 +33,7 @@ namespace fsr_or
     d_max_sq_ (0.0f),
     angle_step_ (0.0f),
     L_ (L),
-    L_space_eps_ (0.5f*L + L_eps),
+    L_eps_ (L_eps),
     P_s_ (P_s),
     K_ (0.0f),
     m_ (0.0f),
@@ -41,7 +44,6 @@ namespace fsr_or
     device_ (dev),
     focallength_ (fl),
     H_ (new FeatureHashMap<PointT>),
-    modelSizes_ (new ObjectMap<int>),
     cloud_sensor_ (new Cloud),
     cloud_input_ (boost::none),
     cloud_scene_ (boost::none),
@@ -108,7 +110,7 @@ namespace fsr_or
   void FSRRecognition<PointT>::spinOnce ()
   {
     /// TODO: add resolution invariance
-    if (cloud_mutex_.try_lock())
+    if (cloud_mutex_.try_lock ())
     {
       if (updated_cloud_)
       {
@@ -116,7 +118,7 @@ namespace fsr_or
         updated_cloud_ = false;
         ready_ = false;
       }
-      cloud_mutex_.unlock();
+      cloud_mutex_.unlock ();
     }
 
     /// recognition
@@ -149,9 +151,6 @@ namespace fsr_or
 
       #if FSR_RECOGNITION_DEBUG
       dbg_file.close();
-      //N_ = 0; /// debugging
-      //cloud_input_ = boost::none;  /// debugging
-      //publish (); /// debugging
       #endif // FSR_RECOGNITION_DEBUG
 
       boost::lock_guard<BoostMutex> lock (cloud_mutex_);
@@ -168,11 +167,12 @@ namespace fsr_or
     }
 
     cloud_scene_ = cloud_input_;
-    scene_resolution_ = computeCloudResolution<PointT>(*cloud_scene_);
-
-    /// compute the range image used for evaluating hypotheses
     CloudPtr temp_scene (new Cloud);
     pcl::copyPointCloud (*(*cloud_scene_), *temp_scene);
+
+    scene_resolution_ = computeCloudResolution<PointT> (temp_scene);
+
+    /// compute the range image used for evaluating hypotheses
     range_image_scene_ = RangeImagePtr (new RangeImage ());
     sensor_pose_ = Eigen::Affine3f (Eigen::Translation3f((*cloud_scene_)->sensor_origin_[0],
                                     (*cloud_scene_)->sensor_origin_[1],
@@ -188,11 +188,16 @@ namespace fsr_or
     (*cloud_scene_reduced_)->is_dense = true;
     (*cloud_scene_reduced_)->width = oct_centroid_->getVoxelCentroids (centroids);
     (*cloud_scene_reduced_)->height = 1;
-    (*cloud_scene_reduced_)->points.resize ((*cloud_scene_reduced_)->width * (*cloud_scene_reduced_)->height);
+    (*cloud_scene_reduced_)->points.resize ((*cloud_scene_reduced_)->width);
     for (size_t i = 0; i < (*cloud_scene_reduced_)->width; ++i)
     {
       (*cloud_scene_reduced_)->points[i] = centroids[i];
     }
+    /// set voxel half-length for hypothesis acceptance
+    float L_space = sqrt (oct_centroid_->getVoxelSquaredSideLen ()) / 2.0;
+    L_front_ = L_space - L_eps_;
+    L_back_ = L_space + L_eps_;
+
     oct_centroid_->deleteTree();
 
     /// create the search tree from reduced scene
@@ -321,13 +326,10 @@ namespace fsr_or
     ne.compute (normals_uv);
 
     /// compute the feature for the sampled point pair
-    PointPairSystem<PointT> pps_scene (PointPair<PointT> (pu, normals_uv.points[0], pv, normals_uv.points[1]), Eigen::Matrix4f ());
-    if (!computeOPFFeature (pps_scene.opp.pu.p,
-                            pps_scene.opp.pu.n,
-                            pps_scene.opp.pv.p,
-                            pps_scene.opp.pv.n,
-                            f1, f2, f3, f4,
-                            d_min_sq_, d_max_sq_))
+    PointPairSystem<PointT> pps_scene (PointPair<PointT> (pu, normals_uv[0], pv, normals_uv[1]));
+    if (!computeOPFeature<PointT> (pps_scene.opp.pu, pps_scene.opp.pv,
+                                   f1, f2, f3, f4,
+                                   d_min_sq_, d_max_sq_))
     {
       #if FSR_RECOGNITION_DEBUG
       {
@@ -341,9 +343,9 @@ namespace fsr_or
       return;
     }
     int d2, d3, d4;
-    discretizeOPFFeature (f2, f3, f4,
-                          d2, d3, d4,
-                          angle_step_);
+    discretizeOPFeatureVals (f2, f3, f4,
+                             d2, d3, d4,
+                             angle_step_);
     const FSRFeature feature (d2, d3, d4);
 
     /// get point pairs with same feature as pair (u,v)
@@ -395,12 +397,11 @@ namespace fsr_or
         if (ompps_it == om_pairs.end ()) { continue; }
 
         mpairs = ompps_it->second;
-        m = static_cast<float> ((modelSizes_->find_model (*key))->second);
 
         CloudPtr cloud_model (new pcl::PointCloud<PointT> ());
         {
           TBBMutex::scoped_lock lock (io_mutex_);
-          model_cache_->getModel (key, cloud_model);
+          m = model_cache_->getModel (key, cloud_model, scene_resolution_);
         }
 
         /// iterate over all point pairs in the model that have this feature
@@ -411,16 +412,6 @@ namespace fsr_or
           Cloud cloud_transformed;
           for (PPSIterator it2 = r2.begin (); it2 != r2.end (); ++it2)
           {
-            #if FSR_SAVE_F
-            /// do nothing, the local coordinate system is already saved
-            #else
-            /// compute F for pair
-            if (!computeF<PointT>(it2->opp, it2->.F))
-            {
-              continue;
-            }
-            #endif // FSR_SAVE_F
-
             /// transorm the model and add it to the scene
             T = MatrixT (pps_scene.F * (it2->F.inverse ()));
             pcl::transformPointCloud(*cloud_model, cloud_transformed, T);
@@ -482,30 +473,31 @@ namespace fsr_or
 
       if (!pcl_isfinite (s.range)) { continue; }
 
-      if (range < s.range - L_space_eps_)
+      if (range < s.range - L_front_)
       {
         ++m_p;
       }
-      else if (range < s.range + L_space_eps_)
+      else if (range < s.range + L_back_)
       {
         ++m_v;
         explainedpts.insert (CNPoint (x, y));
       }
     }
 
+    float u_V = static_cast<float> (m_v) / m;
+    float u_P = static_cast<float> (m_p) / m;
+
     #if FSR_RECOGNITION_DEBUG
     {
         DBGMutex::scoped_lock lock (dbg_out_mutex);
         std::stringstream ss;
         ss << "[fsr_or::FSRRecognition::acceptHypothesis()] : \n"
-           << "Model " << id->print() << " explained " << node.m_v << " scene points "
-           << "and blocked " << node.m_p << " scene points.\n\n";
+           << "Model " << id->print() << " had " << u_V << " visibility and "
+           << u_P << " occlusion of the scene.\n\n";
         dbg_file << ss.str ();
     }
     #endif // FSR_RECOGNITION_DEBUG
 
-    float u_V = static_cast<float> (m_v) / m;
-    float u_P = static_cast<float> (m_p) / m;
     bool accept = u_V > t_V_ && u_P < t_P_;
     if (accept)
     {

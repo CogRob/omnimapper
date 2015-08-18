@@ -59,8 +59,9 @@ namespace fsr_or
       float K_;
       float angle_step_;
       int m_;
+
       FeatureHashMapPtr H_;
-      ObjectMap<int>::Ptr modelSizes_;
+      std::vector<OMKey::Ptr> omkey_box_;
 
       bool readModel (std::istream &mfile);
       void writeModel (const FeatureHashMapSingle &singlemap, const FeatureTracker &tracker, std::ofstream &mfile) const;
@@ -87,7 +88,7 @@ namespace fsr_or
       float getAngleStep () const { return angle_step_; }
       int getAverageModelSize () const { return m_; }
       FeatureHashMapPtr getHashMap () const { return H_->makeShared (); }
-      ObjectMap<int>::Ptr getModelSizes () const { return modelSizes_->makeShared (); }
+      std::vector<OMKey::Ptr> getKeyBox () const { return omkey_box_; }
   };
 
 }

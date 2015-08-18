@@ -26,10 +26,10 @@ namespace fsr_or
     angle_step_ (angle_step),
     m_ (0),
     H_ (new FeatureHashMap<PointT>),
-    modelSizes_ (new ObjectMap<int>)
+    omkey_box_ ()
   {
     H_->clear ();
-    modelSizes_->clear ();
+    omkey_box_.clear ();
   }
 
   template <typename PointT>
@@ -61,8 +61,6 @@ namespace fsr_or
     #endif // FSR_HASHDESCRIPTION_DEBUG
 
     CloudPtr cloud_input (new Cloud ());
-    pcl::copyPointCloud (*cloud, pt_indices, *cloud_input);
-    /*#if FSR_SAVE_F
     pcl::octree::OctreePointCloudVoxelCentroid<PointT> oct (0.01);
     oct.setInputCloud (cloud);
     oct.addPointsFromInputCloud ();
@@ -86,9 +84,6 @@ namespace fsr_or
     std::cout << "[fsr_or::FSRHashMapDescription::addModelToFile()]: the downsampled model has "
               << cloud_input->points.size () << " points." << std::endl;
     #endif // FSR_HASHDESCRIPTION_VERBOSE
-    #else
-    pcl::copyPointCloud (*cloud, pt_indices, *cloud_input);
-    #endif // FSR_SAVE_F*/
 
     NormalCloudPtr cloud_normals (new NormalCloud ());
     typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT> ());
@@ -96,9 +91,7 @@ namespace fsr_or
     ne.setRadiusSearch (0.03);
     ne.setSearchMethod (tree);
     ne.setInputCloud (cloud_input);
-    #if FSR_SAVE_F
     ne.setSearchSurface (cloud);
-    #endif // FSR_SAVE_F
     ne.compute (*cloud_normals);
 
     std::vector<int> ne_indices;
@@ -136,27 +129,26 @@ namespace fsr_or
       {
         for(size_t j = r.begin (); j != r.end (); ++j)
         {
+          OrientedPoint<PointT> u (cloud_opp.points[i]);
+          OrientedPoint<PointT> v (cloud_opp.points[j]);
           float f1, f2, f3, f4;
-          if (computeOPFFeature (cloud_opp.points[i].p, cloud_opp.points[i].n,
-                                 cloud_opp.points[j].p, cloud_opp.points[j].n,
-                                 f1, f2, f3, f4,
-                                 d_min_sq_, d_max_sq_))
+          if (computeOPFeature<PointT> (u, v,
+                                        f1, f2, f3, f4,
+                                        d_min_sq_, d_max_sq_))
           {
             int d2, d3, d4;
             Eigen::Matrix4f F;
-            discretizeOPFFeature (f2, f3, f4,
-                                  d2, d3, d4,
-                                  angle_step_);
-            PointPair<PointT> ptpair (cloud_opp.points[i],  cloud_opp.points[j]);
-            #if FSR_SAVE_F
-            if (computeF<PointT>(ptpair, F))
-            #endif // FSR_SAVE_F
+            PointPair<PointT> ptpair (u, v);
+            if (computeF<PointT> (ptpair, F))
             {
+              discretizeOPFeatureVals (f2, f3, f4,
+                                       d2, d3, d4,
+                                       angle_step_);
               FSRFeature feature (d2, d3, d4);
               featurerecord.insert (feature);
               mapformodel.insert (std::pair<FSRFeature, PointPairSystem<PointT> > (feature, PointPairSystem<PointT> (ptpair, F)));
             }
-            #if FSR_SAVE_F && FSR_HASHDESCRIPTION_DEBUG
+            #if FSR_HASHDESCRIPTION_DEBUG
             else
             {
               std::stringstream ss;
@@ -265,12 +257,12 @@ namespace fsr_or
     std::string mname = value;
     std::getline (ss, value, ',');
     int mtype = std::stoi (value);
-
-    /// get model diameter and number of points in model
     OMKey key (mname, mtype);
+    omkey_box_.push_back(key.makeShared());
+
+    /// get model number of points in model
     std::getline(ss, value, ',');
     int msize = std::stoi (value);
-    modelSizes_->insert_model (key, msize);
     m_ += msize;
 
     #if FSR_HASHDESCRIPTION_VERBOSE
@@ -280,6 +272,7 @@ namespace fsr_or
 
     FSRFeature feature;
     std::getline (mfile, line);
+    bool ppsfound = false;
     while (line.compare ("}") != 0)
     {
       /// read FSRFeature
@@ -295,10 +288,15 @@ namespace fsr_or
         //std::cout << line << std::endl;
         systems.push_back (pps);
         std::getline (mfile, line);
+        ppsfound = true;
       }
       //std::cout << line << std::endl;
 
-      H_->insert_model (feature, key, systems);
+      if (ppsfound)
+      {
+        H_->insert_model (feature, key, systems);
+        ppsfound = false;
+      }
     }
 
     return true;

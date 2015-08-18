@@ -8,7 +8,6 @@
 #include <iostream>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
-#include <vtkImageShiftScale.h>
 #include <vtkPNGWriter.h>
 
 #include <fsr_threedorlib/fsr_hashdescription.h>
@@ -17,29 +16,29 @@
 #define FSR_OBJREC_DEBUG 1
 #define FSR_OBJREC_VERBOSE 1
 
-typedef pcl::PointCloud<pcl::PointXYZRGBA> Cloud;
-typedef Cloud::Ptr CloudPtr;
-typedef Cloud::ConstPtr CloudConstPtr;
+typedef pcl::PointCloud<pcl::PointXYZRGBA> App_Cloud;
+typedef App_Cloud::Ptr App_CloudPtr;
+typedef App_Cloud::ConstPtr App_CloudConstPtr;
 
-typedef pcl::RangeImagePlanar RangeImage;
-typedef RangeImage::Ptr RangeImagePtr;
+typedef pcl::RangeImagePlanar App_RangeImage;
+typedef App_RangeImage::Ptr App_RangeImagePtr;
 
-typedef std::vector<fsr_or::RegSolEntry<pcl::PointXYZRGBA> > RegistrationSolutions;
-typedef boost::shared_ptr<RegistrationSolutions> RegistrationSolutionsPtr;
+typedef std::vector<fsr_or::RegSolEntry<pcl::PointXYZRGBA> > App_RegistrationSolutions;
+typedef boost::shared_ptr<App_RegistrationSolutions> App_RegistrationSolutionsPtr;
 
-typedef boost::posix_time::ptime Time;
+typedef boost::posix_time::ptime App_Time;
 
 namespace fs = boost::filesystem;
 
 static fsr_or::FSRHashMapDescription<pcl::PointXYZRGBA> hashmapsearch;
 static fsr_or::FSRRecognition<pcl::PointXYZRGBA> object_recognizer;
 
-CloudConstPtr cloud_scene;
-CloudConstPtr cloud_scene_reduced;
-RangeImagePtr range_image;
+App_CloudConstPtr cloud_scene;
+App_CloudConstPtr cloud_scene_reduced;
+App_RangeImagePtr range_image;
 Eigen::Affine3f sensor_pose;
 boost::shared_ptr<fsr_or::ConflictGraph> conflict_graph;
-RegistrationSolutionsPtr solutions;
+App_RegistrationSolutionsPtr solutions;
 
 static bool red_sce_done = false;
 static bool ran_img_done = false;
@@ -56,11 +55,11 @@ static boost::condition_variable reg_sol_cond;
 
 int classifyDatabase (std::string database);
 int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &mfile);
-void reducedSceneCallback (const CloudConstPtr &scene, CloudPtr &reduced, Time t);
-void rangeImageCallback (RangeImagePtr &ri, Eigen::Affine3f pose, Time t);
-void conflictGraphCallback (boost::shared_ptr<fsr_or::ConflictGraph> &graph, Time t);
-void solutionsCallback (RegistrationSolutionsPtr &sol, Time t);
-void saveRangeImgAsPNG (RangeImagePtr &ri, std::string rname);
+void reducedSceneCallback (const App_CloudConstPtr &scene, App_CloudPtr &reduced, App_Time t);
+void rangeImageCallback (App_RangeImagePtr &ri, Eigen::Affine3f pose, App_Time t);
+void conflictGraphCallback (boost::shared_ptr<fsr_or::ConflictGraph> &graph, App_Time t);
+void solutionsCallback (App_RegistrationSolutionsPtr &sol, App_Time t);
+void saveRangeImgAsPNG (App_RangeImagePtr &ri, std::string rname);
 
 int main (int argc, char** argv)
 {
@@ -76,13 +75,12 @@ int main (int argc, char** argv)
                                        hashmapsearch.getFractionKeptOfOriginalModel (),
                                        hashmapsearch.getAverageModelSize ());
   object_recognizer.setHashMap (hashmapsearch.getHashMap ());
-  object_recognizer.setModelSizes (hashmapsearch.getModelSizes ());
-  object_recognizer.setModelKeyBox (hashmapsearch.getModelSizes ());
+  object_recognizer.setModelKeyBox (hashmapsearch.getKeyBox ());
 
-  boost::function<void (const CloudConstPtr&, CloudPtr&, Time)> red_sce_callback = boost::bind (reducedSceneCallback, _1, _2, _3);
-  boost::function<void (RangeImagePtr&, Eigen::Affine3f, Time t)> ran_img_callback = boost::bind (rangeImageCallback, _1, _2, _3);
-  boost::function<void (boost::shared_ptr<fsr_or::ConflictGraph>&, Time)> con_gra_callback = boost::bind (conflictGraphCallback, _1, _2);
-  boost::function<void (RegistrationSolutionsPtr&, Time)> reg_sol_callback = boost::bind (solutionsCallback, _1, _2);
+  boost::function<void (const App_CloudConstPtr&, App_CloudPtr&, App_Time)> red_sce_callback = boost::bind (reducedSceneCallback, _1, _2, _3);
+  boost::function<void (App_RangeImagePtr&, Eigen::Affine3f, App_Time t)> ran_img_callback = boost::bind (rangeImageCallback, _1, _2, _3);
+  boost::function<void (boost::shared_ptr<fsr_or::ConflictGraph>&, App_Time)> con_gra_callback = boost::bind (conflictGraphCallback, _1, _2);
+  boost::function<void (App_RegistrationSolutionsPtr&, App_Time)> reg_sol_callback = boost::bind (solutionsCallback, _1, _2);
   object_recognizer.setSceneReducedCallback (red_sce_callback);
   object_recognizer.setRangeImageCallback(ran_img_callback);
   object_recognizer.setConflictGraphCallback (con_gra_callback);
@@ -240,7 +238,7 @@ int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &
     ss << scenefolder << "/" << scene;
   }
 
-  CloudPtr cloud (new Cloud ());
+  App_CloudPtr cloud (new App_Cloud ());
   pcl::io::loadPCDFile (ss.str().c_str (), *cloud);
 
   mfile << ss.str () << "\n";
@@ -265,7 +263,7 @@ int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &
     reg_sol_done = false;
   }
 
-  RegistrationSolutions::iterator it;
+  App_RegistrationSolutions::iterator it;
   for (it = solutions->begin (); it != solutions->end (); ++it)
   {
     fsr_or::RegSolEntry<pcl::PointXYZRGBA> rse (*it);
@@ -275,7 +273,15 @@ int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &
   }
 
   /// TODO : write coding for adding cloud to solution range image
-  RangeImagePtr solution_image (new RangeImage);
+
+  /*pcl::visualization::RangeImageVisualizer viewer ("Planar range image");
+  viewer.showRangeImage (*range_image);
+  while (!viewer.wasStopped ())
+  {
+    viewer.spinOnce();
+    // Sleep 100ms to go easy on the CPU.
+    pcl_sleep(0.1);
+  }*/
 
   std::string fname = scene.substr (scene.find_last_of ("/") + 1, scene.find_last_of ("."));
   ss.clear ();
@@ -283,6 +289,7 @@ int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &
   ss << "fsrtest_" << fname << ".png";
   saveRangeImgAsPNG(range_image, ss.str ());
 
+  App_RangeImagePtr solution_image (new App_RangeImage);
   /*
   ss.clear ();
   ss.str (std::string ());
@@ -293,46 +300,60 @@ int classifyObjects (std::string scene, std::string scenefolder, std::ofstream &
   return 0;
 }
 
-void saveRangeImgAsPNG (RangeImagePtr &ri, std::string rname)
+void saveRangeImgAsPNG (App_RangeImagePtr &ri, std::string rname)
 {
   vtkSmartPointer<vtkImageData> image = vtkSmartPointer<vtkImageData>::New ();
   image->SetDimensions (ri->width, ri->height, 1);
-  //image->SetNumberOfScalarComponents (1);
-  //image->SetScalarTypeToFloat ();
-  //image->AllocateScalars ();
 
   vtkInformation *imginfo = image->GetInformation ();
-  vtkDataObject::SetPointDataActiveScalarInfo(imginfo, VTK_FLOAT, 1);
+  vtkDataObject::SetPointDataActiveScalarInfo(imginfo, VTK_UNSIGNED_CHAR, 1);
   image->AllocateScalars(imginfo);
 
   int *dims = image->GetDimensions ();
+
+  float maxRange = 0.0f;
   for (int y = 0; y < dims[1]; ++y)
   {
     for (int x = 0; x < dims[0]; ++x)
     {
-      float *pixel = static_cast<float*> (image->GetScalarPointer (x,y,0));
       pcl::PointWithRange s = ri->getPoint (x,y);
-      pixel[0] = s.range;
+      if (pcl_isfinite(s.range))
+      {
+        if (s.range > maxRange) { maxRange = s.range; }
+      }
     }
   }
 
-  float oldRange = image->GetScalarRange()[1] - image->GetScalarRange()[0];
+  float oldRange = maxRange;
   float newRange = 255.0f;
+  unsigned char maxPixVal = 255;
 
-  vtkSmartPointer<vtkImageShiftScale> shiftScaleFilter = vtkSmartPointer<vtkImageShiftScale>::New();
-  shiftScaleFilter->SetOutputScalarTypeToUnsignedChar();
-  shiftScaleFilter->SetInputData(image);
-  shiftScaleFilter->SetShift(-1.0f * image->GetScalarRange()[0]);
-  shiftScaleFilter->SetScale(newRange/oldRange);
-  shiftScaleFilter->Update();
+  for (int y = 0; y < dims[1]; ++y)
+  {
+    for (int x = 0; x < dims[0]; ++x)
+    {
+      unsigned char *pixel = static_cast<unsigned char*> (image->GetScalarPointer (x,y,0));
+      pcl::PointWithRange s = ri->getPoint (x,dims[1]-y-1);
+      if (pcl_isfinite(s.range))
+      {
+        pixel[0] = static_cast<unsigned char> (newRange - s.range * (newRange/maxRange));
+      }
+      else
+      {
+        pixel[0] = maxPixVal;
+      }
+
+      //std::cout << "pixel(" << x << "," << y << ") -> " << pixel[0] << std::endl;
+    }
+  }
 
   vtkSmartPointer<vtkPNGWriter> writer = vtkSmartPointer<vtkPNGWriter>::New();
   writer->SetFileName(rname.c_str());
-  writer->SetInputConnection(shiftScaleFilter->GetOutputPort());
+  writer->SetInputData(image);
   writer->Write();
 }
 
-void reducedSceneCallback (const CloudConstPtr &scene, CloudPtr &reduced, Time t)
+void reducedSceneCallback (const App_CloudConstPtr &scene, App_CloudPtr &reduced, App_Time t)
 {
   boost::lock_guard<boost::mutex> lock (red_sce_mutex);
   cloud_scene = scene;
@@ -341,7 +362,7 @@ void reducedSceneCallback (const CloudConstPtr &scene, CloudPtr &reduced, Time t
   red_sce_cond.notify_one ();
 }
 
-void rangeImageCallback (RangeImagePtr &ri, Eigen::Affine3f pose, Time t)
+void rangeImageCallback (App_RangeImagePtr &ri, Eigen::Affine3f pose, App_Time t)
 {
   boost::lock_guard<boost::mutex> lock (ran_img_mutex);
   range_image = ri;
@@ -350,7 +371,7 @@ void rangeImageCallback (RangeImagePtr &ri, Eigen::Affine3f pose, Time t)
   ran_img_cond.notify_one ();
 }
 
-void conflictGraphCallback (boost::shared_ptr<fsr_or::ConflictGraph> &graph, Time t)
+void conflictGraphCallback (boost::shared_ptr<fsr_or::ConflictGraph> &graph, App_Time t)
 {
   boost::lock_guard<boost::mutex> lock (con_gra_mutex);
   conflict_graph = graph;
@@ -358,7 +379,7 @@ void conflictGraphCallback (boost::shared_ptr<fsr_or::ConflictGraph> &graph, Tim
   con_gra_cond.notify_one ();
 }
 
-void solutionsCallback (RegistrationSolutionsPtr &sol, Time t)
+void solutionsCallback (App_RegistrationSolutionsPtr &sol, App_Time t)
 {
   boost::lock_guard<boost::mutex> lock (reg_sol_mutex);
   solutions = sol;

@@ -2,7 +2,6 @@
 #define FSR_CONFLICTGRAPH
 
 #include <tbb/concurrent_vector.h>
-#include <boost/unordered_set.hpp>
 
 #include <fsr_threedorlib/fsr_types.h>
 
@@ -135,7 +134,7 @@ namespace fsr_or
       id = nodes[i].id;
     }
 
-    /// for debugging puposes
+    /// for debugging
     inline ConflictNode& getNodeByID (OMKey::Ptr &id)
     {
       for (tbb::concurrent_vector<ConflictNode>::iterator it = nodes.begin (); it != nodes.end (); ++it)

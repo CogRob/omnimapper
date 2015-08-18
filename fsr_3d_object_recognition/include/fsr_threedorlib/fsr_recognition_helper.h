@@ -5,6 +5,8 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <boost/array.hpp>
 
+#include <pcl/visualization/range_image_visualizer.h>
+
 namespace fsr_or
 {
 
@@ -43,7 +45,7 @@ namespace fsr_or
     boost::unordered_map<OMKey::Ptr, bool, om_hash> track_;
 
     ModelCache () {}
-    void getModel (const OMKey::Ptr &key, CloudPtr &cloud);
+    float getModel (const OMKey::Ptr &key, CloudPtr &cloud, const float &resolution);
     void record ();
     void clean ();
 
