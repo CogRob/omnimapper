@@ -59,3 +59,32 @@ set (srcs ${base_srcs} ${plugins_srcs})
 
 add_library (omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRARIES})
+
+###########################################################################
+# INSTALL
+
+# Install Omnimapper Headers
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/base/include/omnimapper DESTINATION include)
+
+# Install Omnimapper Plugins
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/plugins/include/omnimapper DESTINATION include)
+
+# Install Omnimapper organized segmentation tools
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/organized_segmentation_tools DESTINATION include)
+
+install(EXPORT omnimapper DESTINATION lib/omnimapper)
+
+# Configure package config file
+configure_file(
+  ${CMAKE_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
+  ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake @ONLY
+)
+
+set(ConfigPackageLocation lib/omnimapper)
+
+install(
+  FILES
+    ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake
+  DESTINATION
+    ${ConfigPackageLocation}
+)
