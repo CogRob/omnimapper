@@ -2,4 +2,4 @@ omnimapper
 ==========
 
 Documentation available at:
-https://github.com/CognitiveRobotics/omnimapper/wiki
+https://github.com/CogRob/omnimapper/wiki
