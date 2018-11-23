@@ -6,6 +6,10 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
+find_package(Boost REQUIRED system)
+
+#set (CMAKE_CXX_STANDARD 11)
+
 SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
@@ -17,7 +21,6 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
-
 
 
 rosbuild_init()
@@ -58,18 +61,19 @@ rosbuild_add_library(${PROJECT_NAME}
 				     src/csm_math_functions.cpp 
 				     src/csm_visualizer.cpp
 				     src/omnimapper_ros.cpp)
-target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES} organized_segmentation_tools tcmalloc profiler tbb csm)
+
+target_link_libraries(${PROJECT_NAME} omnimapper gtsam ${PCL_LIBRARIES} ${BOOST_SYSTEM_LIBRARY} organized_segmentation_tools tcmalloc profiler tbb csm)
 
 rosbuild_add_executable(time_test src/time_test.cpp)
 
 rosbuild_add_library(omnimapper_ros_nodelet src/omnimapper_ros_nodelet.cpp)
-target_link_libraries(omnimapper_ros_nodelet ${PROJECT_NAME})
+target_link_libraries(omnimapper_ros_nodelet ${PROJECT_NAME} ${BOOST_SYSTEM_LIBRARY})
 
 rosbuild_add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc profiler) 
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} ${BOOST_SYSTEM_LIBRARY} omnimapper gtsam tcmalloc profiler) 
 
 rosbuild_add_executable(omnimapper_pcd src/omnimapper_ros_pcd.cpp)
-target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc tbb)
+target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} ${BOOST_SYSTEM_LIBRARY} omnimapper gtsam tcmalloc tbb)
 
 rosbuild_add_executable(omnimapper_openni src/omnimapper_ros_openni.cpp)
-target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} omnimapper gtsam tcmalloc tbb)
+target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} ${BOOST_SYSTEM_LIBRARY} omnimapper gtsam tcmalloc tbb)

@@ -69,10 +69,10 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
     vis_values_ = vis_values;
     vis_graph_ = vis_graph;
   }
-  
+
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
-  
+
   geometry_msgs::PoseArray pose_array;
   pose_array.header.frame_id = "/world";
   pose_array.header.stamp = ros::Time::now ();
@@ -80,18 +80,18 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
   pcl::PointCloud<pcl::PointXYZ>::Ptr aggregate_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
   aggregate_cloud->header.frame_id = "/world";
   //aggregate_cloud->header.stamp = ros::Time::now ();
-  
+
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
   BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
   {
     geometry_msgs::Pose pose;
-    
+
     gtsam::Symbol key_symbol (key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation ();
     // W X Y Z
     gtsam::Vector quat = rot.quaternion ();
-    
+
     //Eigen::Affine3d eigen_mat (pose.matrix ());
     //tf::Transform tf_pose;
     //tf::transformEigenToTF (eigen_mat, tf_pose);
@@ -103,7 +103,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
     pose.position.z = sam_pose.z ();
     pose_array.poses.push_back (pose);
 
-    if (draw_map_) 
+    if (draw_map_)
     {
       // Draw the scans too
       sensor_msgs::PointCloud2 cloud_msg = csm_plugin_->getPC2 (key_symbol);
@@ -117,11 +117,11 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
         (*aggregate_cloud) += (*map_cloud);
       }
     }
-    
+
   }
-  
+
   pose_array_pub_.publish (pose_array);
-  
+
   if (draw_map_)
   {
     sensor_msgs::PointCloud2 cloud_msg;
@@ -150,8 +150,8 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
   BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
   {
     // check for poses
-    const std::vector<gtsam::Key> keys = factor->keys ();
-    
+    const gtsam::KeyVector keys = factor->keys ();
+
     // skip if there aren't two pose keys
     if ((keys.size () == 2))
     {
@@ -164,21 +164,21 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
         p1_msg.x = p1.x ();
         p1_msg.y = p1.y ();
         p1_msg.z = p1.z ();
-        
+
         geometry_msgs::Point p2_msg;
         p2_msg.x = p2.x ();
         p2_msg.y = p2.y ();
         p2_msg.z = p2.z ();
-        
+
         mapper_graph.points.push_back (p1_msg);
         mapper_graph.points.push_back (p2_msg);
       }
     }
   }
-  
+
   marker_array.markers.push_back (mapper_graph);
   marker_array_pub_.publish (marker_array);
-  
+
 
 }
 
@@ -193,7 +193,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap (omnimapper_ros::VisualizeFull
   //   current_solution = vis_values_;
   //   current_graph = vis_graph_;
   // }
-  
+
   // gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
 
   // int pose_num = 0;
@@ -202,7 +202,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap (omnimapper_ros::VisualizeFull
   //   gtsam::Symbol key_symbol (key_value.key);
   //   gtsam::Pose3 sam_pose = key_value.value;
   // }
-  
+
 }
 
 

@@ -161,8 +161,10 @@ AprilTagPoseMeasurementPlugin::initializeCalibration(APRILTagMessagePtr current_
 
                         double trans_noise =    0.001;
                         double rot_noise =      0.001;
-                        gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (
-                                    (gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+
+                        gtsam::Vector noise_model(6);
+                        noise_model << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise;
+                        gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas(noise_model);
 
                         omnimapper::OmniMapperBase::NonlinearFactorPtr between (
                                     new gtsam::BetweenFactor<gtsam::Pose3> (tag_sym_a, tag_sym_b, b_P_a, noise));
@@ -295,8 +297,9 @@ AprilTagPoseMeasurementPlugin::addConstraint (gtsam::Symbol sym1, gtsam::Symbol 
 
     double trans_noise = trans_noise_;
     double rot_noise = rot_noise_;
-    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (
-                (gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+    gtsam::Vector noise_model_(6);
+    noise_model_ << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise;
+    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas(noise_model_);
 
     omnimapper::OmniMapperBase::NonlinearFactorPtr between (
                 new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
