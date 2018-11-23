@@ -42,11 +42,13 @@ set (base_incs base/include/omnimapper/omnimapper_base.h
 			   base/include/omnimapper/time.h
 			   base/include/omnimapper/transform_tools.h
 			   base/include/omnimapper/trigger.h
-			   base/include/omnimapper/get_transform_functor.h)
+			   base/include/omnimapper/get_transform_functor.h
+)
 
 set (base_srcs base/src/omnimapper_base.cpp
 			   base/src/time.cpp
-			   base/src/transform_tools.cpp)
+			   base/src/transform_tools.cpp
+)
 
 
 # Landmarks for Object-SLAM

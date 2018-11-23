@@ -290,7 +290,9 @@ EBTPoseMeasurementPlugin::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2,
 
     double trans_noise = trans_noise_;
     double rot_noise = rot_noise_;
-    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
+    gtsam::Vector noise_vector_(6);
+    noise_vector_ << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise;
+    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas(noise_vector_);
 
     omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
 
