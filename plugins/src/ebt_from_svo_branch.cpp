@@ -40,6 +40,7 @@
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/time.h>
 #include <pcl/common/time.h>
+#include <math.h>
 
 namespace omnimapper{
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,8 @@ EBTPoseMeasurementPlugin::EBTPoseMeasurementPlugin (omnimapper::OmniMapperBase* 
     first_ (true),
     trans_noise_ (.05),
     rot_noise_ (.05),
+    counter_ (0),
+    counter_th_(10),
     debug_ (true),
     overwrite_timestamps_ (false)
 {
@@ -146,19 +149,18 @@ EBTPoseMeasurementPlugin::spinOnce ()
         printf ("EBT Plugin: current symbol: %zu, inserting message\n", current_sym.index ());
     }
 
-//    gtsam::Pose3 sensor_to_base = gtsam::Pose3(getSensorToBaseAtSymbol(current_sym).matrix());
-   //  gtsam::Pose3 sensor_to_base (((*get_sensor_to_base_)(current_time)).matrix());
-
-    gtsam::Rot3 tempRot = gtsam::Rot3::ypr( -1.571,0.00, -1.571);
-    gtsam::Point3 tempT = gtsam::Point3(0.00,-0.045, 0.000);
-    gtsam::Pose3 sensor_to_base = gtsam::Pose3(tempRot, tempT);
-    // if sensor_to_base ==
-
-    //    messages_.insert (std::pair<gtsam::Symbol, EBTMessageConstPtr> (current_sym, current_message));
+    //    gtsam::Pose3 sensor_to_base = gtsam::Pose3(getSensorToBaseAtSymbol(current_sym).matrix());
+    gtsam::Pose3 sensor_to_base (((*get_sensor_to_base_)(current_time)).matrix());
+  //  sensor_to_base.print("pose");
 
     bool all_good = true;
+    rot_noise_ = 1;
+    trans_noise_ = 0.5;
 
-    for(unsigned int i = 0; i < current_message->detections.size(); ++i){
+    // For each detection
+    for(unsigned int i = 0; i < current_message->detections.size(); ++i)
+    {
+        //coppy the detection into baseframe
         EBTDetection detection_base = current_message->detections[i];
         // hash the landmark's name
         std::size_t h = string_hash(detection_base.ns);
@@ -166,94 +168,133 @@ EBTPoseMeasurementPlugin::spinOnce ()
         h = h >> 8;
         gtsam::Symbol object_sym_(gtsam::Symbol ('l', h));
         detection_base.pose = sensor_to_base.compose(detection_base.pose);
-        std::cout<<"Values for sensor to base"<<sensor_to_base.rotation().rpy()<<std::endl;
-
-        if (debug_){
-            sensor_to_base.print ("\n\nsensor_to_base\n");
-            detection_base.pose.print ("\n\ndetection_base.pose\n");
-        }
-
-        if (detections_.count (object_sym_) == 0){
-            EBTDetectionPtr detection_base_const (new EBTDetection ());
-            *detection_base_const = detection_base;
-            std::map<boost::posix_time::ptime, EBTDetectionConstPtr> detection_map_const;
-            detection_map_const.insert(
-                        std::pair<boost::posix_time::ptime, EBTDetectionConstPtr>
-                        (current_time, detection_base_const));
-
-            detections_.insert (
-                        std::pair<gtsam::Symbol, std::map<boost::posix_time::ptime, EBTDetectionConstPtr> >
-                        (object_sym_, detection_map_const));
-          //  gtsam::Pose3 initial_guess = intial_guess.
-            gtsam::Pose3 initial_guess = current_pose->compose(detection_base.pose);
-            initial_guess = initial_guess.identity();
-            initial_guess.print ("\n\ninitial_guess\n");
-            mapper_->addNewValue(object_sym_,initial_guess);
-        }
+        detection_base.noise->print("Writing the covariance for the ebt");
 
 
-        gtsam::NonlinearFactorGraph current_graph = mapper_->getGraph();
-        gtsam::Pose3 test_pose = current_pose->compose(detection_base.pose);
-        gtsam::Values current_solution = mapper_->getSolution();
-        gtsam::Marginals marginals = gtsam::Marginals(current_graph,current_solution);
-        if (current_solution.exists(object_sym_))
-        {
-            gtsam::Pose3 estimate_pose = mapper_->getSolution().at<gtsam::Pose3>(object_sym_);
-            double test_dist = estimate_pose.range(test_pose);
-            gtsam::Rot3 test_rot = estimate_pose.rotation().between(test_pose.rotation());
-            Eigen::AngleAxisd test_angle(test_rot.matrix());
 
-            if((test_dist > init_distance_threshold_) || (test_angle.angle() > init_angle_threshold_)){
-                if (debug_)
+
+
+        // if detection is good
+       if (detection_base.good){
+
+            if (detections_.count (object_sym_) == 0){
+                EBTPoseMeasurementPlugin::addDetection (detection_base, current_time, object_sym_, current_pose);
+            }
+            gtsam::Pose3 test_pose = current_pose->compose(detection_base.pose);
+            gtsam::Values current_solution = mapper_->getSolution();
+            gtsam::NonlinearFactorGraph current_graph = mapper_->getGraph();
+            double x = 0.6;
+            double y = 0.6;
+            bool xr = true;
+            bool yr = true;
+            bool zr = true;
+            bool xt = true;
+            bool yt = true;
+            bool zt = true;
+            gtsam::Pose3 delta_pose;
+            gtsam::Marginals marginals(current_graph,current_solution);
+            gtsam::Matrix mar_covar;
+
+            if (current_solution.exists(object_sym_) && current_pose.is_initialized())
+            {
+                detection_base.noise->print("Before: detection_base.noise");
+                gtsam::Pose3 estimate_pose = mapper_->getSolution().at<gtsam::Pose3>(object_sym_);
+                delta_pose = estimate_pose.between(test_pose);
+                double test_dist = estimate_pose.range(test_pose);
+                double test_angdist = gtsam::norm_2(delta_pose.rotation().xyz());
+                double theta = 0.05;
+                double thetang = 0.15;
+                x = (2*theta)/(theta + test_dist);
+                y = (2*thetang)/(thetang + test_angdist);
+                gtsam::Vector sigmas(detection_base.noise->sigmas());
+                std::cout << "Before: spp: " << sigmas << " " <<x<< " "<<y<<std::endl;
+                sigmas = sigmas/x;
+                trans_noise_ = trans_noise_/x;
+                rot_noise_ = rot_noise_/y;
+                std::cout << "After: spp: " << rot_noise_ <<" "<<trans_noise_<< std::endl;
+                //detection_base.noise = gtsam::noiseModel::Diagonal::Sigmas ((sigmas));
+                // test_pose.print("After: test_pose: ");
+                // printf("After: test_dist: %f \n", test_dist);
+                // printf("After: theta: %f \n", theta);
+                // printf("After: x: %f \n", x);
+                // detection_base.noise->print("After: detection_base.noise");
+
+                mar_covar = marginals.marginalCovariance(object_sym_.key());
+                std::cout<<"Outputting marginals"<<mar_covar<<std::endl;
+                std::cout<<"Outputting values"<<estimate_pose<<std::endl;
+            //    bool temp = if(current_pose == NULL);
+                std::cout<<"Outputting delta"<<current_pose.is_initialized()<<" "<<delta_pose.translation()<<" "<<delta_pose.rotation().xyz()<<std::endl;
+                current_pose->print(" The current tracking solution");
+                int sigmaNum = 2;
+
+                xr = fabs(delta_pose.rotation().xyz().coeff(0)) < fabs(1.5*sigmaNum*mar_covar.coeff(0,0));// + 0.1);
+                yr = fabs(delta_pose.rotation().xyz().coeff(1)) < fabs(1.5*sigmaNum*mar_covar.coeff(1,1));// + 0.1);
+                zr = fabs(delta_pose.rotation().xyz().coeff(2)) < fabs(1.5*sigmaNum*mar_covar.coeff(2,2)); // + 0.1);
+                xt = fabs(delta_pose.x()) < fabs(sigmaNum*mar_covar.coeff(3,3)); // + 0.05);
+                yt = fabs(delta_pose.y()) < fabs(sigmaNum*mar_covar.coeff(4,4)); // + 0.05);
+                zt = fabs(delta_pose.z()) < fabs(sigmaNum*mar_covar.coeff(5,5));// + 0.05);
+
+            }
+
+            // Add constraints
+            if( xt && yt  && zt && xr && yr && zr){
+
+                if(current_pose.is_initialized())
                 {
-                    printf ("EBTPoseMeasurementPlugin: The test_dist of %f is too larg, sending init signal!\n", test_dist);
-                }
-                all_good = false;
+                boost::thread latest_ebt_thread (
+                            &EBTPoseMeasurementPlugin::addConstraint, this, current_sym, object_sym_, detection_base);
+                latest_ebt_thread.join ();
+                // reset our counter
+                counter_ = 0;
 
-                if(init_with_estimate_){
-                    current_message->detections[i].good = false;
-                    gtsam::Pose3 world_to_sensor = current_pose->compose(sensor_to_base); //.inverse());
-                    current_message->detections[i].pose = world_to_sensor.between(estimate_pose);
-
-                    world_to_sensor.translation().print("world_to_sensor after!!!!!!!!!!!!!");
-                    estimate_pose.translation().print("estimate_pose!!!!!!!!!!!!!!!!!");
-                    current_message->detections[i].pose.translation().print("current_message->detections[i].pose!!!!!!!!!!!!!!!!!");
-                  //  init_distance_threshold_ = 1.5*init_distance_threshold_;
                 }
-                else
-                {
+
+
+
+                // Wait for latest one to complete, at least
+
+            }
+            else{
+                // set the detection to bad
+                current_message->detections[i].good = false;
+
+                // check if we've seen it before
+                if (detections_.count (object_sym_) == 0){
                     current_message->detections[i].init = true;
                 }
-            }
-        }
-        if(all_good)
-        {
-            // Add constraints
-            boost::thread latest_ebt_thread (
-                        &EBTPoseMeasurementPlugin::addConstraint, this, current_sym, object_sym_, detection_base.pose);
-            // Wait for latest one to complete, at least
-            if (current_solution.exists(object_sym_))
-            {
-                gtsam::Matrix information = marginals.marginalInformation(object_sym_);
-                gtsam::Vector6 vecdiag = information.diagonal();
-
-                if( (current_sym.index() > 30) && ((vecdiag(0)-initial_covar_obj_(0))>0) && ((vecdiag(1)-initial_covar_obj_(1))>0) && ((vecdiag(2)-initial_covar_obj_(2))>0) && ((vecdiag(3)-initial_covar_obj_(3))>5) && ((vecdiag(4)-initial_covar_obj_(4))>5) && ((vecdiag(5)-initial_covar_obj_(5))>5)  )
-
-                {
-                     std::cout<<"information matrix changed"<<std::endl;
-                     initial_covar_obj_ = vecdiag;
-                     init_distance_threshold_ = 0.1*init_distance_threshold_;
+                // if we have use the predicted pose
+                else{
+                    gtsam::Pose3 estimate_pose = mapper_->getSolution().at<gtsam::Pose3>(object_sym_);
+                    gtsam::Pose3 world_to_sensor = current_pose->compose(sensor_to_base);
+                    current_message->detections[i].pose = world_to_sensor.between(estimate_pose);
+                    // but consider our counter
+                    EBTPoseMeasurementPlugin::reinit (current_message, i);
+                    ++counter_;
                 }
+                all_good = false;
+            }//*/
+        }//*/
 
-                //    if(information.diagonal() > initial_covar_obj_ )
-            //    {
-            //        std::cout<<"information matrix changed"<<std::endl;
-            //    }
+        // if detection is bad
+        else{
+            // set the detection to bad
+            current_message->detections[i].good = false;
 
-                std::cout<<"information matrix of landmark "<<vecdiag<<" "<<init_distance_threshold_<<std::endl;
+            // check if we've seen it before
+            if (detections_.count (object_sym_) == 0){
+                current_message->detections[i].init = true;
             }
-            latest_ebt_thread.join ();
-        }
+            // if we have use the predicted pose
+            else{
+                gtsam::Pose3 estimate_pose = mapper_->getSolution().at<gtsam::Pose3>(object_sym_);
+                gtsam::Pose3 world_to_sensor = current_pose->compose(sensor_to_base);
+                current_message->detections[i].pose = world_to_sensor.between(estimate_pose);
+                // but consider our counter
+                EBTPoseMeasurementPlugin::reinit (current_message, i);
+                ++counter_;
+            }
+            all_good = false;
+        }//*/
     }
 
     if(!all_good){
@@ -284,21 +325,22 @@ EBTPoseMeasurementPlugin::spinOnce ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
-EBTPoseMeasurementPlugin::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, gtsam::Pose3 relative_pose)
+EBTPoseMeasurementPlugin::addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, EBTDetection detection)
 {
     printf ("EBTPoseMeasurementPlugin: Adding factor between %lu and %lu\n", sym1.index (), sym2.index ());
 
     double trans_noise = trans_noise_;
     double rot_noise = rot_noise_;
+    std::cout<<"Noise models R & T"<<trans_noise<<"  "<<rot_noise<<std::endl;
     gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
 
-    omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
+    omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, detection.pose, noise));
 
     if (debug_)
     {
         printf ("ADDED FACTOR BETWEEN l%zu and x%zu\n", sym1.index (), sym2.index ());
-        relative_pose.print ("\n\nEBT Relative Pose\n");
-        printf ("relative pose det: %lf\n", relative_pose.rotation ().matrix ().determinant ());
+        detection.pose.print ("\n\nEBT Relative Pose\n");
+        printf ("relative pose det: %lf\n", detection.pose.rotation ().matrix ().determinant ());
     }
 
     mapper_->addFactor (between);
@@ -363,6 +405,45 @@ EBTPoseMeasurementPlugin::reset ()
     messages_.clear ();
     detections_.clear ();
     sensor_to_base_transforms_.clear ();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+EBTPoseMeasurementPlugin::reinit (EBTMessagePtr current_message, unsigned int i)
+{
+    if (counter_ <= counter_th_){
+        if (debug_)
+        {
+            printf ("EBTPoseMeasurementPlugin: Reinit using Pose! Counter=%d\n", counter_);
+        }
+    }
+    else{
+        if (debug_)
+        {
+            printf ("EBTPoseMeasurementPlugin: Reinit using Surf! Counter=%d\n", counter_);
+        }
+        current_message->detections[i].init = true;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void
+EBTPoseMeasurementPlugin::addDetection (EBTDetection detection, boost::posix_time::ptime current_time, gtsam::Symbol object_sym_, boost::optional<gtsam::Pose3> current_pose)
+{
+    EBTDetectionPtr detection_const (new EBTDetection ());
+    *detection_const = detection;
+    std::map<boost::posix_time::ptime, EBTDetectionConstPtr> detection_map_const;
+    detection_map_const.insert(
+                std::pair<boost::posix_time::ptime, EBTDetectionConstPtr>
+                (current_time, detection_const));
+
+    detections_.insert (
+                std::pair<gtsam::Symbol, std::map<boost::posix_time::ptime, EBTDetectionConstPtr> >
+                (object_sym_, detection_map_const));
+
+    gtsam::Pose3 initial_guess = current_pose->compose(detection.pose);
+    initial_guess.print ("\n\ninitial_guess\n");
+    mapper_->addNewValue(object_sym_,initial_guess);
 }
 
 }

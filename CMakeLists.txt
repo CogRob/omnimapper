@@ -58,8 +58,8 @@ set(landmarks_srcs landmarks/src/object.cpp)
 include_directories (plugins/include)
 
 set (plugins_incs plugins/include/omnimapper/icp_plugin.h
-		  plugins/include/omnimapper/enp_plugin/enp_plugin.h
-		  plugins/include/omnimapper/enp_plugin/enp_base.h
+		  #plugins/include/omnimapper/enp_plugin/enp_plugin.h
+		  #plugins/include/omnimapper/enp_plugin/enp_base.h
 		  plugins/include/omnimapper/ebt_plugin/ebt_base.h
 		  plugins/include/omnimapper/ebt_plugin/ebt_plugin.h
 		  plugins/include/omnimapper/apriltag_plugin/apriltag_base.h
@@ -69,7 +69,7 @@ set (plugins_incs plugins/include/omnimapper/icp_plugin.h
 )
 
 set (plugins_srcs plugins/src/icp_plugin.cpp
-		  plugins/src/enp_plugin.cpp
+		  #plugins/src/enp_plugin.cpp
 		  plugins/src/ebt_plugin.cpp
 		  plugins/src/apriltag_plugin.cpp
 		  plugins/src/no_motion_pose_plugin.cpp
@@ -109,5 +109,4 @@ install(
   FILES
     ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake
   DESTINATION
-    ${ConfigPackageLocation}
-)
+    ${ConfigPackageLocation})

@@ -38,21 +38,40 @@
 
 #pragma once
 
-#include <opencv2/core/core.hpp>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <pcl/io/pcd_grabber.h>
 
-/* \brief ENPBase adds sequential pose constraints based on edge tracking to the SLAM problem.
+/* \brief EBTBase adds sequential pose constraints based on edge tracking to the SLAM problem.
     author Ruffin White
 */
 
-class ENPBase
+class EBTBase
 {
 
 public:
 
-    struct ENPHeader
+    struct EBTDetection
     {
-        ENPHeader (): seq (0), stamp (), frame_id ()
+        EBTDetection (): id(), pose ()
+        {}
+
+        uint32_t id;
+        std::string ns;
+        bool good;
+        bool init;
+        gtsam::Pose3 pose;
+        gtsam::SharedDiagonal noise;
+
+        typedef boost::shared_ptr<EBTDetection> Ptr;
+        typedef boost::shared_ptr<EBTDetection const> ConstPtr;
+    };
+    typedef boost::shared_ptr<EBTDetection> EBTDetectionPtr;
+    typedef boost::shared_ptr<EBTDetection const> EBTDetectionConstPtr;
+
+    struct EBTHeader
+    {
+        EBTHeader (): seq (0), stamp (), frame_id ()
         {}
 
         pcl::uint32_t seq;
@@ -60,26 +79,26 @@ public:
 
         std::string frame_id;
 
-        typedef boost::shared_ptr<ENPHeader> Ptr;
-        typedef boost::shared_ptr<ENPHeader const> ConstPtr;
+        typedef boost::shared_ptr<EBTHeader> Ptr;
+        typedef boost::shared_ptr<EBTHeader const> ConstPtr;
     };
-    typedef boost::shared_ptr<ENPHeader> ENPHeaderPtr;
-    typedef boost::shared_ptr<ENPHeader const> ENPHeaderConstPtr;
+    typedef boost::shared_ptr<EBTHeader> EBTHeaderPtr;
+    typedef boost::shared_ptr<EBTHeader const> EBTHeaderConstPtr;
 
-    struct ENPImage
+    struct EBTMessage
     {
-        ENPImage (): img (), header ()
+        EBTMessage (): header (), detections ()
         {}
 
-        cv::Mat img;
-        ENPHeader header;
+        EBTHeader header;
+        std::vector<EBTDetection> detections;
 
-        typedef boost::shared_ptr<ENPImage> Ptr;
-        typedef boost::shared_ptr<ENPImage const> ConstPtr;
+        typedef boost::shared_ptr<EBTMessage> Ptr;
+        typedef boost::shared_ptr<EBTMessage const> ConstPtr;
     };
-    typedef ENPImage::Ptr ENPImagePtr;
-    typedef ENPImage::ConstPtr ENPImageConstPtr;
+    typedef EBTMessage::Ptr EBTMessagePtr;
+    typedef EBTMessage::ConstPtr EBTMessageConstPtr;
 
-    ENPBase()
+    EBTBase()
     {}
 };

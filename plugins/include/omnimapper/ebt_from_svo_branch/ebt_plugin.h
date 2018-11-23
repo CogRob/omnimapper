@@ -42,82 +42,78 @@
 #include <omnimapper/get_transform_functor.h>
 #include <omnimapper/trigger.h>
 
-#include "omnimapper/apriltag_plugin/apriltag_base.h"
+#include "omnimapper/ebt_plugin/ebt_base.h"
 
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose3.h>
 
+//#include <boost/functional/hash.hpp>
+
+
 namespace omnimapper
 {
-/* \brief AprilTagPoseMeasurementPlugin adds sequential pose constraints based on apriltag markers.
+/* \brief EBTPoseMeasurementPlugin adds sequential pose constraints based on edge tracking to the SLAM problem.
     author Ruffin White
 */
 
-class AprilTagPoseMeasurementPlugin //: public omnimapper::PosePlugin
+class EBTPoseMeasurementPlugin //: public omnimapper::PosePlugin
 {
     typedef typename boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > BetweenPose3Ptr;
 
 public:
 
-    typedef APRILTagBase::APRILTagDetection APRILTagDetection;
-    typedef APRILTagDetection::Ptr APRILTagDetectionPtr;
-    typedef APRILTagDetection::ConstPtr APRILTagDetectionConstPtr;
+    typedef EBTBase::EBTDetection EBTDetection;
+    typedef EBTDetection::Ptr EBTDetectionPtr;
+    typedef EBTDetection::ConstPtr EBTDetectionConstPtr;
 
-    typedef APRILTagBase::APRILTagMessage APRILTagMessage;
-    typedef APRILTagMessage::Ptr APRILTagMessagePtr;
-    typedef APRILTagMessage::ConstPtr APRILTagMessageConstPtr;
+    typedef EBTBase::EBTMessage EBTMessage;
+    typedef EBTMessage::Ptr EBTMessagePtr;
+    typedef EBTMessage::ConstPtr EBTMessageConstPtr;
 
-    /** \brief AprilTagPoseMeasurementPlugin constructor. */
-    AprilTagPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper);
-    ~AprilTagPoseMeasurementPlugin ();
+    /** \brief EBTPoseMeasurementPlugin constructor. */
+    EBTPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper);
+    ~EBTPoseMeasurementPlugin ();
     
     /** \brief spin starts a thread spinning, which will process messages as they become available. */
     void spin ();
-
-    bool initializeCalibration(APRILTagMessagePtr current_message);
     
     /** \brief spinOnce handles one update cycle, if a new message is available.  Not needed if spin() has been called. */
     bool spinOnce ();
-    
+
     /** \brief Attempts EBT and adds a constraint between sym1 and sym2. */
-    bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, gtsam::Pose3 relative_pose);
+    bool addConstraint (gtsam::Symbol sym1, gtsam::Symbol sym2, EBTDetection detection);
     
-    /** \brief Attempts to find a loop closure at requested symbol, by examining all past poses. */
-    bool tryLoopClosure (gtsam::Symbol sym);
-    
-    /** \brief apriltagCallback is used to provide input to the EBT Plugin. */
-    void apriltagCallback (const APRILTagMessageConstPtr& message);
+    /** \brief ebtmessageCallback is used to provide input to the EBT Plugin. */
+    void ebtmessageCallback (const EBTMessageConstPtr& message);
     
     /** \brief ready returns false if the plugin is currently processing a message, false otherwise. */
     bool ready ();
     
-    /** \brief getAPRILTagMessagePtr returns a boost::shared_ptr to the point message at symbol sym. */
-    APRILTagMessageConstPtr getAPRILTagMessagePtr (gtsam::Symbol sym);
+    /** \brief getEBTMessagePtr returns a boost::shared_ptr to the point message at symbol sym. */
+    EBTMessageConstPtr getEBTMessagePtr (gtsam::Symbol sym);
     
     /** \brief getSensorToBaseAtSymbol returns the cached sensor to base transform for symbol sym. */
     Eigen::Affine3d getSensorToBaseAtSymbol (gtsam::Symbol sym);
 
 
 
-
-    /** \brief setUsePose sets to use the Pose3 message for the factor. */
-    void setUsePose (bool use_pose) { use_pose_ = use_pose; }
-
-    /** \brief setUseProjection sets to use the Projection message for the factor. */
-    void setUseProjection (bool use_projection) { use_projection_ = use_projection; }
-
     /** \brief setTransNoise sets the translational noise to use on constraints. */
     void setTransNoise (double trans_noise) { trans_noise_ = trans_noise; }
-    
+
     /** \brief setRotNoise sets the rotational noise to use on constraints. */
     void setRotNoise (double rot_noise) { rot_noise_ = rot_noise; }
 
-    /** \brief setUniqueIds sets if to expect if IDs are unique. */
-    void setUniqueIds (bool unique_ids) { unique_ids_ = unique_ids; }
+    /** \brief setInitDistanceThreshold sets the Init Distance Threshold. */
+    void setInitDistanceThreshold (double init_distance_threshold) { init_distance_threshold_ = init_distance_threshold; }
 
-    /** \brief setUseProjection sets to use the Projection message for the factor. */
-    void setLoopClosureDistanceThreshold (double loop_closure_distance_threshold) { loop_closure_distance_threshold_ = loop_closure_distance_threshold; }
+    /** \brief setInitDistanceThreshold sets the Init Distance Threshold. */
+    void setInitWithEstimate (bool init_with_estimate) { init_with_estimate_ = init_with_estimate; }
+
+    /** \brief setInitDistanceThreshold sets the Init Distance Threshold. */
+    void setInitCounterThreshold (int counter_th) { counter_th_ = counter_th; }
+
+
 
 
     
@@ -130,15 +126,20 @@ public:
     /** \brief returns the time the previous frame processing was completed. */
     omnimapper::Time getLastProcessedTime ();
 
+
+    /* \brief Installs a callback for the ebtmessage init */
+    void setEBTMessageInitCallback (boost::function<void (const EBTMessageConstPtr&)>& ebtmessage_init_callback){
+        ebtmessage_init_callback_ = ebtmessage_init_callback;
+    }
     
     /** \brief resets the plugin to the initial state. */
     void reset ();
 
-    /** \brief transformPointAPRILTag transform the message given a pose3. */
-    void transformPointAPRILTag (const APRILTagMessagePtr &message, const gtsam::Pose3 &T);
+    /** \brief reinit the tracker based on the current and past state. */
+    void reinit (EBTMessagePtr current_message, unsigned int i);
 
-    /** \brief applyBaseTransform transform the message using the base. */
-    void applyBaseTransform (APRILTagMessagePtr& message);
+    /** \brief reinit the tracker based on the current and past state. */
+    void addDetection (EBTDetection detection, boost::posix_time::ptime current_time, gtsam::Symbol object_sym_, boost::optional<gtsam::Pose3> current_pose);
     
 protected:
     OmniMapperBase* mapper_;
@@ -150,31 +151,32 @@ protected:
     Time triggered_time_;
     
     bool initialized_;
-    std::map<gtsam::Symbol, APRILTagMessageConstPtr> messages_;
-    std::map<gtsam::Symbol, std::map<boost::posix_time::ptime, APRILTagDetectionConstPtr> > detections_;
+    std::map<gtsam::Symbol, EBTMessageConstPtr> messages_;
+    std::map<gtsam::Symbol, std::map<boost::posix_time::ptime, EBTDetectionConstPtr> > detections_;
     
     std::map<gtsam::Symbol, Eigen::Affine3d> sensor_to_base_transforms_;
 
-    APRILTagMessageConstPtr current_message_;
+    EBTMessageConstPtr current_message_;
     boost::mutex current_message_mutex_;
     boost::condition_variable current_message_cv_;
     bool have_new_message_;
 
     bool ready_;
     bool first_;
-
-    bool use_pose_;
-    bool use_projection_;
     double trans_noise_;
     double rot_noise_;
-    bool unique_ids_;
-    double loop_closure_distance_threshold_;
-
+    double init_distance_threshold_;
+    double init_cov_threshold_;
+    bool init_with_estimate_;
     bool debug_;
     bool overwrite_timestamps_;
+    int counter_;
+    int counter_th_;
+
+
+    boost::function<void (const EBTMessageConstPtr&)> ebtmessage_init_callback_;
 
     boost::hash<std::string> string_hash;
-
 };
 
 }
