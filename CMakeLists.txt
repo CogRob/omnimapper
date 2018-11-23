@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 project(OMNIMAPPER)
 
+set (CMAKE_CXX_STANDARD 11)
+
 set (OMNIMAPPER_VERSION_MAJOR 0)
 set (OMNIMAPPER_VERSION_MINOR 1)
 set (OMNIMAPPER_VERSION_STRING "$OMNIMAPPER_VERSION_MAJOR}.${OMNIMAPPER_VERSION_MINOR}")
@@ -27,6 +29,8 @@ message("GTSAM LIBS: " ${GTSAM_LIBRARY_DIRS})
 
 # Build CogRob's Organized Segmentation Tools
 add_subdirectory(organized_segmentation_tools_dev)
+include_directories(organized_segmentation_tools_dev/include)
+
 
 # OmniMapper Base
 include_directories (base/include)
@@ -46,12 +50,12 @@ set (base_srcs base/src/omnimapper_base.cpp
 
 
 # Landmarks for Object-SLAM
-include_directories(landmarks/include)
+#include_directories(landmarks/include)
 
-set(landmarks_incs landmarks/include/omnimapper/object.h
-		   landmarks/include/omnimapper/landmark_factor.h)
+#set(landmarks_incs landmarks/include/omnimapper/object.h
+#		   landmarks/include/omnimapper/landmark_factor.h)
 
-set(landmarks_srcs landmarks/src/object.cpp)
+#set(landmarks_srcs landmarks/src/object.cpp)
 
 
 # OmniMapper Plugins
@@ -60,25 +64,25 @@ include_directories (plugins/include)
 set (plugins_incs plugins/include/omnimapper/icp_plugin.h
 		  #plugins/include/omnimapper/enp_plugin/enp_plugin.h
 		  #plugins/include/omnimapper/enp_plugin/enp_base.h
-		  plugins/include/omnimapper/ebt_plugin/ebt_base.h
-		  plugins/include/omnimapper/ebt_plugin/ebt_plugin.h
-		  plugins/include/omnimapper/apriltag_plugin/apriltag_base.h
-		  plugins/include/omnimapper/apriltag_plugin/apriltag_plugin.h
+		  #plugins/include/omnimapper/ebt_plugin/ebt_base.h
+		  #plugins/include/omnimapper/ebt_plugin/ebt_plugin.h
+		  #plugins/include/omnimapper/apriltag_plugin/apriltag_base.h
+		  #plugins/include/omnimapper/apriltag_plugin/apriltag_plugin.h
 		  plugins/include/omnimapper/no_motion_pose_plugin.h
-		  plugins/include/omnimapper/object_plugin.h
+		  #plugins/include/omnimapper/object_plugin.h
 )
 
 set (plugins_srcs plugins/src/icp_plugin.cpp
 		  #plugins/src/enp_plugin.cpp
-		  plugins/src/ebt_plugin.cpp
-		  plugins/src/apriltag_plugin.cpp
+		  #plugins/src/ebt_plugin.cpp
+		  #plugins/src/apriltag_plugin.cpp
 		  plugins/src/no_motion_pose_plugin.cpp
-		  plugins/src/object_plugin.cpp
+		  #plugins/src/object_plugin.cpp
 )
 
 
-set (incs ${base_incs} ${plugins_incs})
-set (srcs ${base_srcs} ${plugins_srcs})
+set (incs ${base_incs} ${landmarks_incs} ${plugins_incs})
+set (srcs ${base_srcs} ${landmarks_srcs} ${plugins_srcs})
 
 add_library (omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRARIES})
@@ -95,7 +99,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/plugins/include/omnimapper DESTINATION inc
 # Install Omnimapper organized segmentation tools
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/organized_segmentation_tools DESTINATION include)
 
-install(EXPORT omnimapper DESTINATION lib/omnimapper)
+#install(EXPORT omnimapper DESTINATION lib/omnimapper)
 
 # Configure package config file
 configure_file(
