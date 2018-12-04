@@ -51,7 +51,7 @@
 #include <fstream>
 
 template <typename PointT>
-omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
+omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz(const omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     mapper_ (mapper),
     vis_values_ (new gtsam::Values ()),
@@ -139,7 +139,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu ()
   visualization_menu_ = menu_handler_->insert ("Visualization");
   interactive_markers::MenuHandler::EntryHandle map_cloud = menu_handler_->insert (visualization_menu_, "Draw Map Cloud", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb, this, _1));
   interactive_markers::MenuHandler::EntryHandle marginals = menu_handler_->insert (visualization_menu_, "Draw Pose Marginals", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::drawPoseMarginalsCb, this, _1));
-    interactive_markers::MenuHandler::EntryHandle graphviz = menu_handler_->insert (visualization_menu_, "Output Graphviz", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::setOutputGraphviz, this, _1));
+  //interactive_markers::MenuHandler::EntryHandle graphviz = menu_handler_->insert (visualization_menu_, "Output Graphviz", boost::bind (&omnimapper::OmniMapperVisualizerRViz<PointT>::setOutputGraphviz, this, _1));
 
   menu_handler_->apply (*marker_server_, "OmniMapper");
   marker_server_->applyChanges ();
