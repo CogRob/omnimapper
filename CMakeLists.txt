@@ -36,18 +36,18 @@ include_directories(organized_segmentation_tools_dev/include)
 include_directories (base/include)
 
 set (base_incs base/include/omnimapper/omnimapper_base.h
-			   base/include/omnimapper/output_plugin.h
-			   base/include/omnimapper/pose_chain.h
-			   base/include/omnimapper/pose_plugin.h
-			   base/include/omnimapper/time.h
-			   base/include/omnimapper/transform_tools.h
-			   base/include/omnimapper/trigger.h
-			   base/include/omnimapper/get_transform_functor.h
+	       base/include/omnimapper/output_plugin.h
+	       base/include/omnimapper/pose_chain.h
+	       base/include/omnimapper/pose_plugin.h
+	       base/include/omnimapper/time.h
+	       base/include/omnimapper/transform_tools.h
+	       base/include/omnimapper/trigger.h
+	       base/include/omnimapper/get_transform_functor.h
 )
 
 set (base_srcs base/src/omnimapper_base.cpp
-			   base/src/time.cpp
-			   base/src/transform_tools.cpp
+	       base/src/time.cpp
+	       base/src/transform_tools.cpp
 )
 
 
@@ -94,6 +94,9 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRA
 
 # Install Omnimapper Headers
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/base/include/omnimapper DESTINATION include)
+
+# Install landmark headers
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/landmarks/include/omnimapper DESTINATION include)
 
 # Install Omnimapper Plugins
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/plugins/include/omnimapper DESTINATION include)
