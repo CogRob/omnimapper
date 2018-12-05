@@ -28,9 +28,19 @@ message("GTSAM LIBS: " ${GTSAM_LIBRARY_DIRS})
 #message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 
 # Build CogRob's Organized Segmentation Tools
-add_subdirectory(organized_segmentation_tools_dev)
+#add_subdirectory(organized_segmentation_tools_dev)
 include_directories(organized_segmentation_tools_dev/include)
 
+set (org_incs    organized_segmentation_tools_dev/include/organized_segmentation_tools/organized_segmentation_tbb.h
+)
+
+set (org_srcs    organized_segmentation_tools_dev/src/organized_segmentation_tbb.cpp
+                organized_segmentation_tools_dev/src/organized_segmentation_tbb_demo.cpp
+)
+
+
+add_library(organized_segmentation_tools SHARED ${org_incs} ${org_srcs})
+target_link_libraries(organized_segmentation_tools ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRARIES})
 
 # OmniMapper Base
 include_directories (base/include)
@@ -80,11 +90,13 @@ set (srcs ${base_srcs} ${landmarks_srcs} ${plugins_srcs})
 add_library (omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRARIES})
 
+
 ###########################################################################
 # INSTALL
 
-# Install Omnimapper Headers
+# Install Omnimapper Headers and Library
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/base/include/omnimapper DESTINATION include)
+install(TARGETS omnimapper DESTINATION lib)
 
 # Install landmark headers
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/landmarks/include/omnimapper DESTINATION include)
@@ -94,6 +106,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/plugins/include/omnimapper DESTINATION inc
 
 # Install Omnimapper organized segmentation tools
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/organized_segmentation_tools DESTINATION include)
+install(TARGETS organized_segmentation_tools DESTINATION lib)
 
 #install(EXPORT omnimapper DESTINATION lib/omnimapper)
 
