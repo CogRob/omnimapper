@@ -91,11 +91,13 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} ${GTSAM_LIBRARIES} ${TBB_LIBRA
 # Install Omnimapper Headers
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/base/include/omnimapper DESTINATION include)
 
+install(TARGETS omnimapper DESTINATION lib)
+
 # Install Omnimapper Plugins
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/plugins/include/omnimapper DESTINATION include)
 
 # Install Omnimapper organized segmentation tools
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/organized_segmentation_tools DESTINATION include)
+# install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/organized_segmentation_tools DESTINATION include)
 
 #install(EXPORT omnimapper DESTINATION lib/omnimapper)
 

@@ -24,7 +24,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 # Use GTSAM's Eigen
 # Use generic Eigen include paths e.g. <Eigen/Core>
 #set(EIGEN_INCLUDE_DIRS ${GTSAM_DIR}/../../../include/gtsam/3rdparty/Eigen/)
-#message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})    
+#message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 
 include_directories(include)
 set(incs include/organized_segmentation_tools/organized_segmentation_tbb.h)
@@ -36,3 +36,6 @@ target_link_libraries(organized_segmentation_tools ${PCL_LIBRARIES} tbb tbbmallo
 
 add_executable(organized_segmentation_tbb_demo src/organized_segmentation_tbb_demo.cpp)
 target_link_libraries(organized_segmentation_tbb_demo organized_segmentation_tools)
+
+install(DIRECTORY include/organized_segmentation_tools DESTINATION include)
+install(TARGETS organized_segmentation_tools DESTINATION lib)
