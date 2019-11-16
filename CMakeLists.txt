@@ -99,16 +99,16 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/organized_segmentation_tools_dev/include/o
 
 #install(EXPORT omnimapper DESTINATION lib/omnimapper)
 
-# Configure package config file
-configure_file(
-  ${CMAKE_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
-  ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake @ONLY
-)
-
-set(ConfigPackageLocation lib/omnimapper)
-
-install(
-  FILES
-    ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake
-  DESTINATION
-    ${ConfigPackageLocation})
+# # Configure package config file
+# configure_file(
+#   ${CMAKE_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
+#   ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake @ONLY
+# )
+#
+# set(ConfigPackageLocation lib/omnimapper)
+#
+# install(
+#   FILES
+#     ${CMAKE_BINARY_DIR}/cmake/omnimapperConfig.cmake
+#   DESTINATION
+#     ${ConfigPackageLocation})
