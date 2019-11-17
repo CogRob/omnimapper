@@ -17,7 +17,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 ###########################################################################
 # Find GTSAM
 find_package(GTSAM REQUIRED)
-include_directories(${GTSAM_INCLUDE_DIRS})
+include_directories(${GTSAM_INCLUDE_DIR})
 link_directories(${GTSAM_LIBRARY_DIRS})
 message("GTSAM INCS: " ${GTSAM_EIGEN_INCLUDE_PREFIX})
 message("GTSAM LIBS: " ${GTSAM_LIBRARY_DIRS})
