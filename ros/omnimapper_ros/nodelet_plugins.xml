@@ -1,7 +1,0 @@
-<library path="lib/libomnimapper_ros_nodelet">
-  <class name="omnimapper_ros/OmniMapperROSNodelet" type="omnimapper_ros::OmniMapperROSNodelet" base_class_type="nodelet::Nodelet">
-    <description>
-      OmniMapperROSNodelet
-    </description>
-  </class>
-</library>
