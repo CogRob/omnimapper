@@ -1,0 +1,158 @@
+diff --git a/gtsam/inference/EliminateableFactorGraph-inst.h b/gtsam/inference/EliminateableFactorGraph-inst.h
+index b64ebe259..822b43c8e 100644
+--- a/gtsam/inference/EliminateableFactorGraph-inst.h
++++ b/gtsam/inference/EliminateableFactorGraph-inst.h
+@@ -47,13 +47,15 @@ namespace gtsam {
+       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
+       // for no variable index first so that it's always computed if we need to call COLAMD because
+       // no Ordering is provided.
+-      return eliminateSequential(ordering, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminateSequential(ordering, function, computedVariableIndex);
+     }
+     else /*if(!ordering)*/ {
+       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
+       // have a VariableIndex already here because we computed one if needed in the previous 'else'
+       // block.
+-      return eliminateSequential(Ordering::COLAMD(*variableIndex), function);
++      Ordering computedOrdering = Ordering::COLAMD(*variableIndex);
++      return eliminateSequential(computedOrdering, function);
+     }
+   }
+ 
+@@ -81,13 +83,15 @@ namespace gtsam {
+       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
+       // for no variable index first so that it's always computed if we need to call COLAMD because
+       // no Ordering is provided.
+-      return eliminateMultifrontal(ordering, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminateMultifrontal(ordering, function, computedVariableIndex);
+     }
+     else /*if(!ordering)*/ {
+       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
+       // have a VariableIndex already here because we computed one if needed in the previous 'else'
+       // block.
+-      return eliminateMultifrontal(Ordering::COLAMD(*variableIndex), function);
++      Ordering computedOrdering = Ordering::COLAMD(*variableIndex);
++      return eliminateMultifrontal(computedOrdering, function);
+     }
+   }
+ 
+@@ -104,7 +108,8 @@ namespace gtsam {
+       return etree.eliminate(function);
+     } else {
+       // If no variable index is provided, compute one and call this function again
+-      return eliminatePartialSequential(ordering, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminatePartialSequential(ordering, function, computedVariableIndex);
+     }
+   }
+ 
+@@ -124,7 +129,8 @@ namespace gtsam {
+       return eliminatePartialSequential(ordering, function, variableIndex);
+     } else {
+       // If no variable index is provided, compute one and call this function again
+-      return eliminatePartialSequential(variables, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminatePartialSequential(variables, function, computedVariableIndex);
+     }
+   }
+ 
+@@ -142,7 +148,8 @@ namespace gtsam {
+       return junctionTree.eliminate(function);
+     } else {
+       // If no variable index is provided, compute one and call this function again
+-      return eliminatePartialMultifrontal(ordering, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminatePartialMultifrontal(ordering, function, computedVariableIndex);
+     }
+   }
+ 
+@@ -162,7 +169,8 @@ namespace gtsam {
+       return eliminatePartialMultifrontal(ordering, function, variableIndex);
+     } else {
+       // If no variable index is provided, compute one and call this function again
+-      return eliminatePartialMultifrontal(variables, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return eliminatePartialMultifrontal(variables, function, computedVariableIndex);
+     }
+   }
+ 
+@@ -279,7 +287,8 @@ namespace gtsam {
+       }
+     } else {
+       // If no variable index is provided, compute one and call this function again
+-      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, computedVariableIndex);
+     }
+   }
+ 
+@@ -304,7 +313,8 @@ namespace gtsam {
+     else
+     {
+       // If no variable index is provided, compute one and call this function again
+-      return marginal(variables, function, VariableIndex(asDerived()));
++      VariableIndex computedVariableIndex(asDerived());
++      return marginal(variables, function, computedVariableIndex);
+     }
+   }
+ 
+diff --git a/gtsam/linear/GaussianFactorGraph.cpp b/gtsam/linear/GaussianFactorGraph.cpp
+index 54e721cd7..50c30f86d 100644
+--- a/gtsam/linear/GaussianFactorGraph.cpp
++++ b/gtsam/linear/GaussianFactorGraph.cpp
+@@ -1,6 +1,6 @@
+ /* ----------------------------------------------------------------------------
+ 
+- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
++ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+  * Atlanta, Georgia 30332-0415
+  * All Rights Reserved
+  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+@@ -222,7 +222,8 @@ namespace gtsam {
+   Matrix GaussianFactorGraph::augmentedHessian(
+       boost::optional<const Ordering&> optionalOrdering) const {
+     // combine all factors and get upper-triangular part of Hessian
+-    HessianFactor combined(*this, Scatter(*this, optionalOrdering));
++    Scatter scatter(*this, optionalOrdering);
++    HessianFactor combined(*this, scatter);
+     Matrix result = combined.info();
+     // Fill in lower-triangular part of Hessian
+     result.triangularView<Eigen::StrictlyLower>() = result.transpose();
+diff --git a/gtsam/linear/HessianFactor.cpp b/gtsam/linear/HessianFactor.cpp
+index f282682b3..06ad4a0d1 100644
+--- a/gtsam/linear/HessianFactor.cpp
++++ b/gtsam/linear/HessianFactor.cpp
+@@ -276,7 +276,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
+   boost::optional<Scatter> computedScatter;
+   if(!scatter) {
+     computedScatter = Scatter(factors);
+-    scatter = computedScatter;
++    scatter = *computedScatter;
+   }
+ 
+   // Allocate and copy keys
+@@ -625,7 +625,8 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
+   // Build joint factor
+   HessianFactor::shared_ptr jointFactor;
+   try {
+-    jointFactor = boost::make_shared<HessianFactor>(factors, Scatter(factors, keys));
++    Scatter scatter(factors, keys);
++    jointFactor = boost::make_shared<HessianFactor>(factors, scatter);
+   } catch(std::invalid_argument&) {
+     throw InvalidDenseElimination(
+         "EliminateCholesky was called with a request to eliminate variables that are not\n"
+diff --git a/gtsam/linear/JacobianFactor.cpp b/gtsam/linear/JacobianFactor.cpp
+index a63bbf473..4c5d4f5f7 100644
+--- a/gtsam/linear/JacobianFactor.cpp
++++ b/gtsam/linear/JacobianFactor.cpp
+@@ -227,7 +227,7 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
+   boost::optional<VariableSlots> computedVariableSlots;
+   if (!variableSlots) {
+     computedVariableSlots = VariableSlots(graph);
+-    variableSlots = computedVariableSlots; // Binds reference, does not copy VariableSlots
++    variableSlots = *computedVariableSlots; // Binds reference, does not copy VariableSlots
+   }
+ 
+   // Cast or convert to Jacobians
