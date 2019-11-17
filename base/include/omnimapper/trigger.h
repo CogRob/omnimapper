@@ -39,59 +39,46 @@
 #pragma once
 #include <omnimapper/time.h>
 
-namespace omnimapper
-{
-  /** \brief TriggerFunctor
-    *
-    */
-    class TriggerFunctor
-    {
-    public:
-        virtual bool operator () (Time time) = 0;
-    };
+namespace omnimapper {
+/** \brief TriggerFunctor
+ *
+ */
+class TriggerFunctor {
+ public:
+  virtual bool operator()(Time time) = 0;
+};
 
-    /** \brief TriggerAlways will always add a pose. */
-    class TriggerAlways : public TriggerFunctor
-    {
-    public:
-      TriggerAlways ()
-      {}
+/** \brief TriggerAlways will always add a pose. */
+class TriggerAlways : public TriggerFunctor {
+ public:
+  TriggerAlways() {}
 
-      bool operator()(Time time) 
-      {
-        return true;
-      }
+  bool operator()(Time time) { return true; }
 
-    private:
-      Time the_future_;
-    };
+ private:
+  Time the_future_;
+};
 
-    /** \brief TriggerPeriodic will add a pose at the specified rate. */ 
-    class TriggerPeriodic : public TriggerFunctor
-    {
-    public:
-      TriggerPeriodic (GetTimeFunctorPtr get_time, float duration)
-      : get_time_ (get_time),
-        duration_ (duration),
-        prev_time_ ((*get_time_)())
-        {}
+/** \brief TriggerPeriodic will add a pose at the specified rate. */
+class TriggerPeriodic : public TriggerFunctor {
+ public:
+  TriggerPeriodic(GetTimeFunctorPtr get_time, float duration)
+      : get_time_(get_time), duration_(duration), prev_time_((*get_time_)()) {}
 
-        bool operator()(Time time)
-        {
-          Time now = (*get_time_)();
-          if (((now - prev_time_) > boost::posix_time::seconds(duration_)))
-          {
-            prev_time_ = now;
-            return (true);
-          }
-          return (false);
-        }
-    private:
-      GetTimeFunctorPtr get_time_;
-      float duration_;
-      Time prev_time_;  
-    };
-  
+  bool operator()(Time time) {
+    Time now = (*get_time_)();
+    if (((now - prev_time_) > boost::posix_time::seconds(duration_))) {
+      prev_time_ = now;
+      return (true);
+    }
+    return (false);
+  }
 
-    typedef boost::shared_ptr<omnimapper::TriggerFunctor> TriggerFunctorPtr;
-}
+ private:
+  GetTimeFunctorPtr get_time_;
+  float duration_;
+  Time prev_time_;
+};
+
+typedef boost::shared_ptr<omnimapper::TriggerFunctor> TriggerFunctorPtr;
+}  // namespace omnimapper
