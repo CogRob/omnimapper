@@ -40,7 +40,9 @@
 
 #include <pcl/common/time.h>
 #include <pcl/features/integral_image_normal.h>
-#include <pcl/io/openni_grabber.h>
+#include <pcl/conversions.h>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/thread.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
