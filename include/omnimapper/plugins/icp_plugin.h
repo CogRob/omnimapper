@@ -44,7 +44,9 @@
 #include <omnimapper/get_transform_functor.h>
 #include <omnimapper/pose_plugin.h>
 #include <omnimapper/trigger.h>
-#include <pcl/io/pcd_grabber.h>
+#include <pcl/conversions.h>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace omnimapper {
 /** \brief ICPPoseMeasurementPlugin adds sequential pose constraints based on
