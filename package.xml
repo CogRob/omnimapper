@@ -7,11 +7,14 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>eigen3_cmake_module</buildtool_depend>
 
+  <build_depend>eigen</build_depend>
+  
   <depend>gtsam</depend>
   <depend>libpcl-all-dev</depend>
 
   <export>
-    <build_type>cmake</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
