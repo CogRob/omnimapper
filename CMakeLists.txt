@@ -38,29 +38,30 @@ set (organized_segmentation_srcs
   src/organized_segmentation/organized_segmentation_tbb.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED
+set(library_name ${PROJECT_NAME})
+add_library(${library_name} SHARED
   ${library_srcs}
   ${plugins_srcs}
   ${organized_segmentation_srcs}
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${library_name}
   ${PCL_LIBRARIES}
   ${GTSAM_LIBRARIES}
   ${TBB_LIBRARIES}
 )
 
-ament_target_dependencies(${PROJECT_NAME}
+ament_target_dependencies(${library_name}
   Eigen3
 )
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(${library_name}
   PUBLIC
   ${GTSAM_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
 )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${library_name}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
@@ -79,5 +80,7 @@ ament_export_dependencies(eigen3_cmake_module)
 ament_export_dependencies(Eigen3)
 
 ament_export_include_directories(include)
-
+ament_export_libraries(
+  ${library_name}
+)
 ament_package()
