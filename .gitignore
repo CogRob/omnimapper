@@ -22,6 +22,3 @@
 
 # Build
 build
-ros/omnimapper_ros/bin
-ros/omnimapper_ros/srv_gen
-ros/omnimapper_ros/src/omnimapper_ros/
