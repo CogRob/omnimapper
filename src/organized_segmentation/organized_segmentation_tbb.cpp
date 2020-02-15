@@ -36,7 +36,7 @@
  *
  */
 
-#include <organized_segmentation_tools/organized_segmentation_tbb.h>
+#include <omnimapper/organized_segmentation/organized_segmentation_tbb.h>
 #include <pcl/segmentation/plane_refinement_comparator.h>
 #include <tbb/parallel_invoke.h>
 #include <tbb/pipeline.h>

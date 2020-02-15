@@ -1,4 +1,4 @@
-#include <omnimapper/no_motion_pose_plugin.h>
+#include <omnimapper/plugins/no_motion_pose_plugin.h>
 
 namespace omnimapper {
 

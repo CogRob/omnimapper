@@ -36,7 +36,7 @@
  *
  */
 
-#include <organized_segmentation_tools/organized_segmentation_tbb.h>
+#include <omnimapper/organized_segmentation/organized_segmentation_tbb.h>
 #include <pcl/console/parse.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>

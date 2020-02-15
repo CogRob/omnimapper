@@ -36,7 +36,7 @@
  *
  */
 
-#include <omnimapper/icp_plugin.h>
+#include <omnimapper/plugins/icp_plugin.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/time.h>
 #include <pcl/common/centroid.h>
