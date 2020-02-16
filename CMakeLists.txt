@@ -27,15 +27,25 @@ set (library_srcs
   src/omnimapper_base.cpp
   src/time.cpp
   src/transform_tools.cpp
+  src/BoundedPlane3.cpp
+  src/BoundedPlaneFactor.cpp
+  src/plane_factor.cpp
+  src/plane.cpp
 )
 
 set (plugins_srcs
   src/plugins/icp_plugin.cpp
   src/plugins/no_motion_pose_plugin.cpp
+  src/plugins/bounded_plane_plugin.cpp
+  src/plugins/plane_plugin.cpp
 )
 
 set (organized_segmentation_srcs
   src/organized_segmentation/organized_segmentation_tbb.cpp
+)
+
+set (organized_feature_extraction_srcs
+  src/organized_feature_extraction/organized_feature_extraction.cpp
 )
 
 set(library_name ${PROJECT_NAME})
@@ -43,6 +53,7 @@ add_library(${library_name} SHARED
   ${library_srcs}
   ${plugins_srcs}
   ${organized_segmentation_srcs}
+  ${organized_feature_extraction_srcs}
 )
 
 target_link_libraries(${library_name}
