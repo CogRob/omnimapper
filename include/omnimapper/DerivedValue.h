@@ -15,6 +15,7 @@
 #pragma once
 
 #include <gtsam/base/Value.h>
+#include <gtsam/base/Vector.h>
 #include <boost/make_shared.hpp>
 
 //////////////////
@@ -35,10 +36,10 @@
 //////////////////
 
 
-namespace gtsam {
+namespace omnimapper {
 
 template<class DERIVED>
-class DerivedValue : public Value {
+class DerivedValue : public gtsam::Value {
 
 protected:
   DerivedValue() {}
@@ -52,7 +53,7 @@ public:
    * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
    * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
    */
-  virtual Value* clone_() const {
+  virtual gtsam::Value* clone_() const {
     void *place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
     DERIVED* ptr = new(place) DERIVED(static_cast<const DERIVED&>(*this));
     return ptr;
@@ -69,12 +70,12 @@ public:
   /**
    * Clone this value (normal clone on the heap, delete with 'delete' operator)
    */
-  virtual boost::shared_ptr<Value> clone() const {
+  virtual boost::shared_ptr<gtsam::Value> clone() const {
     return boost::make_shared<DERIVED>(static_cast<const DERIVED&>(*this));
   }
 
   /// equals implementing generic Value interface
-  virtual bool equals_(const Value& p, double tol = 1e-9) const {
+  virtual bool equals_(const gtsam::Value& p, double tol = 1e-9) const {
     // Cast the base class Value pointer to a derived class pointer
     const DERIVED& derivedValue2 = dynamic_cast<const DERIVED&>(p);
 
@@ -83,20 +84,20 @@ public:
   }
 
   /// Generic Value interface version of retract
-  virtual Value* retract_(const Vector& delta) const {
+  virtual gtsam::Value* retract_(const gtsam::Vector& delta) const {
     // Call retract on the derived class
     const DERIVED retractResult = (static_cast<const DERIVED*>(this))->retract(delta);
 
     // Create a Value pointer copy of the result
     void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
-    Value* resultAsValue = new(resultAsValuePlace) DERIVED(retractResult);
+    gtsam::Value* resultAsValue = new(resultAsValuePlace) DERIVED(retractResult);
 
     // Return the pointer to the Value base class
     return resultAsValue;
   }
 
   /// Generic Value interface version of localCoordinates
-  virtual Vector localCoordinates_(const Value& value2) const {
+  virtual gtsam::Vector localCoordinates_(const gtsam::Value& value2) const {
     // Cast the base class Value pointer to a derived class pointer
     const DERIVED& derivedValue2 = dynamic_cast<const DERIVED&>(value2);
 
@@ -105,7 +106,7 @@ public:
   }
 
   /// Assignment operator
-  virtual Value& operator=(const Value& rhs) {
+  virtual gtsam::Value& operator=(const gtsam::Value& rhs) {
     // Cast the base class Value pointer to a derived class pointer
     const DERIVED& derivedRhs = dynamic_cast<const DERIVED&>(rhs);
 
@@ -137,4 +138,4 @@ private:
 
 };
 
-} /* namespace gtsam */
+}; /* namespace gtsam */

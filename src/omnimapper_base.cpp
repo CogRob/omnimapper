@@ -245,6 +245,7 @@ bool omnimapper::OmniMapperBase::addFactorDirect(
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   new_factors.push_back(new_factor);
+  return true;
 }
 
 /**
@@ -530,57 +531,63 @@ void omnimapper::OmniMapperBase::updateValue(gtsam::Symbol& update_symbol,
   return;
 }
 
-// void
-// omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol,
-// gtsam::Pose3& pose, gtsam::Plane<PointT>& meas_plane)
-// {
-//   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
-//   if (new_values.exists (update_symbol))
-//   {
-//     gtsam::Plane<PointT> to_update = new_values.at<gtsam::Plane<PointT>
-//     >(update_symbol); to_update.Extend2 (pose, meas_plane); new_values.update
-//     (update_symbol, to_update); return;
-//   }
+void
+omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol,
+  gtsam::Pose3& pose, gtsam::Plane<pcl::PointXYZRGBA>& meas_plane)
+{
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  if (new_values.exists (update_symbol))
+  {
+    gtsam::Plane<pcl::PointXYZRGBA> to_update = 
+      new_values.at<gtsam::Plane<pcl::PointXYZRGBA> >(update_symbol); 
+    to_update.Extend2(pose, meas_plane);
+    // new_values.update(update_symbol, to_update);
+    gtsam::GenericValue<gtsam::Plane<pcl::PointXYZRGBA> > temp;
+    // temp = to_update;
+    // new_values.update(update_symbol, static_cast<const gtsam::Value&>(temp));
+    return;
+  }
 
-//     std::cout << "Update value not supported!" << std::endl;
-//   assert (false);
-//   exit (1);
-//   //gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
-//   //gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT>
-//   >(update_symbol);
-//   //to_update.Extend2 (pose, meas_plane);
-//   /////to_update.Extend (pose, meas_plane);
+  std::cout << "Update value not supported!" << std::endl;
+  assert (false);
+  exit (1);
+  //gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  //gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT>
+  //>(update_symbol);
+  //to_update.Extend2 (pose, meas_plane);
+  /////to_update.Extend (pose, meas_plane);
 
-//   //state.update (update_symbol, to_update);
-//   return;
-// }
+  //state.update (update_symbol, to_update);
+  return;
+}
 
-// void
-// omnimapper::OmniMapperBase::updateBoundedPlane (gtsam::Symbol& update_symbol,
-// gtsam::Pose3& pose, omnimapper::BoundedPlane3<PointT>& meas_plane)
-// {
-//   // TODO: We should not have factor specific update functions, they should
-//   be derived from updateable value. boost::lock_guard<boost::mutex> lock
-//   (omnimapper_mutex_); if (new_values.exists(update_symbol))
-//   {
-//     omnimapper::BoundedPlane3<PointT> to_update =
-//     new_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-//     to_update.extendBoundary(pose, meas_plane);
-//     //new_values.at<omnimapper::BoundedPlane3<PointT>
-//     >(update_symbol).extendBoundary(pose, meas_plane);
-//     //new_values.update (update_symbol, to_update);
-//   }
-//   else
-//   {
-//     const gtsam::Values& isam_values = isam2.getLinearizationPoint();
-//     const omnimapper::BoundedPlane3<PointT>& to_update =
-//     isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-//     to_update.extendBoundary(pose, meas_plane);
-//     //isam2.getLinearizationPoint().at<omnimapper::BoundedPlane3<PointT>
-//     >(update_symbol).extendBoundary(pose, meas_plane);
-//   }
-//   return;
-// }
+void
+omnimapper::OmniMapperBase::updateBoundedPlane (gtsam::Symbol& update_symbol,
+gtsam::Pose3& pose, omnimapper::BoundedPlane3<pcl::PointXYZRGBA>& meas_plane)
+{
+  // TODO: We should not have factor specific update functions, they should
+  // be derived from updateable value. 
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_); 
+  if (new_values.exists(update_symbol))
+  {
+    omnimapper::BoundedPlane3<pcl::PointXYZRGBA> to_update =
+      new_values.at<omnimapper::BoundedPlane3<pcl::PointXYZRGBA> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    //new_values.at<omnimapper::BoundedPlane3<PointT>
+    //>(update_symbol).extendBoundary(pose, meas_plane);
+    //new_values.update (update_symbol, to_update);
+  }
+  else
+  {
+    const gtsam::Values& isam_values = isam2.getLinearizationPoint();
+    const omnimapper::BoundedPlane3<pcl::PointXYZRGBA>& to_update =
+      isam_values.at<omnimapper::BoundedPlane3<pcl::PointXYZRGBA> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    //isam2.getLinearizationPoint().at<omnimapper::BoundedPlane3<PointT>
+    //>(update_symbol).extendBoundary(pose, meas_plane);
+  }
+  return;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::getPose(

@@ -22,6 +22,8 @@
 
 using namespace std;
 
+template class gtsam::Plane<pcl::PointXYZRGBA>;
+
 namespace gtsam {
   
   /* ************************************************************************* */
@@ -1294,4 +1296,4 @@ namespace gtsam {
 } // namespace gtsam
 
 //template class gtsam::Plane<pcl::PointXYZ>;
-template class gtsam::Plane<pcl::PointXYZRGBA>;
+

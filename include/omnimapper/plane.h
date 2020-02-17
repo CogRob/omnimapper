@@ -50,7 +50,7 @@ namespace gtsam {
    * Functional, so no set functions: once created, a point is constant.
    */
   template <typename PointT>
-  class Plane: public DerivedValue<Plane<PointT> > {
+  class Plane: public omnimapper::DerivedValue<Plane<PointT> > {
   private:
     //double theta_, phi_,rho_;
     double a_, b_, c_, d_;
