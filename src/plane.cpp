@@ -6,7 +6,7 @@
  */
 
 #include <omnimapper/plane.h>
-#include <omnimapper/transform_helpers.h>
+#include <omnimapper/transform_tools.h>
 //#include <gtpointcloud/pointcloud_helpers.h>
 //#include <pcl_ros/transforms.h>
 #include <pcl/io/io.h>
@@ -26,8 +26,7 @@ namespace gtsam {
   
   /* ************************************************************************* */
   template <typename PointT>
-  Plane<PointT>::Plane(): 
-    a_(0), b_(0),c_(0),d_(0)
+  Plane<PointT>::Plane(): a_(0), b_(0),c_(0),d_(0)
   {
     //printf("Warning: Using default constructor in plane.  This might indicate a bug\n");
     //assert(false);
@@ -386,12 +385,12 @@ namespace gtsam {
     pred[1] = normal_out.y();
     pred[2] = normal_out.z();
     pred[3] = a_*xr.x() + b_*xr.y() + c_*xr.z() + d_;
-    
-    return (gtsam::Vector(4) <<
-			  pred[0],
-			  pred[1],
-			  pred[2],
-			  pred[3]);
+    gtsam::Vector g_v(4);
+    g_v << pred[0],
+			    pred[1],
+			    pred[2],
+			    pred[3];
+    return g_v;
   }
 
   template <typename PointT>
@@ -452,7 +451,9 @@ namespace gtsam {
 
   template <typename PointT>
   gtsam::Vector Plane<PointT>::GetXf()const {
-    return (gtsam::Vector(4) << a_,b_,c_,d_);
+    gtsam::Vector g_v(4);
+    g_v << a_,b_,c_,d_;
+    return g_v;
   }
 
   // gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
@@ -596,11 +597,11 @@ namespace gtsam {
 				      boost::optional<Matrix&> dhbydxf) const{
 
     gtsam::Vector xo = GetXo(xr);
-    gtsam::Vector normal = (gtsam::Vector(4) << 
-					  measured.a(),
-					  measured.b(),
-					  measured.c(),
-					  measured.d());
+    gtsam::Vector normal(4);
+    normal << measured.a(),
+					    measured.b(),
+					    measured.c(),
+					    measured.d();
 
     gtsam::Vector h = Geth(xo,normal);
     if(dhbydxr){
@@ -1106,7 +1107,7 @@ namespace gtsam {
     //bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
     bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
 
-    printf ("Fuse Result: orig: %d meas: %d fused: %d\n", origin_xy_lm_hull.points.size (),
+    printf ("Fuse Result: orig: %lu meas: %lu fused: %lu\n", origin_xy_lm_hull.points.size (),
             origin_xy_meas_hull.points.size (), origin_xy_fused_hull.points.size ());
 
     if (!worked)
@@ -1117,7 +1118,7 @@ namespace gtsam {
     
     if (debug_extend2)
     {
-      printf ("lm_hull: %d meas_hull: %d fused_hull: %d\n", origin_xy_lm_hull.points.size (), 
+      printf ("lm_hull: %lu meas_hull: %lu fused_hull: %lu\n", origin_xy_lm_hull.points.size (), 
               origin_xy_meas_hull.points.size (),
               origin_xy_fused_hull.points.size ());
     }
@@ -1128,7 +1129,7 @@ namespace gtsam {
     typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;    
 
     pcl::approximatePolygon2D<PointT> ( xy_fused_points, xy_fused_approx_points, 0.005, false, true);
-    printf ("approximatePolygon2D: orig poly: %d new poly: %d\n", xy_fused_points.size (), xy_fused_approx_points.size ());
+    printf ("approximatePolygon2D: orig poly: %lu new poly: %lu\n", xy_fused_points.size (), xy_fused_approx_points.size ());
 
     // Rotate it back
     pcl::PointCloud<PointT> fused_rotated_back;

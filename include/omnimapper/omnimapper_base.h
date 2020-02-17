@@ -57,18 +57,19 @@
 #include <omnimapper/pose_chain.h>
 #include <omnimapper/pose_plugin.h>
 #include <omnimapper/time.h>
+#include <omnimapper/plane.h>
+#include <omnimapper/BoundedPlane3.h>
+#include <pcl/point_types.h>
 
 #include <list>
 #include <map>
 #include <vector>
-// #include <omnimapper/plane.h>
-// #include <omnimapper/BoundedPlane3.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/thread.hpp>
 
-// typedef pcl::PointXYZRGBA PointT;
+typedef pcl::PointXYZRGBA PointT;
 
 namespace omnimapper {
 /** \brief OmniMapperBase is the base class for the OmniMapper system.  It
@@ -252,13 +253,15 @@ class OmniMapperBase {
   /** \brief Updates an existing value.  TODO: Fix this. */
   void updateValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
 
-  // /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test.
-  // */ void updatePlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
-  // gtsam::Plane<PointT>& meas_plane);
+  /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test.
+  */ 
+  void updatePlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+  gtsam::Plane<PointT>& meas_plane);
 
-  // * \brief Update a bounded plane -- TODO: remove this, should make
-  // updateable value. */ void updateBoundedPlane (gtsam::Symbol& update_symbol,
-  // gtsam::Pose3& pose, omnimapper::BoundedPlane3<PointT>& meas_plane);
+  /* \brief Update a bounded plane -- TODO: remove this, should make
+  updateable value. */ 
+  void updateBoundedPlane (gtsam::Symbol& update_symbol,
+  gtsam::Pose3& pose, omnimapper::BoundedPlane3<PointT>& meas_plane);
 
   /** \brief Looks up a pose by symbol. */
   boost::optional<gtsam::Pose3> getPose(gtsam::Symbol& pose_sym);

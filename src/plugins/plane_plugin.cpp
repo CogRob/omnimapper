@@ -1,4 +1,4 @@
-#include <omnimapper/plane_plugin.h>
+#include <omnimapper/plugins/plane_plugin.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <pcl/io/pcd_io.h>
 
@@ -262,7 +262,9 @@ namespace omnimapper
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.01, 0.01, 0.01, 0.03));
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 0.1, 0.1, 0.1, 0.2));
       //measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (4, 1.1, 1.1, 1.1, 2.2));
-      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (4) << angular_noise_, angular_noise_, angular_noise_, range_noise_));
+      gtsam::Vector g_v(4);
+      g_v << angular_noise_, angular_noise_, angular_noise_, range_noise_;
+      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(g_v);
       
       gtsam::Vector measurement_vector = meas_plane.GetXf ();
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor(new gtsam::PlaneFactor<PointT> (measurement_vector, measurement_noise, pose_sym, best_symbol));

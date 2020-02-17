@@ -1,5 +1,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
 #include <pcl/segmentation/planar_region.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/BoundedPlane3.h>

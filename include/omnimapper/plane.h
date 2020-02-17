@@ -22,12 +22,13 @@
 //#include <gtpointcloud/pointcloud_helpers.h>
 //#include <omnimapper/math_functions.h>
 //#include <mspacegtsam/MathUtils.h>
-#include <omnimapper/transform_helpers.h>
+#include <omnimapper/transform_tools.h>
+#include <omnimapper/DerivedValue.h>
 #include <pcl/common/transforms.h>
 #include <pcl/geometry/polygon_operations.h>
 #include <pcl/filters/project_inliers.h>
 
-//typedef pcl::PointXYZRGBA PointT;
+// typedef pcl::PointXYZRGBA PointT;
 // TODO: find better solution for hull projection. Would be ideal if it were auto-updated.
 
 namespace boost{

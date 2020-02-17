@@ -1,9 +1,10 @@
-#include <omnimapper/bounded_plane_plugin.h>
+#include <omnimapper/plugins/bounded_plane_plugin.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <omnimapper/geometry.h>
 #include <pcl/io/pcd_io.h>
+#include <omnimapper/transform_tools.h>
 
 namespace omnimapper
 {
@@ -106,10 +107,10 @@ namespace omnimapper
       border_cloud->points = border;
       pcl::PointCloud<PointT> empty_inliers;
 
-      printf("border before: %d\n", border.size());
+      printf("border before: %lu\n", border.size());
       removeDuplicatePoints(*border_cloud);
       border = border_cloud->points;
-      printf("border after: %d\n", border.size());
+      printf("border after: %lu\n", border.size());
 
       // TODO : remove debug
       //PointVector poly(border);
@@ -166,12 +167,12 @@ namespace omnimapper
   template <typename PointT> void
   BoundedPlanePlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
   {
-    printf ("BoundedPlanePlugin: Got %d regions.\n", regions.size ());
+    printf ("BoundedPlanePlugin: Got %lu regions.\n", regions.size ());
     
     // Convert the regions to omnimapper::BoundedPlane3
     std::vector<omnimapper::BoundedPlane3<PointT> > plane_measurements;
     regionsToMeasurements (regions, t, plane_measurements);
-    printf ("BoundedPlanePlugin: Have %d measurements\n", plane_measurements.size ());
+    printf ("BoundedPlanePlugin: Have %lu measurements\n", plane_measurements.size ());
 
     // Get the planes from the mapper
     gtsam::Values current_solution = mapper_->getSolutionAndUncommitted ();//mapper_->getSolution ();
@@ -233,12 +234,13 @@ namespace omnimapper
         printf("BoundedPlanePlugin: map_meas: GOT INVALID MEASUREMENT!\n");
       // Remove debug
       
-      if (meas_d < 0.1)
+      if (meas_d < 0.1) {
         continue;
-
-        Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
-        if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_)
-         continue;
+      }
+      Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
+      if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) {
+        continue;
+      }
 
 //      BOOST_FOREACH (const typename gtsam::Values::Filtered<gtsam::OrientedPlane3>::KeyValuePair& key_value, plane_filtered)
       BOOST_FOREACH (const typename gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value, plane_filtered)
@@ -307,7 +309,9 @@ namespace omnimapper
       } 
         
       gtsam::SharedDiagonal measurement_noise;
-      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (3) << angular_noise_, angular_noise_, range_noise_));
+      gtsam::Vector g_v(3);
+      g_v << angular_noise_, angular_noise_, range_noise_;
+      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(g_v);
       
       gtsam::Vector measurement_vector = meas_plane.planeCoefficients ();
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor (new omnimapper::BoundedPlaneFactor<PointT> (measurement_vector, meas_boundary, measurement_noise, pose_sym, best_symbol));
