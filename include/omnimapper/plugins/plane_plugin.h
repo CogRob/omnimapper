@@ -2,7 +2,7 @@
 #include <pcl/point_types.h>
 #include <pcl/segmentation/planar_region.h>
 #include <omnimapper/omnimapper_base.h>
-#include <omnimapper/organized_feature_extraction.h>
+#include <omnimapper/organized_segmentation/organized_segmentation_tbb.h>
 #include <omnimapper/plane.h>
 #include <omnimapper/plane_factor.h>
 #include <omnimapper/get_transform_functor.h>
