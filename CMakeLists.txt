@@ -21,6 +21,7 @@ find_package(PCL REQUIRED)
 include_directories(
   include
   ${PCL_COMMON_INCLUDE_DIRS}
+  ${OPENNI_INCLUDE_DIRS}
 )
 
 set (library_srcs
@@ -44,20 +45,16 @@ set (organized_segmentation_srcs
   src/organized_segmentation/organized_segmentation_tbb.cpp
 )
 
-set (organized_feature_extraction_srcs
-  src/organized_feature_extraction/organized_feature_extraction.cpp
-)
-
 set(library_name ${PROJECT_NAME})
 add_library(${library_name} SHARED
   ${library_srcs}
   ${plugins_srcs}
   ${organized_segmentation_srcs}
-  ${organized_feature_extraction_srcs}
 )
 
 target_link_libraries(${library_name}
   ${PCL_LIBRARIES}
+  ${OPENNI_LIBRARIES}
   ${GTSAM_LIBRARIES}
   ${TBB_LIBRARIES}
 )
