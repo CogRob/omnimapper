@@ -22,3 +22,7 @@
 
 # Build
 build
+
+.vscode
+.gitignore
+.git*
