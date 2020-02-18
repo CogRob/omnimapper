@@ -150,7 +150,7 @@ namespace omnimapper
     //   updated_ = false;
     // }
 
-    printf ("PlaneMeasurementPlugin: Got %d planes.\n", regions.size ());
+    printf ("PlaneMeasurementPlugin: Got %lu planes.\n", regions.size ());
     
     if (overwrite_timestamps_)
       t = boost::posix_time::ptime ( boost::posix_time::microsec_clock::local_time() );
@@ -191,7 +191,7 @@ namespace omnimapper
 
       printf ("measurement: %lf %lf %lf %lf\n", meas_plane.a (), meas_plane.b (), meas_plane.c (), meas_plane.d ());
 
-      printf ("plane_filtered size: %d\n", plane_filtered.size ());
+      printf ("plane_filtered size: %lu\n", plane_filtered.size ());
       BOOST_FOREACH (const typename gtsam::Values::Filtered<gtsam::Plane<PointT> >::KeyValuePair& key_value, plane_filtered)
       {
         gtsam::Symbol key_symbol (key_value.key);
@@ -231,7 +231,7 @@ namespace omnimapper
           {   
             if ((error < lowest_error) && (!disable_data_association_))
             {
-              printf ("new potential match to plane %d\n", key_symbol.index ());
+              printf ("new potential match to plane %lu\n", key_symbol.index ());
               lowest_error = error;
               best_symbol = key_symbol;
             }

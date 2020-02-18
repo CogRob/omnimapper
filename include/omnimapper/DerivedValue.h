@@ -36,7 +36,7 @@
 //////////////////
 
 
-namespace omnimapper {
+namespace gtsam {
 
 template<class DERIVED>
 class DerivedValue : public gtsam::Value {
@@ -138,4 +138,4 @@ private:
 
 };
 
-}; /* namespace gtsam */
+} /* namespace gtsam */

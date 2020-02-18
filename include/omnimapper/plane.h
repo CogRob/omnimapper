@@ -50,7 +50,7 @@ namespace gtsam {
    * Functional, so no set functions: once created, a point is constant.
    */
   template <typename PointT>
-  class Plane: public omnimapper::DerivedValue<Plane<PointT> > {
+  class Plane: public gtsam::DerivedValue<Plane<PointT> > {
   private:
     //double theta_, phi_,rho_;
     double a_, b_, c_, d_;
@@ -158,20 +158,20 @@ namespace gtsam {
     template<class Archive>
       void serialize(Archive & ar, const unsigned int version)
       {
-	printf("a\n");
-	ar & boost::serialization::make_nvp("Plane",
-	     boost::serialization::base_object<Value>(*this));
-	printf("b\n");
-	ar & BOOST_SERIALIZATION_NVP(a_);
-	printf("c\n");
-	ar & BOOST_SERIALIZATION_NVP(b_);
-	printf("d\n");
-	ar & BOOST_SERIALIZATION_NVP(c_);
-	printf("e\n");
-	ar & BOOST_SERIALIZATION_NVP(d_);
-	printf("f\n");
-	ar & boost::serialization::make_nvp("hull", hull_.points);
-	printf("g\n");
+	      printf("a\n");
+	      ar & boost::serialization::make_nvp("Plane",
+	           boost::serialization::base_object<Value>(*this));
+	      printf("b\n");
+	      ar & BOOST_SERIALIZATION_NVP(a_);
+	      printf("c\n");
+	      ar & BOOST_SERIALIZATION_NVP(b_);
+	      printf("d\n");
+	      ar & BOOST_SERIALIZATION_NVP(c_);
+	      printf("e\n");
+	      ar & BOOST_SERIALIZATION_NVP(d_);
+	      printf("f\n");
+	      ar & boost::serialization::make_nvp("hull", hull_.points);
+	      printf("g\n");
      }
   };
 
