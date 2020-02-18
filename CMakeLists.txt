@@ -32,6 +32,7 @@ set (library_srcs
   src/BoundedPlaneFactor.cpp
   src/plane_factor.cpp
   src/plane.cpp
+  src/omnimapper_visualizer_pcl
 )
 
 set (plugins_srcs
