@@ -2,6 +2,8 @@ rename organized_feature_extraction with organized_segmentation_tbb
 
 rename transform_helpers with transform_tools
 
+replace DerivedValue with GenericValue
+
 > error: cannot find <gtsam/geometry/Sphere2.h>
 	--> rename all Sphere2 with Unit3
 
@@ -41,4 +43,4 @@ rename transform_helpers with transform_tools
 
 > error: incomplete type ‘gtsam::traits<gtsam::Plane<pcl::PointXYZRGBA> >’ used in nested name specifier
      return traits<T>::Equals(this->value_, genericValue2.value_, tol);
-	--> 
+	--> add gtsam::traits< Plane<T> > functions to header file just after the defination of class Plane.

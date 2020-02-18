@@ -541,8 +541,8 @@ omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol,
     gtsam::Plane<pcl::PointXYZRGBA> to_update = 
       new_values.at<gtsam::Plane<pcl::PointXYZRGBA> >(update_symbol); 
     to_update.Extend2(pose, meas_plane);
-    // new_values.update(update_symbol, to_update);
-    gtsam::GenericValue<gtsam::Plane<pcl::PointXYZRGBA> > temp;
+    new_values.update(update_symbol, to_update);
+    // gtsam::GenericValue<gtsam::Plane<pcl::PointXYZRGBA> > temp;
     // temp = to_update;
     // new_values.update(update_symbol, static_cast<const gtsam::Value&>(temp));
     return;
