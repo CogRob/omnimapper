@@ -19,7 +19,8 @@
 #include <boost/make_shared.hpp>
 
 //////////////////
-// The following includes windows.h in some MSVC versions, so we undef min, max, and ERROR
+// The following includes windows.h in some MSVC versions, so we undef min, max,
+// and ERROR
 #include <boost/pool/singleton_pool.hpp>
 
 #ifdef min
@@ -35,36 +36,36 @@
 #endif
 //////////////////
 
-
 namespace gtsam {
 
-template<class DERIVED>
+template <class DERIVED>
 class DerivedValue : public gtsam::Value {
-
-protected:
+ protected:
   DerivedValue() {}
 
-public:
-
+ public:
   virtual ~DerivedValue() {}
 
   /**
-   * Create a duplicate object returned as a pointer to the generic Value interface.
-   * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
-   * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
+   * Create a duplicate object returned as a pointer to the generic Value
+   * interface. For the sake of performance, this function use singleton pool
+   * allocator instead of the normal heap allocator. The result must be deleted
+   * with Value::deallocate_, not with the 'delete' operator.
    */
   virtual gtsam::Value* clone_() const {
-    void *place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
-    DERIVED* ptr = new(place) DERIVED(static_cast<const DERIVED&>(*this));
+    void* place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
+    DERIVED* ptr = new (place) DERIVED(static_cast<const DERIVED&>(*this));
     return ptr;
   }
 
   /**
-   * Destroy and deallocate this object, only if it was originally allocated using clone_().
+   * Destroy and deallocate this object, only if it was originally allocated
+   * using clone_().
    */
   virtual void deallocate_() const {
-    this->~DerivedValue(); // Virtual destructor cleans up the derived object
-    boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this); // Release memory from pool
+    this->~DerivedValue();  // Virtual destructor cleans up the derived object
+    boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free(
+        (void*)this);  // Release memory from pool
   }
 
   /**
@@ -86,11 +87,14 @@ public:
   /// Generic Value interface version of retract
   virtual gtsam::Value* retract_(const gtsam::Vector& delta) const {
     // Call retract on the derived class
-    const DERIVED retractResult = (static_cast<const DERIVED*>(this))->retract(delta);
+    const DERIVED retractResult =
+        (static_cast<const DERIVED*>(this))->retract(delta);
 
     // Create a Value pointer copy of the result
-    void* resultAsValuePlace = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
-    gtsam::Value* resultAsValue = new(resultAsValuePlace) DERIVED(retractResult);
+    void* resultAsValuePlace =
+        boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
+    gtsam::Value* resultAsValue =
+        new (resultAsValuePlace) DERIVED(retractResult);
 
     // Return the pointer to the Value base class
     return resultAsValue;
@@ -115,16 +119,12 @@ public:
   }
 
   /// Conversion to the derived class
-  operator const DERIVED& () const {
-    return static_cast<const DERIVED&>(*this);
-  }
+  operator const DERIVED&() const { return static_cast<const DERIVED&>(*this); }
 
   /// Conversion to the derived class
-  operator DERIVED& () {
-    return static_cast<DERIVED&>(*this);
-  }
+  operator DERIVED&() { return static_cast<DERIVED&>(*this); }
 
-protected:
+ protected:
   /// Assignment operator, protected because only the Value or DERIVED
   /// assignment operators should be used.
   DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& /*rhs*/) {
@@ -132,10 +132,9 @@ protected:
     return *this;
   }
 
-private:
+ private:
   /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-  struct PoolTag { };
-
+  struct PoolTag {};
 };
 
 } /* namespace gtsam */

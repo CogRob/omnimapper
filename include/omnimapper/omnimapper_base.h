@@ -53,12 +53,12 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <omnimapper/BoundedPlane3.h>
 #include <omnimapper/output_plugin.h>
+#include <omnimapper/plane.h>
 #include <omnimapper/pose_chain.h>
 #include <omnimapper/pose_plugin.h>
 #include <omnimapper/time.h>
-#include <omnimapper/plane.h>
-#include <omnimapper/BoundedPlane3.h>
 
 #include <list>
 #include <map>
@@ -255,14 +255,15 @@ class OmniMapperBase {
   void updateValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
 
   /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test.
-  */ 
-  void updatePlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
-  gtsam::Plane<pcl::PointXYZRGBA>& meas_plane);
+   */
+  void updatePlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+                   gtsam::Plane<pcl::PointXYZRGBA>& meas_plane);
 
   /* \brief Update a bounded plane -- TODO: remove this, should make
-  updateable value. */ 
-  void updateBoundedPlane (gtsam::Symbol& update_symbol,
-  gtsam::Pose3& pose, omnimapper::BoundedPlane3<pcl::PointXYZRGBA>& meas_plane);
+  updateable value. */
+  void updateBoundedPlane(
+      gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+      omnimapper::BoundedPlane3<pcl::PointXYZRGBA>& meas_plane);
 
   /** \brief Looks up a pose by symbol. */
   boost::optional<gtsam::Pose3> getPose(gtsam::Symbol& pose_sym);

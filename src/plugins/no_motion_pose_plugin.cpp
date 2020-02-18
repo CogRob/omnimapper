@@ -15,7 +15,7 @@ NoMotionPosePlugin::addRelativePose(boost::posix_time::ptime t1,
   // Eigen::Matrix4f cloud_tform = Eigen::Matrix4f::Identity ();
   gtsam::Pose3 relative_pose =
       gtsam::Pose3::identity();  //(gtsam::Rot3 (cloud_tform.block (0, 0, 3,
-                                 //3).cast<double>()), gtsam::Point3
+                                 // 3).cast<double>()), gtsam::Point3
                                  // (cloud_tform (0,3), cloud_tform (1,3),
                                  // cloud_tform (2,3)));
   double trans_noise = 100.0;  // 0.1;//100.0;
