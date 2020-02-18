@@ -181,3 +181,31 @@ namespace gtsam {
   // }
 }
 
+namespace gtsam {
+// Define Key to be Testable by specializing gtsam::traits
+  // template<typename T> struct traits;
+  template<typename Type> struct traits<gtsam::Plane<Type> > {
+
+    static void Print(const Plane<Type>& key, const std::string& str = "") {
+      key.print(str);
+    }
+
+    static bool Equals(const Plane<Type>& key1, const Plane<Type>& key2, double tol = 1e-9) {
+      return key1.equals(key2, tol);
+    }
+
+    static int GetDimension(const Plane<Type> & key) {return key.dim();}
+
+    typedef OptionalJacobian<3, 3> ChartJacobian;
+    typedef gtsam::Vector TangentVector;
+    static TangentVector Local(const Plane<Type>& origin, const Plane<Type>& other,
+      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
+      return origin.localCoordinates(other);
+    }
+
+    static Plane<Type> Retract(const Plane<Type>& g, const TangentVector& v,
+          ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+        return g.retract(v);
+      }
+  };
+}
