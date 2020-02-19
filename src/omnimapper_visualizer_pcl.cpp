@@ -185,10 +185,10 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback (const pcl::visual
         draw_icp_clouds_ = true;
         break;
       case 'p':
-        icp_plugin_->pause (true);
+        // icp_plugin_->pause (true);
         break;
       case ' ':
-        icp_plugin_->pause (false);
+        // icp_plugin_->pause (false);
         break;
       case 'o':
         mapper_->printSolution ();
