@@ -12,14 +12,19 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS timer)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.8 REQUIRED)
 
 include_directories(
   include
+)
+
+include_directories(
+  ${Boost_INCLUDE_DIRS}
+  ${GTSAM_INCLUDE_DIR}
   ${PCL_COMMON_INCLUDE_DIRS}
   ${OPENNI_INCLUDE_DIRS}
 )
@@ -46,6 +51,10 @@ set (organized_segmentation_srcs
   src/organized_segmentation/organized_segmentation_tbb.cpp
 )
 
+set(dependencies
+  Eigen3
+)
+
 set(library_name ${PROJECT_NAME})
 add_library(${library_name} SHARED
   ${library_srcs}
@@ -56,12 +65,13 @@ add_library(${library_name} SHARED
 target_link_libraries(${library_name}
   ${PCL_LIBRARIES}
   ${OPENNI_LIBRARIES}
-  ${GTSAM_LIBRARIES}
+  gtsam
+  ${Boost_LIBRARIES}
   ${TBB_LIBRARIES}
 )
 
 ament_target_dependencies(${library_name}
-  Eigen3
+  ${dependencies}
 )
 
 target_include_directories(${library_name}
@@ -70,7 +80,23 @@ target_include_directories(${library_name}
   ${GTSAM_INCLUDE_DIR}
 )
 
+add_executable(omnimapper_test src/omnimapper_test.cpp)
+
+ament_target_dependencies(omnimapper_test
+  ${dependencies}
+)
+
+target_link_libraries(omnimapper_test
+  ${library_name}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${OPENNI_LIBRARIES}
+  gtsam
+  ${TBB_LIBRARIES}
+)
+
 install(TARGETS ${library_name}
+  omnimapper_test
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
