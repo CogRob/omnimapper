@@ -12,7 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(Boost REQUIRED COMPONENTS timer)
+find_package(Boost REQUIRED COMPONENTS timer thread)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
