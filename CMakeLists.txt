@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 #SET(CMAKE_BUILD_TYPE debug)
 #SET(CMAKE_BUILD_TYPE distribution)
 #SET(CMAKE_CXX_FLAGS_DISTRIBUTION "-O3")
@@ -29,10 +31,15 @@ find_package(GTSAM REQUIRED)
 #include_directories(${GTSAM_INCLUDE_DIR})
 
 ###########################################################################
+# Find MKL
+find_package(MKL REQUIRED)
+include_directories(${MKL_INCLUDE_DIR})
+
+###########################################################################
 # Use GTSAM's Eigen
 # Use generic Eigen include paths e.g. <Eigen/Core>
 set(EIGEN_INCLUDE_DIRS ${GTSAM_DIR}/../../../include/gtsam/3rdparty/Eigen/)
-message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})    
+message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 
 
 ###########################################################################
@@ -52,7 +59,7 @@ endif(WITH_CPUTSDF)
 
 include_directories(include)
 set(incs  include/omnimapper/omnimapper_base.h
-					     include/omnimapper/measurement_plugin.h 
+					     include/omnimapper/measurement_plugin.h
 					     include/omnimapper/pose_plugin.h
 					     include/omnimapper/icp_pose_plugin.h
 					     include/omnimapper/omnimapper_visualizer_pcl.h
