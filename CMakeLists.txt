@@ -89,7 +89,7 @@ set(srcs
   src/plane_plugin.cpp
   src/object_plugin.cpp
   src/object_segment_propagation.cpp
-  # src/object_recognition.cpp
+  src/object_recognition.cpp
   src/object_discovery.cpp
   #src/cloud_registration_plugin.cpp
   src/transform_helpers.cpp
