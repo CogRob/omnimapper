@@ -9,10 +9,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>eigen3_cmake_module</buildtool_depend>
 
+  <build_depend>boost</build_depend>
   <build_depend>eigen</build_depend>
-  
-  <depend>gtsam</depend>
-  <depend>libpcl-all-dev</depend>
+  <build_depend>gtsam</build_depend>
+  <build_depend>libpcl-all-dev</build_depend>
+  <build_depend>tbb</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
