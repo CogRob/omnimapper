@@ -26,7 +26,6 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
   ${PCL_COMMON_INCLUDE_DIRS}
-  ${OPENNI_INCLUDE_DIRS}
 )
 
 set (library_srcs
@@ -64,7 +63,6 @@ add_library(${library_name} SHARED
 
 target_link_libraries(${library_name}
   ${PCL_LIBRARIES}
-  ${OPENNI_LIBRARIES}
   gtsam
   ${Boost_LIBRARIES}
   ${TBB_LIBRARIES}
@@ -90,7 +88,6 @@ target_link_libraries(omnimapper_test
   ${library_name}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${OPENNI_LIBRARIES}
   gtsam
   ${TBB_LIBRARIES}
 )
