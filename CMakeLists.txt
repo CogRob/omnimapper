@@ -10,6 +10,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(FindTBB)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(Boost REQUIRED COMPONENTS timer thread)
@@ -17,6 +20,7 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
 find_package(PCL 1.8 REQUIRED)
+find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 include_directories(
   include
@@ -26,6 +30,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
   ${PCL_COMMON_INCLUDE_DIRS}
+  ${TBB_INCLUDE_DIR}
 )
 
 set (library_srcs
