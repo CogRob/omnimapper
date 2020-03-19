@@ -82,7 +82,7 @@ set(srcs
   src/icp_pose_plugin.cpp
   src/omnimapper_visualizer_pcl.cpp
   src/organized_feature_extraction.cpp
-  # src/organized_feature_extraction_tbb.cpp
+  src/organized_feature_extraction_tbb.cpp
   src/plane.cpp
   src/object.cpp
   src/plane_factor.cpp
