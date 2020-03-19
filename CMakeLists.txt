@@ -81,15 +81,15 @@ set(srcs
   src/time.cpp
   src/icp_pose_plugin.cpp
   src/omnimapper_visualizer_pcl.cpp
-  src/organized_feature_extraction.cpp
-  src/organized_feature_extraction_tbb.cpp
+  # src/organized_feature_extraction.cpp
+  # src/organized_feature_extraction_tbb.cpp
   src/plane.cpp
   src/object.cpp
   src/plane_factor.cpp
   src/plane_plugin.cpp
   src/object_plugin.cpp
   src/object_segment_propagation.cpp
-  src/object_recognition.cpp
+  # src/object_recognition.cpp
   src/object_discovery.cpp
   #src/cloud_registration_plugin.cpp
   src/transform_helpers.cpp
