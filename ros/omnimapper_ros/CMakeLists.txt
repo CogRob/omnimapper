@@ -46,8 +46,8 @@ link_directories(${PCL_LIBRARY_DIRS})
 #set (CMAKE_CXX_STANDARD 11)
 
 SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
-SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
+SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
 
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
@@ -115,7 +115,8 @@ add_library(${PROJECT_NAME}
   src/csm_math_functions.cpp
   src/csm_visualizer.cpp
   src/omnimapper_ros.cpp
-  src/ar_marker_plugin.cpp)
+  src/ar_marker_plugin.cpp
+)
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PCL_LIBRARIES}

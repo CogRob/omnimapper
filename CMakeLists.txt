@@ -77,6 +77,11 @@ set(incs
   include/omnimapper/impl/geometry.hpp
 )
 
+set(third_party_incs
+  include/omnimapper/3rdparty/distortion_model_standalone.h
+  include/omnimapper/3rdparty/eigen_extensions.h
+)
+
 set(srcs
   src/omnimapper_base.cpp
   src/time.cpp
@@ -109,6 +114,7 @@ target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
+install(FILES ${third_party_incs} DESTINATION include/${PROJECT_NAME}/3rdparty)
 
 configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)

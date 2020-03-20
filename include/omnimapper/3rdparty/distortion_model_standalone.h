@@ -3,9 +3,9 @@
 
 #include <Eigen/Eigen>
 #include <pcl/point_cloud.h>
-#include <eigen_extensions/eigen_extensions.h>
+#include <omnimapper/3rdparty/eigen_extensions.h>
 
-/** Distortion Model code courtesy of Stephen Miller.  
+/** Distortion Model code courtesy of Stephen Miller.
  *
  */
 
@@ -65,7 +65,7 @@ public:
     eigen_extensions::deserialize(in, &total_denominators_);
     eigen_extensions::deserialize(in, &multipliers_);
   }
-  
+
 protected:
   double max_dist_;
   int num_bins_;
@@ -76,7 +76,7 @@ protected:
   Eigen::VectorXf multipliers_;
   Eigen::VectorXf total_numerators_;
   Eigen::VectorXf total_denominators_;
-  
+
 
   friend class DistortionModelStandalone;
 };
@@ -117,7 +117,7 @@ public:
     eigen_extensions::deserializeScalar(in, &num_bins_y_);
 
     deleteFrustums ();
-    
+
     frustums_.resize(num_bins_y_);
     for(size_t y = 0; y < frustums_.size(); ++y) {
       frustums_[y].resize(num_bins_x_, NULL);
@@ -128,7 +128,7 @@ public:
     }
     in.close ();
   }
-  
+
 protected:
   int width_;
   int height_;
