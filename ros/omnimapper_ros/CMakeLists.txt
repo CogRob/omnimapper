@@ -115,7 +115,7 @@ add_library(${PROJECT_NAME}
   src/csm_math_functions.cpp
   src/csm_visualizer.cpp
   src/omnimapper_ros.cpp
-  # src/ar_marker_plugin.cpp
+  src/ar_marker_plugin.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
