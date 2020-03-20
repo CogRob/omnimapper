@@ -106,7 +106,7 @@ add_library(${PROJECT_NAME}
   src/ros_time_utils.cpp
   src/ros_tf_utils.cpp
   src/tf_pose_plugin.cpp
-  # src/omnimapper_visualizer_rviz.cpp
+  src/omnimapper_visualizer_rviz.cpp
   src/tum_data_error_plugin.cpp
   src/get_transform_functor_tf.cpp
   # src/error_evaluation_plugin.cpp

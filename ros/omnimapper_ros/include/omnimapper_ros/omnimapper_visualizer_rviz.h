@@ -62,16 +62,18 @@ namespace omnimapper
 
       void drawPoseMarginalsCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
+      void outputGraphvizCb (const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
       /** \brief objectCallback draws the estimated objects computed by object_plugin */
       void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map, gtsam::Point3 direction, gtsam::Point3 center);
-      
+
       // For drawing planes, and use in AR application
       //void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
 
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;
-      
+
       // A reference to a mapper instance
       OmniMapperBase* mapper_;
 
@@ -95,10 +97,10 @@ namespace omnimapper
 
       // Publisher for the trajectory
       ros::Publisher pose_array_pub_;
-      
+
       // Publisher for the map clouds
       ros::Publisher map_cloud_pub_;
-      
+
       // Publisher for Planar boundaries
       ros::Publisher planar_boundary_pub_;
 
@@ -111,7 +113,7 @@ namespace omnimapper
       ros::Publisher segmented_plane_pub_;
       ros::Publisher segmented_label_cloud_pub_;
       ros::Publisher segmented_clusters_pub_;
-      
+
       // Publisher for object observations
       ros::Publisher object_observation_pub_;
       ros::Publisher object_modeled_pub_;
@@ -140,7 +142,7 @@ namespace omnimapper
       double draw_icp_clouds_prev_time_;
 
       bool draw_icp_clouds_downsampled_;
-      
+
       bool draw_planar_landmarks_;
 
       bool draw_pose_array_;
