@@ -50,31 +50,32 @@ endif(WITH_CPUTSDF)
 ###########################################################################
 
 include_directories(include)
-set(incs include/omnimapper/omnimapper_base.h
-  include/omnimapper/measurement_plugin.h
-  include/omnimapper/pose_plugin.h
+set(incs
+  include/omnimapper/geometry.h
+  include/omnimapper/get_transform_functor.h
   include/omnimapper/icp_pose_plugin.h
+  include/omnimapper/landmark_factor.h
+  include/omnimapper/measurement_plugin.h
+  include/omnimapper/no_motion_pose_plugin.h
+  include/omnimapper/object_discovery.h
+  include/omnimapper/object.h
+  include/omnimapper/object_plugin.h
+  include/omnimapper/object_recognition.h
+  include/omnimapper/object_segment_propagation.h
+  include/omnimapper/omnimapper_base.h
   include/omnimapper/omnimapper_visualizer_pcl.h
-  #include/omnimapper/StampedSymbol.h
   include/omnimapper/organized_feature_extraction.h
   include/omnimapper/organized_feature_extraction_tbb.h
-  include/omnimapper/plane.h
+  include/omnimapper/output_plugin.h
   include/omnimapper/plane_factor.h
-  include/omnimapper/landmark_factor.h
+  include/omnimapper/plane.h
   include/omnimapper/plane_plugin.h
-  include/omnimapper/object_plugin.h
-  include/omnimapper/object.h
-  include/omnimapper/object_segment_propagation.h
-  include/omnimapper/object_recognition.h
-  include/omnimapper/object_discovery.h
-  include/omnimapper/transform_helpers.h
-  include/omnimapper/no_motion_pose_plugin.h
-  #include/omnimapper/cloud_registration_plugin.h
-  include/omnimapper/tsdf_output_plugin.h
+  include/omnimapper/pose_chain.h
+  include/omnimapper/pose_plugin.h
   include/omnimapper/time.h
-  include/omnimapper/geometry.h
+  include/omnimapper/transform_helpers.h
   include/omnimapper/impl/geometry.hpp
-  )
+)
 
 set(srcs
   src/omnimapper_base.cpp
@@ -91,10 +92,11 @@ set(srcs
   src/object_segment_propagation.cpp
   src/object_recognition.cpp
   src/object_discovery.cpp
-  #src/cloud_registration_plugin.cpp
+  # src/cloud_registration_plugin.cpp
   src/transform_helpers.cpp
   src/no_motion_pose_plugin.cpp
-  src/tsdf_output_plugin.cpp)
+  src/tsdf_output_plugin.cpp
+)
 
 if(CPUTSDF_FOUND)
   list(APPEND incs include/omnimapper/tsdf_output_plugin.h)

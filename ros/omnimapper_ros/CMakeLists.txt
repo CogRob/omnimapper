@@ -126,6 +126,7 @@ add_dependencies(
   ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${catkin_EXPORTED_TARGETS})
 
 add_executable(time_test src/time_test.cpp)
+target_link_libraries(time_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_library(omnimapper_ros_nodelet src/omnimapper_ros_nodelet.cpp)
 target_link_libraries(
