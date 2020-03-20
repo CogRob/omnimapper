@@ -12,12 +12,15 @@
 #include <boost/geometry/multi/multi.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 
-typedef std::vector<pcl::PointXYZRGB, Eigen::aligned_allocator<pcl::PointXYZRGB> > PointVector;
-BOOST_GEOMETRY_REGISTER_POINT_2D (pcl::PointXYZRGB, float, boost::geometry::cs::cartesian, x, y);
+typedef std::vector<pcl::PointXYZRGBA, Eigen::aligned_allocator<pcl::PointXYZRGBA> > PointVector;
+BOOST_GEOMETRY_REGISTER_POINT_2D (pcl::PointXYZRGBA, float, boost::geometry::cs::cartesian, x, y);
 BOOST_GEOMETRY_REGISTER_RING (PointVector);
 
 namespace omnimapper
 {
   template <typename PointT>
   bool fusePlanarPolygonsXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out);
+
+  template <typename PointT>
+  bool fusePlanarPolygonsConvexXY (const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2, pcl::PointCloud<PointT>& poly_out);
 }

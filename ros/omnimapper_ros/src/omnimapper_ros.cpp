@@ -9,6 +9,7 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     icp_plugin_ (&omb_),
     edge_icp_plugin_ (&omb_),
     plane_plugin_ (&omb_),
+    bounded_plane_plugin_ (&omb_),
     object_plugin_ (&omb_),
     csm_plugin_ (&omb_),
     ar_marker_plugin_ (&omb_),
@@ -148,6 +149,13 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
   plane_plugin_.setRangeNoise (plane_range_noise_);      //0.2
   plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
 
+  // Set up the Bounded Plane Plugin
+  bounded_plane_plugin_.setRangeThreshold (plane_range_threshold_);
+  bounded_plane_plugin_.setAngularThreshold (plane_angular_threshold_);
+  bounded_plane_plugin_.setAngularNoise (plane_angular_noise_);
+  bounded_plane_plugin_.setRangeNoise (plane_range_noise_);
+  bounded_plane_plugin_.setSensorToBaseFunctor (rgbd_to_base_ptr);
+
   // Set up the object Plugin
   if (use_objects_)
   {
@@ -176,6 +184,13 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     organized_feature_extraction_.setPlanarRegionStampedCallback (plane_vis_cb);
   }
 
+  if (use_bounded_planes_)
+  {
+    ROS_INFO ("OmniMapperROS: Installing BoundedPlanePlugin callback.");
+    boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_cb = boost::bind (&omnimapper::BoundedPlanePlugin<PointT>::planarRegionCallback, &bounded_plane_plugin_, _1, _2);
+    organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
+  }
+  
   // Optionally use planes in the visualizer
   if (ar_mode_)
   {
@@ -499,9 +514,10 @@ template<typename PointT> void
 OmniMapperROS<PointT>::loadROSParams ()
 {
   // Load some params
-  n_.param ("use_planes", use_planes_, false);
-  n_.param ("use_objects", use_objects_, false);
-  n_.param ("use_csm", use_csm_, false);
+  n_.param ("use_planes", use_planes_, true);
+  n_.param ("use_bounded_planes", use_bounded_planes_, true);
+  n_.param ("use_objects", use_objects_, true);
+  n_.param ("use_csm", use_csm_, true);
   n_.param ("use_icp", use_icp_, true);
   n_.param ("use_occ_edge_icp", use_occ_edge_icp_, false);
   n_.param ("use_tf", use_tf_, true);
@@ -691,8 +707,8 @@ OmniMapperROS<PointT>::laserScanCallback (const sensor_msgs::LaserScanConstPtr& 
   //boost::shared_ptr<sensor_msgs::LaserScan> lscanPtr1 (new sensor_msgs::LaserScan);
 
   gtsam::Symbol sym;
-  boost::posix_time::ptime header_time = msg->header.stamp.toBoost ();
-  omb_.getPoseSymbolAtTime (header_time, sym);
+  //boost::posix_time::ptime header_time = msg->header.stamp.toBoost ();
+  //omb_.getPoseSymbolAtTime (header_time, sym);
 
   boost::shared_ptr<sensor_msgs::LaserScan> lscanPtr1 (
                                                        new sensor_msgs::LaserScan (*msg));
@@ -817,7 +833,7 @@ OmniMapperROS<PointT>::publishMapToOdom ()
   {
 //        tf_listener_.transformPose ("/odom", tf::Stamped<tf::Pose> (tf::btTransform (tf::btQuaternion (current_quat[1], current_quat[2], current_quat[3], current_quat[0]), btVector3 (current_pose.x (), current_pose.y (), current_pose.z ())).inverse (), current_time_ros, "/base_link"), odom_to_map);
     tf_listener_.waitForTransform (odom_frame_name_, base_frame_name_,
-                                   current_time_ros, ros::Duration (0.02));
+                                   current_time_ros, ros::Duration (0.05));
     tf_listener_.transformPose (odom_frame_name_,
                                 tf::Stamped<tf::Pose> (current_pose_ros.inverse (),
                                                        current_time_ros, base_frame_name_), odom_to_map);

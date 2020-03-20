@@ -50,31 +50,35 @@ endif(WITH_CPUTSDF)
 ###########################################################################
 
 include_directories(include)
+
 set(incs
-  include/omnimapper/geometry.h
-  include/omnimapper/get_transform_functor.h
-  include/omnimapper/icp_pose_plugin.h
-  include/omnimapper/landmark_factor.h
-  include/omnimapper/measurement_plugin.h
-  include/omnimapper/no_motion_pose_plugin.h
-  include/omnimapper/object_discovery.h
-  include/omnimapper/object.h
-  include/omnimapper/object_plugin.h
-  include/omnimapper/object_recognition.h
-  include/omnimapper/object_segment_propagation.h
-  include/omnimapper/omnimapper_base.h
-  include/omnimapper/omnimapper_visualizer_pcl.h
-  include/omnimapper/organized_feature_extraction.h
-  include/omnimapper/organized_feature_extraction_tbb.h
-  include/omnimapper/output_plugin.h
-  include/omnimapper/plane_factor.h
-  include/omnimapper/plane.h
-  include/omnimapper/plane_plugin.h
-  include/omnimapper/pose_chain.h
-  include/omnimapper/pose_plugin.h
   include/omnimapper/time.h
-  include/omnimapper/transform_helpers.h
+  include/omnimapper/pose_plugin.h
+  include/omnimapper/organized_feature_extraction.h
+  include/omnimapper/landmark_factor.h
   include/omnimapper/impl/geometry.hpp
+  include/omnimapper/BoundedPlaneFactor.h
+  include/omnimapper/omnimapper_base.h
+  include/omnimapper/object_recognition.h
+  include/omnimapper/BoundedPlane3.h
+  include/omnimapper/plane_plugin.h
+  include/omnimapper/no_motion_pose_plugin.h
+  include/omnimapper/object_plugin.h
+  include/omnimapper/object.h include/omnimapper/icp_pose_plugin.h
+  include/omnimapper/measurement_plugin.h
+  include/omnimapper/omnimapper_visualizer_pcl.h
+  include/omnimapper/object_discovery.h
+  include/omnimapper/get_transform_functor.h
+  include/omnimapper/tsdf_output_plugin.h
+  include/omnimapper/geometry.h
+  include/omnimapper/output_plugin.h
+  include/omnimapper/organized_feature_extraction_tbb.h
+  include/omnimapper/plane_factor.h
+  include/omnimapper/pose_chain.h
+  include/omnimapper/plane.h
+  include/omnimapper/bounded_plane_plugin.h
+  include/omnimapper/transform_helpers.h
+  include/omnimapper/object_segment_propagation.h
 )
 
 set(third_party_incs
@@ -83,24 +87,27 @@ set(third_party_incs
 )
 
 set(srcs
-  src/omnimapper_base.cpp
-  src/time.cpp
-  src/icp_pose_plugin.cpp
-  src/omnimapper_visualizer_pcl.cpp
-  src/organized_feature_extraction.cpp
-  src/organized_feature_extraction_tbb.cpp
-  src/plane.cpp
-  src/object.cpp
-  src/plane_factor.cpp
-  src/plane_plugin.cpp
-  src/object_plugin.cpp
-  src/object_segment_propagation.cpp
-  src/object_recognition.cpp
-  src/object_discovery.cpp
-  # src/cloud_registration_plugin.cpp
-  src/transform_helpers.cpp
-  src/no_motion_pose_plugin.cpp
-  src/tsdf_output_plugin.cpp
+ src/omnimapper_base.cpp
+ src/time.cpp
+ src/icp_pose_plugin.cpp
+ src/omnimapper_visualizer_pcl.cpp
+ src/organized_feature_extraction.cpp
+ src/organized_feature_extraction_tbb.cpp
+ src/plane.cpp
+ src/BoundedPlane3.cpp
+ src/object.cpp
+ src/plane_factor.cpp
+ src/BoundedPlaneFactor.cpp
+ src/plane_plugin.cpp
+ src/bounded_plane_plugin.cpp
+ src/object_plugin.cpp
+ src/object_segment_propagation.cpp
+ src/object_recognition.cpp
+ src/object_discovery.cpp
+ #src/cloud_registration_plugin.cpp
+ src/transform_helpers.cpp
+ src/no_motion_pose_plugin.cpp
+ src/tsdf_output_plugin.cpp
 )
 
 if(CPUTSDF_FOUND)

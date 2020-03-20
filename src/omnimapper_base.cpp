@@ -542,6 +542,27 @@ omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol, gtsam::Po
   return;
 }
 
+void
+omnimapper::OmniMapperBase::updateBoundedPlane (gtsam::Symbol& update_symbol, gtsam::Pose3& pose, omnimapper::BoundedPlane3<PointT>& meas_plane)
+{
+  // TODO: We should not have factor specific update functions, they should be derived from updateable value.
+  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  if (new_values.exists(update_symbol))
+  {
+    omnimapper::BoundedPlane3<PointT> to_update = new_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    //new_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol).extendBoundary(pose, meas_plane);
+    //new_values.update (update_symbol, to_update);
+  }
+  else
+  {
+    const gtsam::Values& isam_values = isam2.getLinearizationPoint();
+    const omnimapper::BoundedPlane3<PointT>& to_update = isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    //isam2.getLinearizationPoint().at<omnimapper::BoundedPlane3<PointT> >(update_symbol).extendBoundary(pose, meas_plane);
+  }
+  return;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<gtsam::Pose3>
@@ -720,3 +741,15 @@ omnimapper::OmniMapperBase::reset ()
   initial_pose_ = gtsam::Pose3::identity ();
   largest_pose_index = 0;
 }
+
+// void
+// omnimapper::OmniMapperBase::lock()
+// {
+//   omnimapper_mutex_.lock();
+// }
+
+// void
+// omnimapper::OmniMapperBase::unlock()
+// {
+//   omnimapper_mutex_.unlock();
+// }

@@ -5,6 +5,7 @@
 #include <tf_conversions/tf_eigen.h>
 #include <omnimapper_ros/VisualizeFullCloud.h>
 #include <omnimapper_ros/PublishModel.h>
+#include <omnimapper_ros/WriteTrajectoryFile.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
 #include <pcl/segmentation/planar_region.h>
@@ -70,6 +71,8 @@ namespace omnimapper
       // For drawing planes, and use in AR application
       //void planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t);
 
+      bool writeTrajectoryFile(omnimapper_ros::WriteTrajectoryFile::Request &req, omnimapper_ros::WriteTrajectoryFile::Response &res);
+
     protected:
       // A ROS Node Handle
       ros::NodeHandle nh_;
@@ -118,12 +121,14 @@ namespace omnimapper
       ros::Publisher object_observation_pub_;
       ros::Publisher object_modeled_pub_;
 
+      ros::ServiceServer write_trajectory_srv_;
 
       ros::ServiceServer draw_icp_clouds_srv_;
 
       ros::ServiceServer draw_object_observation_cloud_srv_;
 
       ros::ServiceServer publish_model_srv_;
+
 
       // ICP Plugin Ref
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
@@ -158,5 +163,7 @@ namespace omnimapper
       bool output_graphviz_;
 
       bool passthrough_filter_map_cloud_;
+
+      bool write_trajectory_text_file_;
   };
 }

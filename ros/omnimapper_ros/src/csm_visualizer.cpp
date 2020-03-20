@@ -6,6 +6,8 @@ template <typename LScanT>
 omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz (omnimapper::OmniMapperBase* mapper)
   : nh_ ("~"),
     mapper_ (mapper),
+    vis_values_ (new gtsam::Values ()),
+    vis_graph_ (new gtsam::NonlinearFactorGraph ()),
     draw_graph_ (true),
     draw_map_ (true)
 {
@@ -15,12 +17,20 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz (omnimapper::OmniMapper
 
   map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("csm_map_cloud", 0);
 
+  draw_csm_map_srv_ = nh_.advertiseService ("draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap, this);
+
   //draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
 }
 
 template <typename LScanT> void
 omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph)
 {
+  {
+    boost::lock_guard<boost::mutex> lock (vis_mutex_);
+    vis_values_ = vis_values;
+    vis_graph_ = vis_graph;
+  }
+  
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
   
@@ -131,6 +141,29 @@ omnimapper::CSMVisualizerRViz<LScanT>::update (boost::shared_ptr<gtsam::Values>&
   marker_array_pub_.publish (marker_array);
   
 
+}
+
+template <typename LScanT> bool
+omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res)
+{
+  // gtsam::Values current_solution;
+  // gtsam::NonlinearFactorGraph current_graph;
+
+  // {
+  //   boost::lock_guard<boost::mutex> lock (vis_mutex_);
+  //   current_solution = vis_values_;
+  //   current_graph = vis_graph_;
+  // }
+  
+  // gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
+
+  // int pose_num = 0;
+  // BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+  // {
+  //   gtsam::Symbol key_symbol (key_value.key);
+  //   gtsam::Pose3 sam_pose = key_value.value;
+  // }
+  
 }
 
 

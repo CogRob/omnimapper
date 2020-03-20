@@ -6,6 +6,7 @@
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
+#include <omnimapper_ros/VisualizeFullCloud.h>
 
 namespace omnimapper
 {
@@ -16,7 +17,7 @@ namespace omnimapper
       CSMVisualizerRViz (omnimapper::OmniMapperBase* mapper);
       void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
       void setCSMPlugin (boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<LScanT> >& csm_plugin) { csm_plugin_ = csm_plugin; }
-      //bool drawICPCloudsCallback (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
+      bool drawCSMMap (omnimapper_ros::VisualizeFullCloud::Request &req, omnimapper_ros::VisualizeFullCloud::Response &res);
       
     protected:
       ros::NodeHandle nh_;
@@ -29,9 +30,15 @@ namespace omnimapper
       
       ros::Publisher map_cloud_pub_;
 
-      ros::ServiceServer draw_icp_clouds_srv_;
+      ros::ServiceServer draw_csm_map_srv_;
       
       boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<LScanT> > csm_plugin_;
+
+      boost::shared_ptr<gtsam::Values> vis_values_;
+
+      boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph_;
+
+      boost::mutex vis_mutex_;
 
       bool draw_graph_;
 

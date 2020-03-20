@@ -85,5 +85,5 @@ namespace gtsam{
   */    
 }
 
-template class gtsam::PlaneFactor<pcl::PointXYZ>;
+//template class gtsam::PlaneFactor<pcl::PointXYZ>;
 template class gtsam::PlaneFactor<pcl::PointXYZRGBA>;

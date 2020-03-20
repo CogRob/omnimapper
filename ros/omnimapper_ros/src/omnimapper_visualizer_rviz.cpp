@@ -4,10 +4,12 @@
 #include <geometry_msgs/PoseArray.h>
 #include <pcl/common/transforms.h>
 #include <omnimapper/plane.h>
+#include <omnimapper/BoundedPlane3.h>
 #include <pcl_conversions/pcl_conversions.h>
 //#include <tf2/LinearMath/btMatrix3x3.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <pcl/filters/passthrough.h>
+#include <fstream>
 
 template <typename PointT>
 omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapper::OmniMapperBase* mapper)
@@ -30,7 +32,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
     draw_object_observation_bboxes_ (true),
     draw_pose_marginals_ (false),
     output_graphviz_ (false),
-    passthrough_filter_map_cloud_ (true)
+    passthrough_filter_map_cloud_ (false),
+    write_trajectory_text_file_ (false)
 {
   pose_array_pub_ = nh_.advertise<geometry_msgs::PoseArray>("trajectory", 0);
 
@@ -53,6 +56,8 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz (omnimapp
   draw_object_observation_cloud_srv_ = nh_.advertiseService ("draw_object_observations", &omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud, this);
 
   publish_model_srv_ = nh_.advertiseService ("publish_model", &omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel, this);
+
+  write_trajectory_srv_ = nh_.advertiseService ("write_trajectory", &omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile, this);
 
   pose_covariances_pub_ = nh_.advertise<visualization_msgs::MarkerArray> ("/pose_covariances", 0);
 
@@ -626,7 +631,6 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
   if (draw_icp_clouds_)
   {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud (new pcl::PointCloud<pcl::PointXYZRGB>());
-
     if (passthrough_filter_map_cloud_)
     {
       //CloudPtr filtered_cloud (new Cloud ());
@@ -642,7 +646,7 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
     if (draw_icp_clouds_downsampled_)
     {
       pcl::VoxelGrid<pcl::PointXYZRGB> grid;
-      double leaf_size = 0.0025;
+      double leaf_size = 0.005;
       grid.setLeafSize (leaf_size, leaf_size, leaf_size);
       grid.setInputCloud (aggregate_cloud);
       grid.filter (*filtered_cloud);
@@ -707,6 +711,87 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce ()
       end.x = centroid[0] + key_value.value.a ();
       end.y = centroid[1] + key_value.value.b ();
       end.z = centroid[2] + key_value.value.c ();
+
+      // Draw the normal
+      visualization_msgs::Marker normal_marker;
+      normal_marker.header.frame_id = "/world";
+      normal_marker.header.stamp = ros::Time();
+      normal_marker.ns = "planar_normals";
+      normal_marker.id = ++id;//key_value.key.index ();
+      normal_marker.type = visualization_msgs::Marker::ARROW;
+      normal_marker.action = visualization_msgs::Marker::ADD;
+      normal_marker.points.push_back (start);
+      normal_marker.points.push_back (end);
+      normal_marker.pose.position.x = 0.0;
+      normal_marker.pose.position.y = 0.0;
+      normal_marker.pose.position.z = 0.0;
+      normal_marker.pose.orientation.x = 0.0;
+      normal_marker.pose.orientation.y = 0.0;
+      normal_marker.pose.orientation.z = 0.0;
+      normal_marker.pose.orientation.w = 1.0;
+      normal_marker.scale.x = 0.025;
+      normal_marker.scale.y = 0.05;
+      normal_marker.scale.z = 0.1;
+      normal_marker.color.a = 0.5;
+      normal_marker.color.r = 1.0;
+      normal_marker.color.g = 0.0;
+      normal_marker.color.b = 0.0;
+      marker_array.markers.push_back (normal_marker);
+    }
+
+
+    //marker_array.header.stamp = ros::Time::now ();
+    //marker_array.header.frame_id = "/odom";
+    marker_array_pub_.publish (marker_array);
+
+    if (plane_boundary_cloud->points.size () > 0)
+    {
+      sensor_msgs::PointCloud2 cloud_msg;
+      pcl::toROSMsg (*plane_boundary_cloud, cloud_msg);
+      //pcl_conversions::moveFromPCL (*plane_boundary_cloud, cloud_msg);
+      cloud_msg.header.frame_id = "/world";
+      cloud_msg.header.stamp = ros::Time::now ();
+      planar_boundary_pub_.publish (cloud_msg);
+    }
+
+  }
+
+  // Draw Bounded Planar Landmarks
+  if (draw_planar_landmarks_)
+  {
+    visualization_msgs::MarkerArray marker_array;
+    CloudPtr plane_boundary_cloud (new Cloud ());
+    gtsam::Values::ConstFiltered<omnimapper::BoundedPlane3<PointT> > plane_filtered = current_solution->filter<omnimapper::BoundedPlane3<PointT> >();
+    int id = 0;
+    BOOST_FOREACH (const typename gtsam::Values::ConstFiltered<omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value, plane_filtered)
+    {
+      // Draw the boundary
+      //Cloud lm_cloud = key_value.value.hull ();
+      CloudConstPtr lm_cloud (key_value.value.boundary ());
+      (*plane_boundary_cloud) += *lm_cloud;//(*(key_value.value.boundary ()));
+
+      Eigen::Vector4d plane_coeffs = key_value.value.planeCoefficients ();
+
+      for (int i = 0; i < lm_cloud->points.size (); i++)
+      {
+        if (!pcl::isFinite (lm_cloud->points[i]))
+          printf ("Error!  Point is not finite!\n");
+      }
+
+      Eigen::Vector4f centroid;
+      pcl::compute3DCentroid (*lm_cloud, centroid);
+
+      printf ("RViz Plugin: Cloud had %d points\n", lm_cloud->points.size ());
+      printf ("RViz Plugin Centroid: %lf %lf %lf\n", centroid[0], centroid[1], centroid[2]);
+
+      geometry_msgs::Point start;
+      start.x = centroid[0];
+      start.y = centroid[1];
+      start.z = centroid[2];
+      geometry_msgs::Point end;
+      end.x = centroid[0] + plane_coeffs[0];//key_value.value.a ();
+      end.y = centroid[1] + plane_coeffs[1];//key_value.value.b ();
+      end.z = centroid[2] + plane_coeffs[2];//key_value.value.c ();
 
       // Draw the normal
       visualization_msgs::Marker normal_marker;
@@ -1153,6 +1238,39 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel (omnimapper_ros::Publ
 
   return (true);
 }
+
+template <typename PointT> bool
+omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile(omnimapper_ros::WriteTrajectoryFile::Request &req, omnimapper_ros::WriteTrajectoryFile::Response &res)
+{
+  gtsam::Values current_solution = mapper_->getSolution ();//mapper_->getSolution ();
+
+  std::ofstream optimized_poses;
+  optimized_poses.open(req.filename.c_str());
+
+  gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered = current_solution.filter<gtsam::Pose3>();
+  BOOST_FOREACH (const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value, pose_filtered)
+  {
+    geometry_msgs::Pose pose;
+
+    gtsam::Symbol key_symbol (key_value.key);
+    gtsam::Pose3 sam_pose = key_value.value;
+
+    std::string sym_str = boost::lexical_cast<std::string> (key_symbol.chr())
+    + boost::lexical_cast<std::string> (key_symbol.index());
+    optimized_poses << sym_str << std::endl;
+    optimized_poses << sam_pose.matrix() << std::endl;
+    // optimized_poses <<
+    // optimized_poses << sam_pose.matrix () << std::endl;
+    // std::string pcd_fname = "/home/siddharth/kinect/pcd_files/"
+    // + boost::lexical_cast<std::string> (key_symbol.chr ())
+    // + boost::lexical_cast<std::string> (key_symbol.index ()) + ".pcd";
+    // pcl::io::savePCDFileBinary (pcd_fname, *frame_cloud);
+  }
+  optimized_poses.close();
+
+  return (true);
+}
+
 
   // template <typename PointT> void
   // omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)

@@ -1105,6 +1105,7 @@ namespace gtsam {
     pcl::PointCloud<PointT> origin_xy_fused_hull;
     //bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
     bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
+
     printf ("Fuse Result: orig: %d meas: %d fused: %d\n", origin_xy_lm_hull.points.size (),
             origin_xy_meas_hull.points.size (), origin_xy_fused_hull.points.size ());
 
@@ -1291,5 +1292,5 @@ namespace gtsam {
   /* ************************************************************************* */
 } // namespace gtsam
 
-template class gtsam::Plane<pcl::PointXYZ>;
+//template class gtsam::Plane<pcl::PointXYZ>;
 template class gtsam::Plane<pcl::PointXYZRGBA>;
