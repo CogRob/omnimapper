@@ -19,7 +19,7 @@
 
 #include <omnimapper_ros/ar_marker_plugin.h>
 
-#include <distortion_model/distortion_model_standalone.h>
+#include <omnimapper/3rdparty/distortion_model_standalone.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -38,7 +38,7 @@
 template<typename PointT>
 class OmniMapperROS
 {
-  
+
   typedef pcl::PointCloud<PointT> Cloud;
   typedef typename Cloud::Ptr CloudPtr;
   typedef typename Cloud::ConstPtr CloudConstPtr;
@@ -49,19 +49,19 @@ class OmniMapperROS
   public:
     // Constructor
     OmniMapperROS (ros::NodeHandle nh);
-    
+
     // Load (or reload) ROS Parameters
     void loadROSParams ();
 
     // Point Cloud Callback
     void cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg);
-    
+
     // Laser Scan Callback
     void laserScanCallback (const sensor_msgs::LaserScanConstPtr& msg);
-    
+
     // Evaluation Timer Callback
     void evalTimerCallback (const ros::TimerEvent& e);
-    
+
     // Map To Odometry Correction Publication
     void publishMapToOdom ();
 
@@ -72,8 +72,8 @@ class OmniMapperROS
     bool generateMapTSDFCallback (omnimapper_ros::OutputMapTSDF::Request& req,
                                   omnimapper_ros::OutputMapTSDF::Response &res);
 
-    void runEvaluation (std::string& associated_filename, 
-                        std::string& groundtruth_filename, 
+    void runEvaluation (std::string& associated_filename,
+                        std::string& groundtruth_filename,
                         std::string& pcd_path,
                         std::string& output_trajectory_filename,
                         std::string& output_timing_filename);

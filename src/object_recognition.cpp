@@ -338,11 +338,17 @@ void ObjectRecognition<FeatureType>::detectKeypoints(
 		pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints) const {
 
 #if USE_UNIFORM_SAMPLING == 1
-	pcl::PointCloud<int> sampled_indices;
 	uniform_sampler_->setRadiusSearch(0.03f);
 	uniform_sampler_->setInputCloud(input);
-	uniform_sampler_->compute(sampled_indices);
-	pcl::copyPointCloud(*input, sampled_indices.points, *keypoints);
+
+	/* The following code was changed from these during PCL 1.7.1 -> 1.7.2
+		pcl::PointCloud<int> sampled_indices;
+		uniform_sampler_->compute(sampled_indices);
+		pcl::copyPointCloud(*input, sampled_indices.points, *keypoints);
+	*/
+	pcl::PointCloud<pcl::PointXYZRGBA> sampled_cloud;
+	uniform_sampler_->filter(sampled_cloud);
+	pcl::copyPointCloud<pcl::PointXYZRGBA, pcl::PointXYZI>(sampled_cloud, *keypoints);
 
 #else
 	if(debug_)
@@ -352,7 +358,7 @@ void ObjectRecognition<FeatureType>::detectKeypoints(
 	if(debug_)
 	std::cout << "OK. keypoints found: " << keypoints->points.size() << std::endl;
 
-#endif    
+#endif
 }
 
 template<typename FeatureType>
