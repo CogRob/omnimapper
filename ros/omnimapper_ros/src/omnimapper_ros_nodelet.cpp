@@ -1,7 +1,7 @@
 #include  <omnimapper_ros/omnimapper_ros_nodelet.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_DECLARE_CLASS (omnimapper_ros, OmniMapperROSNodelet, omnimapper_ros::OmniMapperROSNodelet, nodelet::Nodelet);
+PLUGINLIB_EXPORT_CLASS(omnimapper_ros::OmniMapperROSNodelet, nodelet::Nodelet)
 
 namespace omnimapper_ros
 {
@@ -12,12 +12,12 @@ namespace omnimapper_ros
   OmniMapperROSNodelet::~OmniMapperROSNodelet ()
   {
   }
-  
+
   void
   OmniMapperROSNodelet::onInit ()
   {
     omnimapper_.reset (new OmniMapperROS<pcl::PointXYZRGBA>(this->getPrivateNodeHandle ()));
   }
-  
-  
+
+
 }
