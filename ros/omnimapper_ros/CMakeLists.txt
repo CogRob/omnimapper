@@ -109,7 +109,7 @@ add_library(${PROJECT_NAME}
   src/omnimapper_visualizer_rviz.cpp
   src/tum_data_error_plugin.cpp
   src/get_transform_functor_tf.cpp
-  # src/error_evaluation_plugin.cpp
+  src/error_evaluation_plugin.cpp
   src/canonical_scan_matcher_plugin.cpp
   src/canonical_scan.cpp
   src/csm_math_functions.cpp
