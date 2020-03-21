@@ -99,7 +99,7 @@ set(srcs
  src/object.cpp
  src/plane_factor.cpp
  src/BoundedPlaneFactor.cpp
- # src/plane_plugin.cpp
+ src/plane_plugin.cpp
  # src/bounded_plane_plugin.cpp
  src/object_plugin.cpp
  src/object_segment_propagation.cpp
