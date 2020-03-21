@@ -25,14 +25,14 @@ namespace omnimapper
       if (pcl::isPointIn2DPolygon (boundary1->points[i], *boundary2))
         return true;
     }
-    
+
     for (size_t i = 0; i < boundary2->points.size (); i++)
     {
       //if (pcl::isXYPointIn2DXYPolygon (boundary2.points[i], boundary1))
       if (pcl::isPointIn2DPolygon (boundary2->points[i], *boundary1))
         return true;
     }
-    
+
     return false;
   }
 
@@ -41,7 +41,7 @@ namespace omnimapper
   {
     Eigen::Vector4d z_axis (0.0, 0.0, 1.0, 0.0);
     Eigen::Vector4d minus_z_axis (0.0, 0.0, -1.0, 0.0);
-    
+
     //Move to xy
     Eigen::Affine3d p1_to_xy = planarAlignmentTransform(z_axis, coeffs1);
     CloudPtr p1_xy(new Cloud());
@@ -81,7 +81,7 @@ namespace omnimapper
        }
      }
    }
- 
+
 
   template <typename PointT> void
   BoundedPlanePlugin<PointT>::regionsToMeasurements (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions, omnimapper::Time t, std::vector<omnimapper::BoundedPlane3<PointT> >& plane_measurements)
@@ -94,7 +94,7 @@ namespace omnimapper
       use_transform = true;
       sensor_to_base = (*get_sensor_to_base_)(t);
     }
-    
+
     for (size_t i = 0; i < regions.size (); ++i)
     {
       Eigen::Vector4f model = regions[i].getCoefficients ();
@@ -117,7 +117,7 @@ namespace omnimapper
       if (intersects)
       {
         printf("BoundedPlanePlugin: regions->measurements: GOT INVALID MEASUREMENT!\n");
-        char meas_name[2048];  
+        char meas_name[2048];
         sprintf (meas_name, "invalid_meas.pcd");
         pcl::io::savePCDFileBinaryCompressed (meas_name, *border_cloud);
         //exit(1);
@@ -126,7 +126,7 @@ namespace omnimapper
         printf("BoundedPlanePlugin: GOT VALID MEASUREMENT!\n");
       // Remove debug
 
-      // Make a Plane      
+      // Make a Plane
       if (use_transform)
       {
         Eigen::Vector3d trans = sensor_to_base.inverse ().translation ();
@@ -154,8 +154,8 @@ namespace omnimapper
         omnimapper::BoundedPlane3<PointT> plane (model_base[0], model_base[1], model_base[2], model_base[3], border_base);
         plane_measurements.push_back (plane);
       }
-      else 
-      { 
+      else
+      {
         omnimapper::BoundedPlane3<PointT> plane (model[0], model[1], model[2], model[3], border_cloud);
         //gtsam::Plane<PointT> plane (model[0], model[1], model[2], model[3], border_cloud, empty_inliers, centroid4f);
       plane_measurements.push_back (plane);
@@ -167,7 +167,7 @@ namespace omnimapper
   BoundedPlanePlugin<PointT>::planarRegionCallback (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions, omnimapper::Time t)
   {
     printf ("BoundedPlanePlugin: Got %d regions.\n", regions.size ());
-    
+
     // Convert the regions to omnimapper::BoundedPlane3
     std::vector<omnimapper::BoundedPlane3<PointT> > plane_measurements;
     regionsToMeasurements (regions, t, plane_measurements);
@@ -177,13 +177,13 @@ namespace omnimapper
     gtsam::Values current_solution = mapper_->getSolutionAndUncommitted ();//mapper_->getSolution ();
     gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> > plane_filtered = current_solution.filter<omnimapper::BoundedPlane3<PointT> >();
     //gtsam::Values::Filtered<gtsam::OrientedPlane3> plane_filtered = current_solution.filter<gtsam::OrientedPlane3>();
-    
+
     // Get the pose symbol for this time
     gtsam::Symbol pose_sym;
     mapper_->getPoseSymbolAtTime (t, pose_sym);
     boost::optional<gtsam::Pose3> new_pose = mapper_->predictPose (pose_sym);
     printf ("BoundedPlanePlugin: Processing planes for pose %s\n", boost::lexical_cast<std::string>(pose_sym.key ()).c_str ());
-    
+
     // TODO: if above didn't work
     if (!new_pose)
     {
@@ -198,7 +198,7 @@ namespace omnimapper
     {
       double lowest_error = std::numeric_limits<double>::infinity ();
       gtsam::Symbol best_symbol = gtsam::Symbol ('p', max_plane_id_);
-      
+
       omnimapper::BoundedPlane3<PointT> meas_plane = plane_measurements[i];
       Eigen::Vector3d meas_norm = meas_plane.normal ().unitVector ();
       double meas_d = meas_plane.d ();
@@ -211,7 +211,7 @@ namespace omnimapper
       Eigen::Vector4d meas_map_coeffs = omnimapper::BoundedPlane3<PointT>::TransformCoefficients (meas_plane, new_pose_inv);
       for (int i = 0; i < meas_boundary_map->points.size (); i++)
       {
-       printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n", 
+       printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
          meas_boundary_map->points[i].x ,
          meas_boundary_map->points[i].y ,
          meas_boundary_map->points[i].z );
@@ -232,7 +232,7 @@ namespace omnimapper
       if (intersects)
         printf("BoundedPlanePlugin: map_meas: GOT INVALID MEASUREMENT!\n");
       // Remove debug
-      
+
       if (meas_d < 0.1)
         continue;
 
@@ -246,16 +246,16 @@ namespace omnimapper
         gtsam::Symbol key_symbol (key_value.key);
         //omnimapper::BoundedPlane3<PointT> plane = key_value.value;
         omnimapper::BoundedPlane3<PointT> plane = key_value.value;
-        
+
         //gtsam::OrientedPlane3 predicted_plane = gtsam::OrientedPlane3::Transform (plane, (*new_pose), boost::none, boost::none);
         Eigen::Vector4d pred_coeffs = omnimapper::BoundedPlane3<PointT>::TransformCoefficients (plane, (*new_pose));//predicted_plane.planeCoefficients ();
         Eigen::Vector3d pred_norm (pred_coeffs[0], pred_coeffs[1], pred_coeffs[2]);
         double pred_d = pred_coeffs[3];
-        
+
         double angular_error = acos (meas_norm.dot (pred_norm));
         double range_error = fabs (meas_d - pred_d);
         printf ("BoundedPlanePlugin: ang error: %lf range_error: %lf\n", angular_error, range_error);
-        
+
         if ((angular_error < angular_threshold_) && (range_error < range_threshold_))
         {
           double error = angular_error + range_error;
@@ -278,7 +278,7 @@ namespace omnimapper
           }
         }
       }
-      
+
       // Add factors
       if (lowest_error == std::numeric_limits<double>::infinity ())
       {
@@ -293,10 +293,11 @@ namespace omnimapper
 
         //gtsam::Plane<PointT> new_plane (*new_pose, meas_plane, false);//(new_pose_inv, meas_plane, false);
         printf ("BoundedPlanePlugin: Creating new plane %s: %lf %lf %lf %lf\n", boost::lexical_cast<std::string>(best_symbol.key ()).c_str (), map_p3_coeffs[0], map_p3_coeffs[1], map_p3_coeffs[2], map_p3_coeffs[3]);
-        mapper_->addNewValue (best_symbol, map_plane);
+        gtsam::GenericValue<omnimapper::BoundedPlane3<PointT>> map_plane_val(map_plane);
+        mapper_->addNewValue (best_symbol, map_plane_val);
         ++max_plane_id_;
       }
-      else 
+      else
       {
         // lock plane & update
         printf("BoundedPlanePlugin: Extending boundary...\n");
@@ -304,11 +305,11 @@ namespace omnimapper
         //omnimapper::BoundedPlane3<PointT> map_plane = current_solution.at<omnimapper::BoundedPlane3<PointT> > (best_symbol);
         //map_plane.extendBoundary((*new_pose), meas_plane);
         printf("BoundedPlanePlugin: Boundary Extended...\n");
-      } 
-        
+      }
+
       gtsam::SharedDiagonal measurement_noise;
-      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (3) << angular_noise_, angular_noise_, range_noise_));
-      
+      measurement_noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector (3) << angular_noise_, angular_noise_, range_noise_).finished());
+
       gtsam::Vector measurement_vector = meas_plane.planeCoefficients ();
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor (new omnimapper::BoundedPlaneFactor<PointT> (measurement_vector, meas_boundary, measurement_noise, pose_sym, best_symbol));
       mapper_->addFactor (plane_factor);
@@ -316,7 +317,7 @@ namespace omnimapper
     }// plane measurements
 
   }
-  
+
 }
 
 template class omnimapper::BoundedPlanePlugin<pcl::PointXYZRGBA>;

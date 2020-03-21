@@ -87,14 +87,15 @@ namespace omnimapper
       /// Computes the error between two poses
       gtsam::Vector error (const BoundedPlane3<PointT>& plane) const;
 
+      constexpr static size_t dimension = 3;
       /// Dimensionality of tangent space = 3 DOF
       inline static size_t Dim() {
-        return 3;
+        return BoundedPlane3<PointT>::dimension;
       }
 
       /// Dimensionality of tangent space = 3 DOF
       inline size_t dim() const {
-        return 3;
+        return BoundedPlane3<PointT>::dimension;
       }
 
       /// Returns the plane coefficients (a, b, c, d)
@@ -133,4 +134,8 @@ namespace omnimapper
 
   };
 
+
 }
+
+template <typename PointT> struct gtsam::traits<omnimapper::BoundedPlane3<PointT> >
+  : gtsam::internal::Manifold<omnimapper::BoundedPlane3<PointT> > { };
