@@ -9,7 +9,7 @@
 
 /* ************************************************************************* */
 /// The print fuction
-template <typename PointT> void 
+template <typename PointT> void
 omnimapper::BoundedPlane3<PointT>::print(const std::string& s) const {
   gtsam::Vector coeffs = planeCoefficients ();
   std::cout << s << " : " << coeffs << std::endl;
@@ -18,18 +18,18 @@ omnimapper::BoundedPlane3<PointT>::print(const std::string& s) const {
 template <typename PointT> void
 omnimapper::BoundedPlane3<PointT>::reprojectBoundary ()
 {
-  
+
 }
 
-template <typename PointT> omnimapper::BoundedPlane3<PointT> 
+template <typename PointT> omnimapper::BoundedPlane3<PointT>
 omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
 {
   boost::lock_guard<boost::mutex> lock (*plane_mutex_);
   std::cout << "BoundedPlane3: retracting: " << v << std::endl;
-  
+
   // Retract coefficients
   gtsam::Vector2 n_v (v (0), v (1));
-  gtsam::Unit3 n_retracted = n_.retract (n_v, gtsam::Unit3::EXPMAP);
+  gtsam::Unit3 n_retracted = n_.retract (n_v);
   double d_retracted = d_ + v (2);
 
   // Retract the boundary too.
@@ -50,7 +50,7 @@ omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
 
   for (int i = 0; i < new_boundary->points.size (); i++)
   {
-   // printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n", 
+   // printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
    //   meas_boundary_map->points[i].x ,
    //   meas_boundary_map->points[i].y ,
    //   meas_boundary_map->points[i].z );
@@ -71,18 +71,18 @@ omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
   //return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted, boundary_));
 }
 
-template <typename PointT> gtsam::Vector 
+template <typename PointT> gtsam::Vector
 omnimapper::BoundedPlane3<PointT>::localCoordinates(const omnimapper::BoundedPlane3<PointT>& y) const {
-  gtsam::Vector n_local = n_.localCoordinates (y.n_, gtsam::Unit3::EXPMAP);
+  gtsam::Vector n_local = n_.localCoordinates (y.n_);
   double d_local = d_ - y.d_;
-  return gtsam::Vector (3) << n_local (0), n_local (1), -d_local;
+  return (gtsam::Vector (3) << n_local (0), n_local (1), -d_local).finished();
 }
 
-template <typename PointT> gtsam::Vector 
-omnimapper::BoundedPlane3<PointT>::planeCoefficients () const 
+template <typename PointT> gtsam::Vector
+omnimapper::BoundedPlane3<PointT>::planeCoefficients () const
 {
   gtsam::Vector unit_vec = n_.unitVector ();
-  return (gtsam::Vector (4) << unit_vec[0], unit_vec[1], unit_vec[2], d_);
+  return (gtsam::Vector (4) << unit_vec[0], unit_vec[1], unit_vec[2], d_).finished();
 }
 
 template <typename PointT> omnimapper::BoundedPlane3<PointT>
@@ -95,7 +95,7 @@ omnimapper::BoundedPlane3<PointT>::Transform (const omnimapper::BoundedPlane3<Po
   gtsam::Matrix n_hr;
   gtsam::Matrix n_hp;
   gtsam::Unit3 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
-  
+
   gtsam::Vector n_unit = plane.n_.unitVector ();
   gtsam::Vector unit_vec = n_rotated.unitVector ();
   double pred_d = n_unit.dot (xr.translation ().vector ()) + plane.d_;
@@ -124,7 +124,7 @@ omnimapper::BoundedPlane3<PointT>::Transform (const omnimapper::BoundedPlane3<Po
     (*Hp).block<1,2> (2,0) = hpp;
     (*Hp) (2,2) = 1;
   }
-  
+
   return (transformed_plane);
 }
 
@@ -147,10 +147,10 @@ omnimapper::BoundedPlane3<PointT>::TransformCoefficients (const omnimapper::Boun
 }
 
 /* ************************************************************************* */
-template <typename PointT> gtsam::Vector 
+template <typename PointT> gtsam::Vector
 omnimapper::BoundedPlane3<PointT>::error (const omnimapper::BoundedPlane3<PointT>& plane) const
 {
-  gtsam::Vector n_error = -n_.localCoordinates (plane.n_, gtsam::Unit3::EXPMAP);
+  gtsam::Vector n_error = -n_.localCoordinates (plane.n_);
 
   if (!(std::isfinite (n_error[0]) && std::isfinite (n_error[1])))
   {
@@ -160,10 +160,10 @@ omnimapper::BoundedPlane3<PointT>::error (const omnimapper::BoundedPlane3<PointT
 
   double d_error = d_ - plane.d_;
   std::cout << "BoundedPlane3: error: " << n_error << " " << d_error << std::endl;
-  return (gtsam::Vector (3) << n_error (0), n_error (1), d_error);
+  return (gtsam::Vector (3) << n_error (0), n_error (1), d_error).finished();
 }
 
-template <typename PointT> void 
+template <typename PointT> void
 omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, BoundedPlane3<PointT>& plane) const
 {
   boost::lock_guard<boost::mutex> lock (*plane_mutex_);
@@ -202,7 +202,7 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
     Eigen::Vector4d map_coeffs = planeCoefficients();
     for (int i = 0; i < boundary_->points.size (); i++)
     {
-     //printf ("Internal Boundary: Boundary Point: %lf %lf %lf\n", 
+     //printf ("Internal Boundary: Boundary Point: %lf %lf %lf\n",
        // boundary_->points[i].x ,
        // boundary_->points[i].y ,
        // boundary_->points[i].z );
@@ -220,7 +220,7 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
 
     for (int i = 0; i < meas_xy->points.size (); i++)
     {
-     //printf ("MeasXY: Boundary Point: %lf %lf %lf\n", 
+     //printf ("MeasXY: Boundary Point: %lf %lf %lf\n",
        // meas_xy->points[i].x ,
        // meas_xy->points[i].y ,
        // meas_xy->points[i].z );
@@ -238,7 +238,7 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
 
    for (int i = 0; i < map_xy->points.size (); i++)
    {
-     //printf ("MapXY: Boundary Point: %lf %lf %lf\n", 
+     //printf ("MapXY: Boundary Point: %lf %lf %lf\n",
        // map_xy->points[i].x ,
        // map_xy->points[i].y ,
        // map_xy->points[i].z );
@@ -326,7 +326,7 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
   Eigen::Vector4d map_lm_coeffs = planeCoefficients();
    for (int i = 0; i < merged_map->points.size (); i++)
    {
-     //printf ("Merged Map: Boundary Point: %lf %lf %lf\n", 
+     //printf ("Merged Map: Boundary Point: %lf %lf %lf\n",
        // merged_map->points[i].x ,
        // merged_map->points[i].y ,
        // merged_map->points[i].z );
@@ -347,7 +347,7 @@ omnimapper::BoundedPlane3<PointT>::extendBoundary (const gtsam::Pose3& pose, Bou
    //boundary_.swap(merged_map);
   //*boundary_ = *merged_map;
   //CloudPtr meas_boundary = plane.boundary();
-  //CloudPtr map_boundary = boundary_;  
+  //CloudPtr map_boundary = boundary_;
 }
 
 template class omnimapper::BoundedPlane3<pcl::PointXYZRGBA>;

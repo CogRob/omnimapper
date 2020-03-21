@@ -95,7 +95,7 @@ set(srcs
  src/organized_feature_extraction.cpp
  src/organized_feature_extraction_tbb.cpp
  src/plane.cpp
- # src/BoundedPlane3.cpp
+ src/BoundedPlane3.cpp
  src/object.cpp
  # src/plane_factor.cpp
  # src/BoundedPlaneFactor.cpp
