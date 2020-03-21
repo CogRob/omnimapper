@@ -10,6 +10,7 @@
 #include <boost/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
+#include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>

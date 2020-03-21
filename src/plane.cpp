@@ -23,10 +23,10 @@
 using namespace std;
 
 namespace gtsam {
-  
+
   /* ************************************************************************* */
   template <typename PointT>
-  Plane<PointT>::Plane(): 
+  Plane<PointT>::Plane():
     a_(0), b_(0),c_(0),d_(0)
   {
     //printf("Warning: Using default constructor in plane.  This might indicate a bug\n");
@@ -70,7 +70,7 @@ namespace gtsam {
 //     pcl_ros::transformPointCloud(meas_hull,hull_,pose2map);
 // #ifndef KILL_INLIERS
 //     pcl_ros::transformPointCloud(meas_inliers,inliers_,pose2map);
-// #endif    
+// #endif
 //     Eigen::Vector4f map_normal;
 //     gtsam::Point3 normal_in(plane_info.model.values[0],plane_info.model.values[1],plane_info.model.values[2]);
 //     gtsam::Point3 normal_out = pose.rotation().rotate(normal_in);
@@ -80,10 +80,10 @@ namespace gtsam {
 //     a_ = normal_out.x();
 //     b_ = normal_out.y();
 //     c_ = normal_out.z();
-//     d_ = 
-//       plane_info.model.values[0] * pose_inv.x() + 
-//       plane_info.model.values[1] * pose_inv.y() + 
-//       plane_info.model.values[2] * pose_inv.z() + 
+//     d_ =
+//       plane_info.model.values[0] * pose_inv.x() +
+//       plane_info.model.values[1] * pose_inv.y() +
+//       plane_info.model.values[2] * pose_inv.z() +
 //       plane_info.model.values[3];
 //     concave_ = concave;
 
@@ -116,21 +116,21 @@ namespace gtsam {
 //     gtsam::Point3 normal_in(-b(1), b(0), 0.0);
 
 //     Eigen::Vector4f map_normal;
-    
+
 //     gtsam::Point3 normal_out = pose.rotation().rotate(normal_in);
 //     gtsam::Pose3 pose_inv = pose.inverse();
 
 //     double dx = p2.x() - p1.x();
 //     double dy = p2.y() - p1.y();
-    
+
 //     double range = (dy*p1.x() - dx*p1.y())/sqrt(dx*dx + dy*dy);
 //     a_ = normal_out.x();
 //     b_ = normal_out.y();
 //     c_ = normal_out.z();
-//     d_ = 
-//       normal_in.x() * pose_inv.x() + 
-//       normal_in.y() * pose_inv.y() + 
-//       normal_in.z() * pose_inv.z() + 
+//     d_ =
+//       normal_in.x() * pose_inv.x() +
+//       normal_in.y() * pose_inv.y() +
+//       normal_in.z() * pose_inv.z() +
 //       range;
 //   }
   //Make a plane in the local reference frame for extend/retract
@@ -147,7 +147,7 @@ namespace gtsam {
 
   //   double dx = p2.x() - p1.x();
   //   double dy = p2.y() - p1.y();
-    
+
   //   double range = (dy*p1.x() - dx*p1.y())/sqrt(dx*dx + dy*dy);
   //   a_ = normal_in.x();
   //   b_ = normal_in.y();
@@ -156,28 +156,28 @@ namespace gtsam {
   // }
 
   template <typename PointT>
-  Plane<PointT>::Plane(double a, double b, 
-	       double c, double d, 
-	       const pcl::PointCloud<PointT>& hull, 
-	       const pcl::PointCloud<PointT>& inliers, 
+  Plane<PointT>::Plane(double a, double b,
+	       double c, double d,
+	       const pcl::PointCloud<PointT>& hull,
+	       const pcl::PointCloud<PointT>& inliers,
 	       const bool& concave)
-    : a_(a), b_(b), c_(c), d_(d), 
-      hull_(hull), 
+    : a_(a), b_(b), c_(c), d_(d),
+      hull_(hull),
 #ifndef KILL_INLIERS
 
-      inliers_(inliers), 
+      inliers_(inliers),
 #endif
       concave_(concave)
   {
   }
 
   template <typename PointT>
-  Plane<PointT>::Plane(const gtsam::Pose3& pose, Plane& plane_info, const bool& concave)  
+  Plane<PointT>::Plane(const gtsam::Pose3& pose, Plane& plane_info, const bool& concave)
   {
     Eigen::Affine3f pose2map = pose3ToTransform(pose);
     pcl::PointCloud<PointT> meas_hull = plane_info.hull();
     pcl::transformPointCloud(meas_hull,hull_,pose2map);
-    
+
     Eigen::Vector4f map_normal;
     //gtsam::Point3 normal_in(plane_info.model.values[0],plane_info.model.values[1],plane_info.model.values[2]);
     gtsam::Point3 normal_in(plane_info.a(),plane_info.b(),plane_info.c());
@@ -188,12 +188,12 @@ namespace gtsam {
     a_ = normal_out.x();
     b_ = normal_out.y();
     c_ = normal_out.z();
-    //    d_ = 
-    //  plane_info.model.values[0] * pose_inv.x() + 
-    //  plane_info.model.values[1] * pose_inv.y() + 
-    //  plane_info.model.values[2] * pose_inv.z() + 
+    //    d_ =
+    //  plane_info.model.values[0] * pose_inv.x() +
+    //  plane_info.model.values[1] * pose_inv.y() +
+    //  plane_info.model.values[2] * pose_inv.z() +
     //  plane_info.model.values[3];
-    d_ = 
+    d_ =
       plane_info.a() * pose_inv.x() +
       plane_info.b() * pose_inv.y() +
       plane_info.c() * pose_inv.z() +
@@ -227,14 +227,14 @@ namespace gtsam {
     concave_ = false;
   }
 
-  // Plane::Plane(double a, double b, 
-	//        double c, double d, 
-	//        const pcl::PointCloud<PointT>& hull, 
-	//        const pcl::PointCloud<PointT>& inliers, 
+  // Plane::Plane(double a, double b,
+	//        double c, double d,
+	//        const pcl::PointCloud<PointT>& hull,
+	//        const pcl::PointCloud<PointT>& inliers,
 	//        const bool& concave)
-  //   : a_(a), b_(b), c_(c), d_(d), 
-  //     hull_(hull), 
-  //     inliers_(inliers), 
+  //   : a_(a), b_(b), c_(c), d_(d),
+  //     hull_(hull),
+  //     inliers_(inliers),
   //     concave_(concave)
   // {
   // }
@@ -244,17 +244,17 @@ namespace gtsam {
     cout << s << "(" << a_ << ", " << b_ << ", "<< c_<< ", "<< d_<< ")" << endl;
   }
 
-  
+
 
   /* ************************************************************************* */
   template <typename PointT>
   bool Plane<PointT>::equals(const Plane& q, double tol) const {
-    return (fabs(a_ - q.a()) < tol && 
+    return (fabs(a_ - q.a()) < tol &&
 	    fabs(b_ - q.b()) < tol &&
 	    fabs(c_ - q.c()) < tol &&
 	    fabs(d_ - q.d()) < tol);
   }
- 
+
   template <typename PointT>
   Plane<PointT> Plane<PointT>::retract(const Vector& d) const{
     if (d.size() == 0) {
@@ -283,7 +283,7 @@ namespace gtsam {
       proj1.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(hull_));
       proj1.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
       proj1.filter(map_hull_on_map);
-    } 
+    }
     else
     {
       Eigen::Vector3d prev_norm (a_, b_, c_);
@@ -306,7 +306,7 @@ namespace gtsam {
       pcl::transformPointCloud (hull_, temp, transform);
 
       std::cout << "plane::retract: angle: " << angle << " axis: " << axis << " trans: " << translation_part << std::endl;
-      
+
       bool project = false;
       if (project)
       {
@@ -326,8 +326,8 @@ namespace gtsam {
       {
         map_hull_on_map = temp;
       }
-      
-      
+
+
 
 
       bool verify_ptp_dist = true;
@@ -360,7 +360,7 @@ namespace gtsam {
         std::cout << "plane::retract: orig dist: " << orig_dist << " new_dist: " << new_dist << std::endl;
       }
     }
-    
+
 
     Plane new_p(new_norm[0],
 		new_norm[1],
@@ -369,7 +369,7 @@ namespace gtsam {
 
     return new_p;
   }
-    
+
   template <typename PointT>
   Vector Plane<PointT>::localCoordinates(const Plane& p2) const{
     assert(false);
@@ -378,7 +378,7 @@ namespace gtsam {
 
   template <typename PointT>
   Vector Plane<PointT>::GetXo(const gtsam::Pose3& xr) const {
-     
+
     Eigen::Vector4f pred;
     gtsam::Point3 normal_in(a_, b_, c_);
     gtsam::Point3 normal_out = xr.rotation().unrotate(normal_in);
@@ -386,12 +386,12 @@ namespace gtsam {
     pred[1] = normal_out.y();
     pred[2] = normal_out.z();
     pred[3] = a_*xr.x() + b_*xr.y() + c_*xr.z() + d_;
-    
+
     return (gtsam::Vector(4) <<
 			  pred[0],
 			  pred[1],
 			  pred[2],
-			  pred[3]);
+			  pred[3]).finished();
   }
 
   template <typename PointT>
@@ -408,10 +408,10 @@ namespace gtsam {
     Dh1(3,0) = 0;
     Dh1(3,1) = 0;
     Dh1(3,2) = 0;
-    Dh1(3,3) = p(0);//a_; 
+    Dh1(3,3) = p(0);//a_;
     Dh1(3,4) = p(1);//b_;
     Dh1(3,5) = p(2);//c_;
-    
+
     return Dh1;
   }
 
@@ -434,7 +434,7 @@ namespace gtsam {
     Dh2(3,1) = xr.y();
     Dh2(3,2) = xr.z();
     Dh2(3,3) = 1;
-    
+
     return Dh2;
   }
 
@@ -452,7 +452,7 @@ namespace gtsam {
 
   template <typename PointT>
   gtsam::Vector Plane<PointT>::GetXf()const {
-    return (gtsam::Vector(4) << a_,b_,c_,d_);
+    return (gtsam::Vector(4) << a_,b_,c_,d_).finished();
   }
 
   // gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
@@ -473,7 +473,7 @@ namespace gtsam {
 	// 				  b(0),
 	// 				  0.0,
 	// 				  meas_d);
-					  
+
 
   //   gtsam::Vector h = Geth(xo,normal);
   //   if(dhbydxr){
@@ -483,8 +483,8 @@ namespace gtsam {
   //     *dhbydxf = GetDh2(xr);
   //   }
   //   return h;
-  // }				
-  
+  // }
+
   /*
 
   gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
@@ -496,20 +496,20 @@ namespace gtsam {
     gtsam::Vector p2 = gtsam::Vector_(3, measured.p2.x, measured.p2.y, measured.p2.z);
     gtsam::Vector b = (p2 - p1)/((p2-p1).norm()) ;
     gtsam::Vector n = gtsam::Vector_(3, xo[0], xo[1], xo[2]);
-    
+
     gtsam::Vector p_bar = 0.5 * (p1 + p2);
-    
+
     double dx = p2(0) - p1(0);
     double dy = p2(1) - p1(1);
     double meas_d = (dy * p1(0) - dx * p1(1))/
       (sqrt(dx*dx + dy*dy));
-      
-    double old_dist = 
-      xo[0] * p_bar[0] + 
-      xo[1] * p_bar[1] + 
-      xo[2] * p_bar[2] + 
+
+    double old_dist =
+      xo[0] * p_bar[0] +
+      xo[1] * p_bar[1] +
+      xo[2] * p_bar[2] +
       xo[3];
-    
+
     double dist = xo[3] - meas_d;
     //    printf("%lf is the measured dist, %lf is the predicted dist\n",
     //	   dist, xo[3]);
@@ -521,11 +521,11 @@ namespace gtsam {
       detabydh(0,1) = b(1);//measured.p1.y;
       detabydh(0,2) = b(2);//measured.p1.z;
       detabydh(0,3) = 0.0;
-      
+
       detabydh(1,0) = 0.0;//p_bar[0];
       detabydh(1,1) = 0.0;//p_bar[1];
       detabydh(1,2) = 0.0;//p_bar[2];
-      detabydh(1,3) = 1.0;      
+      detabydh(1,3) = 1.0;
     }
     if (dhbydxr) {
       gtsam::Matrix dh1 = GetDh1(xr);
@@ -535,7 +535,7 @@ namespace gtsam {
       gtsam::Matrix dh2 = GetDh2(xr);
       *dhbydxf = detabydh * dh2;
     }
-    
+
     if (dhbydxr || dhbydxf) {
       std::stringstream ss;
       ss << "h: from laser line factor linear state";
@@ -543,9 +543,9 @@ namespace gtsam {
       gtsam::print(detabydh,"detabydh");
     }
     return h;
-    
+
   }
-*/				      
+*/
   // gtsam::Vector Plane::GetLinearState(const gtsam::Pose3& xr,
 	// 			      const omnimapper_msgs::PlaneInfo& measured,
 	// 			      boost::optional<Matrix&> dhbydxr,
@@ -568,7 +568,7 @@ namespace gtsam {
   //   return h;
   // }
 
-  // template <typename PointT> pcl::PointCloud<PointT>& 
+  // template <typename PointT> pcl::PointCloud<PointT>&
   // Plane<PointT>::hull()
   // {
   //   // TODO: Check if we updated the coefficients, if so, generate the proper rotation and apply it
@@ -587,7 +587,7 @@ namespace gtsam {
   //   }
   //   return (hull_);
   // }
-  
+
 
   template <typename PointT>
   gtsam::Vector Plane<PointT>::GetLinearState(const gtsam::Pose3& xr,
@@ -596,11 +596,11 @@ namespace gtsam {
 				      boost::optional<Matrix&> dhbydxf) const{
 
     gtsam::Vector xo = GetXo(xr);
-    gtsam::Vector normal = (gtsam::Vector(4) << 
+    gtsam::Vector normal = (gtsam::Vector(4) <<
 					  measured.a(),
 					  measured.b(),
 					  measured.c(),
-					  measured.d());
+					  measured.d()).finished();
 
     gtsam::Vector h = Geth(xo,normal);
     if(dhbydxr){
@@ -648,7 +648,7 @@ namespace gtsam {
   //   pcl::PointCloud<PointT> meas_hull_in_map;
 
   //   //gtsam::Vector rpy = pose.rotation().rpy();
-  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0], 
+  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0],
   //   //								    rpy[1],
   //   //								    rpy[2]),
   //   //					btVector3(pose.x(),pose.y(),pose.z()));
@@ -698,7 +698,7 @@ namespace gtsam {
   //   //gtsam::Vector rpy = pose.rotation().rpy();
 
   //   pcl::PointCloud<PointT> meas_hull_in_map;
-  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0], 
+  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0],
   //   //								    rpy[1],
   //   //								    rpy[2]),
   //   //					btVector3(pose.x(),pose.y(),pose.z()));
@@ -730,10 +730,10 @@ namespace gtsam {
   //     proj2.setInputCloud(boost::make_shared<pcl::PointCloud<PointT> >(inliers_));
   //     proj2.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
   //     proj2.filter(map_inliers_on_map);
-      
+
   //     pcl::PointCloud<PointT> meas_inliers_in_map;
   //     pcl_ros::transformPointCloud(plane.inliers_,meas_inliers_in_map,posemap);
-      
+
   //     pcl::PointCloud<PointT> meas_inliers_on_map;
   //     pcl::ProjectInliers<PointT> proj3;
   //     proj3.setModelType(pcl::SACMODEL_PLANE);
@@ -773,7 +773,7 @@ namespace gtsam {
     //pcl::transformPointCloud (plane.hull (), meas_boundary_map, map_to_pose);
     gtsam::Point3 norm_in (plane.a (), plane.b (), plane.c ());
     gtsam::Point3 norm_out = pose.rotation ().rotate (norm_in);
-    Eigen::Vector4d meas_coeffs_map (norm_out.x (), 
+    Eigen::Vector4d meas_coeffs_map (norm_out.x (),
                                      norm_out.y (),
                                      norm_out.z (),
                                      plane.a () * pose_to_map.translation ().x () +
@@ -781,12 +781,12 @@ namespace gtsam {
                                      plane.c () * pose_to_map.translation ().z () +
                                      plane.d ());
     Eigen::Vector4d lm_coeffs_map (a_, b_, c_, d_);
-    
+
     // Align the measured plane to the planar coefficients
     Eigen::Affine3d alignment_transform = planarAlignmentTransform (lm_coeffs_map, meas_coeffs_map);
     //pcl::PointCloud<PointT> meas_hull_aligned_map;
     //pcl::transformPointCloud (meas_hull_map, meas_hull_aligned_map, transform);
-    
+
     // Compute the combined centroid for de-meaning the cloud
     Eigen::Vector4f lm_centroid;
     Eigen::Vector4f meas_centroid_local;
@@ -806,19 +806,19 @@ namespace gtsam {
     // pcl::PointCloud<PointT> origin_meas_hull;
     // pcl::transformPointCloud (hull_, origin_lm_hull, demean_transform);
     // pcl::transformPointCloud (meas_hull_aligned_map, origin_meas_hull, demean_transform);
-    
+
     // Rotate these to XY
     Eigen::Vector4d z_axis (0.0, 0.0, 1.0, 0.0);
     Eigen::Vector4d lm_coeffs_rot_only (a_, b_, c_, 0.0);
     Eigen::Affine3d z_alignment_transform = planarAlignmentTransform(z_axis, lm_coeffs_rot_only);
-    
+
     Eigen::Affine3d transform_lm_to_xy = demean_transform * z_alignment_transform;
     Eigen::Affine3d transform_meas_to_xy = alignment_transform * demean_transform * z_alignment_transform;
     pcl::PointCloud<PointT> lm_xy;
     pcl::PointCloud<PointT> meas_xy;
     pcl::transformPointCloud (hull_, lm_xy, transform_lm_to_xy);
     pcl::transformPointCloud (plane.hull (), meas_xy, transform_meas_to_xy);
-    
+
     // Polygon Union
     pcl::PointCloud<PointT> fused_xy;
     //bool worked = pcl::fusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
@@ -830,13 +830,13 @@ namespace gtsam {
       exit (1);
       return;
     }
-    
-    
+
+
     // Move it back
     //pcl::transformPointCloud (fused_xy, hull_, transform_meas_to_xy.inverse ());
     pcl::PointCloud<PointT> test_out;
     pcl::transformPointCloud (fused_xy, test_out, transform_meas_to_xy.inverse ());
-    
+
     bool verify_ptp_dist = true;
     if (verify_ptp_dist)
     {
@@ -852,7 +852,7 @@ namespace gtsam {
       orig_dist = orig_dist / test_out.points.size ();
       std::cout << "plane::Extend: dist: " << orig_dist << std::endl;
     }
-    
+
   }
 
   template <typename PointT>
@@ -870,7 +870,7 @@ namespace gtsam {
     pcl::transformPointCloud (plane.hull (), meas_hull_map, map_to_pose);
     gtsam::Point3 norm_in (plane.a (), plane.b (), plane.c ());
     gtsam::Point3 norm_out = pose.rotation ().rotate (norm_in);
-    Eigen::Vector4d meas_coeffs_map (norm_out.x (), 
+    Eigen::Vector4d meas_coeffs_map (norm_out.x (),
                                      norm_out.y (),
                                      norm_out.z (),
                                      plane.a () * pose_to_map.translation ().x () +
@@ -878,15 +878,15 @@ namespace gtsam {
                                      plane.c () * pose_to_map.translation ().z () +
                                      plane.d ());
     Eigen::Vector4d lm_coeffs_map (a_, b_, c_, d_);
-    
+
     if (debug_extend2)
     {
       // Confirm that these are both on xy and have a centroid near the origin
       Eigen::Vector4f debug_meas_centroid;
       Eigen::Matrix3f debug_meas_cov;
-      
+
       pcl::computeMeanAndCovarianceMatrix (meas_hull_map,  debug_meas_cov, debug_meas_centroid);
-      
+
       EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value_meas;
       EIGEN_ALIGN16 Eigen::Vector3f eigen_vector_meas;
       pcl::eigen33 (debug_meas_cov, eigen_value_meas, eigen_vector_meas);
@@ -895,7 +895,7 @@ namespace gtsam {
       coeffs_meas[1] = eigen_vector_meas[1];
       coeffs_meas[2] = eigen_vector_meas[2];
       coeffs_meas[3] = 0;
-      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);      
+      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);
 
       std::cout << "lm coeffs: " << a_ << ", " << b_ << ", " << c_ << ", " << d_ << std::endl;
       std::cout << "meas coeffs from hull: " << coeffs_meas << std::endl;
@@ -948,10 +948,10 @@ namespace gtsam {
       Eigen::Vector4f debug_meas_centroid;
       Eigen::Matrix3f debug_lm_cov;
       Eigen::Matrix3f debug_meas_cov;
-      
+
       pcl::computeMeanAndCovarianceMatrix (meas_hull_aligned_map1,  debug_lm_cov, debug_lm_centroid);
       pcl::computeMeanAndCovarianceMatrix (meas_hull_aligned_map,  debug_meas_cov, debug_meas_centroid);
-      
+
       EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value_lm;
       EIGEN_ALIGN16 Eigen::Vector3f eigen_vector_lm;
       pcl::eigen33 (debug_lm_cov, eigen_value_lm, eigen_vector_lm);
@@ -961,7 +961,7 @@ namespace gtsam {
       coeffs_lm[2] = eigen_vector_lm[2];
       coeffs_lm[3] = 0;
       coeffs_lm[3] = -1 * coeffs_lm.dot (debug_lm_centroid);
-      
+
       EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value_meas;
       EIGEN_ALIGN16 Eigen::Vector3f eigen_vector_meas;
       pcl::eigen33 (debug_meas_cov, eigen_value_meas, eigen_vector_meas);
@@ -970,7 +970,7 @@ namespace gtsam {
       coeffs_meas[1] = eigen_vector_meas[1];
       coeffs_meas[2] = eigen_vector_meas[2];
       coeffs_meas[3] = 0;
-      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);      
+      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);
 
       std::cout << "lm coeffs: " << a_ << ", " << b_ << ", " << c_ << ", " << d_ << std::endl;
       std::cout << "meas1 coeffs: " << coeffs_lm << std::endl;
@@ -1025,7 +1025,7 @@ namespace gtsam {
 
     //hull_ += meas_hull_aligned_map;
     //return;
-    
+
     // Now get the centroid of both clouds so we can de-mean them
     // TODO: make efficient
     pcl::PointCloud<PointT> combined_cloud;
@@ -1048,7 +1048,7 @@ namespace gtsam {
     pcl::PointCloud<PointT> origin_meas_hull;
     pcl::transformPointCloud (hull_, origin_lm_hull, demean_transform);
     pcl::transformPointCloud (meas_hull_aligned_map, origin_meas_hull, demean_transform);
-    
+
     // Rotate to xy
     Eigen::Vector3d z_axis (0.0, 0.0, 1.0);
     double lm_to_z_angle = acos (lm_norm.dot (z_axis));//z_axis.dot (lm_norm);
@@ -1068,7 +1068,7 @@ namespace gtsam {
       Eigen::Vector4f debug_meas_centroid;
       Eigen::Matrix3f debug_lm_cov;
       Eigen::Matrix3f debug_meas_cov;
-      
+
       pcl::computeMeanAndCovarianceMatrix (origin_xy_lm_hull,  debug_lm_cov, debug_lm_centroid);
       pcl::computeMeanAndCovarianceMatrix (origin_xy_meas_hull,  debug_meas_cov, debug_meas_centroid);
 
@@ -1081,7 +1081,7 @@ namespace gtsam {
       coeffs_lm[2] = eigen_vector_lm[2];
       coeffs_lm[3] = 0;
       coeffs_lm[3] = -1 * coeffs_lm.dot (debug_lm_centroid);
-      
+
       EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value_meas;
       EIGEN_ALIGN16 Eigen::Vector3f eigen_vector_meas;
       pcl::eigen33 (debug_meas_cov, eigen_value_meas, eigen_vector_meas);
@@ -1090,7 +1090,7 @@ namespace gtsam {
       coeffs_meas[1] = eigen_vector_meas[1];
       coeffs_meas[2] = eigen_vector_meas[2];
       coeffs_meas[3] = 0;
-      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);      
+      coeffs_meas[3] = -1 * coeffs_meas.dot (debug_meas_centroid);
 
       std::cout << "lm coeffs: " << coeffs_lm << std::endl;
       std::cout << "meas coeffs: " << coeffs_meas << std::endl;
@@ -1101,7 +1101,7 @@ namespace gtsam {
       std::cout << "lm origin ctroid: " << debug_lm_centroid << std::endl;
       std::cout << "meas origin ctroid: " << debug_meas_centroid << std::endl;
     }
-    
+
     pcl::PointCloud<PointT> origin_xy_fused_hull;
     //bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
     bool worked = omnimapper::fusePlanarPolygonsXY<PointT> (origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
@@ -1114,10 +1114,10 @@ namespace gtsam {
       printf ("Error fusing polygons in inside planeextend!!\n");
       return;
     }
-    
+
     if (debug_extend2)
     {
-      printf ("lm_hull: %d meas_hull: %d fused_hull: %d\n", origin_xy_lm_hull.points.size (), 
+      printf ("lm_hull: %d meas_hull: %d fused_hull: %d\n", origin_xy_lm_hull.points.size (),
               origin_xy_meas_hull.points.size (),
               origin_xy_fused_hull.points.size ());
     }
@@ -1125,7 +1125,7 @@ namespace gtsam {
     // Simplify boundary
     pcl::PointCloud<PointT> origin_xy_fused_approx_hull;
     typename pcl::PointCloud<PointT>::VectorType &xy_fused_points = origin_xy_fused_hull.points;
-    typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;    
+    typename pcl::PointCloud<PointT>::VectorType &xy_fused_approx_points = origin_xy_fused_approx_hull.points;
 
     pcl::approximatePolygon2D<PointT> ( xy_fused_points, xy_fused_approx_points, 0.005, false, true);
     printf ("approximatePolygon2D: orig poly: %d new poly: %d\n", xy_fused_points.size (), xy_fused_approx_points.size ());
@@ -1161,7 +1161,7 @@ namespace gtsam {
       }
     }
   }
-  
+
 
   // template <typename PointT>
   // void Plane<PointT>::Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane){
@@ -1186,7 +1186,7 @@ namespace gtsam {
   //   //gtsam::Vector rpy = pose.rotation().rpy();
 
   //   pcl::PointCloud<PointT> meas_hull_in_map;
-  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0], 
+  //   //tf::Transform posemap = btTransform(tf::createQuaternionFromRPY(rpy[0],
   //   //								    rpy[1],
   //   //								    rpy[2]),
   //   //					btVector3(pose.x(),pose.y(),pose.z()));
@@ -1219,7 +1219,7 @@ namespace gtsam {
   //   pcl::PlanarPolygon<PointT> fused_region;
   //   pcl::PointCloud<PointT> xy1;
   //   pcl::PointCloud<PointT> xy2;
-    
+
   //   //pcl::PlanarPolygon<Point> approx_map;
   //   //pcl::PlanarPolygon<Point> approx_meas;
   //   //pcl::approximatePolygon (map_region, approx_map, 0.005, false);
@@ -1231,7 +1231,7 @@ namespace gtsam {
   //   {
   //     printf ("ERROR FUSING INSIDE PLANE!\n\n\n\n\n\n\n");
   //   }
-    
+
   //   //TEST
 
   //   /*
@@ -1243,10 +1243,10 @@ namespace gtsam {
   //     proj2.setInputCloud(boost::make_shared<pcl::PointCloud<Point> >(inliers_));
   //     proj2.setModelCoefficients(boost::make_shared<pcl::ModelCoefficients>(map_model));
   //     proj2.filter(map_inliers_on_map);
-      
+
   //     pcl::PointCloud<Point> meas_inliers_in_map;
   //     pcl::transformPointCloud(plane.inliers_,meas_inliers_in_map,posemap);
-      
+
   //     pcl::PointCloud<Point> meas_inliers_on_map;
   //     pcl::ProjectInliers<Point> proj3;
   //     proj3.setModelType(pcl::SACMODEL_PLANE);
