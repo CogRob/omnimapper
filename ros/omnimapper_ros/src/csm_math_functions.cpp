@@ -5,8 +5,8 @@
 #define btMatrix3x3 tf::Matrix3x3
 #endif
 
-bool CheckMoveFarEnough(const tf::StampedTransform& last_pose, 
-			const tf::StampedTransform& curr_pose, 
+bool CheckMoveFarEnough(const tf::StampedTransform& last_pose,
+			const tf::StampedTransform& curr_pose,
 			double distance,
 			double rot_thresh) {
   double dx = curr_pose.getOrigin().x() - last_pose.getOrigin().x();
@@ -24,14 +24,14 @@ gtsam::Pose3 GetPose(const tf::StampedTransform& transform) {
   btVector3 axis = transform.getRotation().getAxis();
   gtsam::Vector gtsam_axis;
   double axis_norm = sqrt(axis[0]*axis[0] +
-			  axis[1]*axis[1] + 
+			  axis[1]*axis[1] +
 			  axis[2]*axis[2]);
   if (fabs(axis_norm - 1.0) < 0.01) {
-    gtsam_axis = (gtsam::Vector(3) << axis[0]/axis_norm,axis[1]/axis_norm,axis[2]/axis_norm);
+    gtsam_axis = (gtsam::Vector(3) << axis[0]/axis_norm,axis[1]/axis_norm,axis[2]/axis_norm).finished();
   } else {
-    printf("Axis failure !  Axis length %lf\n", 
+    printf("Axis failure !  Axis length %lf\n",
 	   axis_norm);
-    gtsam_axis = (gtsam::Vector (3) << 0,0,1);
+    gtsam_axis = (gtsam::Vector (3) << 0,0,1).finished();
   }
   double angle = transform.getRotation().getAngle();
   return gtsam::Pose3(gtsam::Rot3::rodriguez(gtsam_axis,angle),
@@ -115,12 +115,12 @@ double WrapToPi(double diff){
   return ret;
 }
 
-gtsam::noiseModel::Diagonal::shared_ptr 
+gtsam::noiseModel::Diagonal::shared_ptr
 GetOdoCovariance( const gtsam::Pose3& odo,
 		  double sroll, double spitch, double syaw,
 		  double sx, double sy, double sz) {
-  double l_scale = sqrt(odo.x()*odo.x() + 
-			odo.y()*odo.y() + 
+  double l_scale = sqrt(odo.x()*odo.x() +
+			odo.y()*odo.y() +
 			odo.z()*odo.z())/1.5;
   if (l_scale < 0.1) l_scale = 0.1;
   gtsam::Vector ypr = odo.rotation().ypr();
@@ -128,14 +128,14 @@ GetOdoCovariance( const gtsam::Pose3& odo,
 			ypr[1]*ypr[1] +
 			ypr[2]*ypr[2])/1.5;
   if (a_scale < 0.1) a_scale = 0.1;
-  
+
   return gtsam::noiseModel::Diagonal::Sigmas((gtsam::Vector(6) <<
 					    a_scale*(sroll),
 					    a_scale*(spitch),
 					    a_scale*(syaw),
 					    l_scale*(sx),
 					    l_scale*(sy),
-					    l_scale*(sz)));
+					    l_scale*(sz)).finished());
 }
 gtsam::Matrix CovarFromDiagonalNoiseModel(const gtsam::SharedDiagonal& diagonal) {
   const gtsam::Vector sigmas = diagonal->sigmas();

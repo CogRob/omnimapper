@@ -365,7 +365,7 @@ omnimapper::ErrorEvaluationPlugin::computeTrajectoryStatistics (boost::shared_pt
   BOOST_FOREACH (const gtsam::NonlinearFactorGraph::sharedFactor& factor, current_graph)
   {
     // check for poses
-    const std::vector<gtsam::Key> keys = factor->keys ();
+    const std::vector<gtsam::Key> keys(factor->keys().begin(), factor->keys().end());
 
     // skip if there aren't two pose keys
     if ((keys.size () == 2))

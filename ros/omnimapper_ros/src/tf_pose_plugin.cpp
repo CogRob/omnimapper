@@ -4,7 +4,7 @@ namespace
 omnimapper
 {
 
-  TFPosePlugin::TFPosePlugin (omnimapper::OmniMapperBase* mapper) 
+  TFPosePlugin::TFPosePlugin (omnimapper::OmniMapperBase* mapper)
     : mapper_ (mapper),
       nh_ ("~"),
       tf_listener_ (ros::Duration (30.0)),
@@ -13,7 +13,7 @@ omnimapper
       translation_noise_ (1.0),
       rotation_noise_ (1.0)
   {
-    
+
   }
 
   gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr
@@ -33,13 +33,13 @@ omnimapper
     try{
       tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
                                     rt1, ros::Duration(0.2));
-      
+
       tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt1, tf1);
-      
+
       tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_,
                                     rt2, ros::Duration(0.2));
-      
+
       tf_listener_.lookupTransform(odom_frame_name_ , base_frame_name_,
                                    rt2, tf2);
     } catch(tf::TransformException ex) {
@@ -58,13 +58,13 @@ omnimapper
 
     printf ("TFPosePlugin: Adding factor between %d and %d\n", sym1.index (), sym2.index ());
     printf ("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x (), relative_pose.y (), relative_pose.z ());
-    
+
     double trans_noise = translation_noise_;//1.0;
     double rot_noise = rotation_noise_;//1.0;
     //double roll_noise = 0.01;
     //doulbe pitch_noise = 0.01;
     //gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise));
-    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << roll_noise_, pitch_noise_, yaw_noise_, trans_noise, trans_noise, trans_noise));
+    gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << roll_noise_, pitch_noise_, yaw_noise_, trans_noise, trans_noise, trans_noise).finished());
     //omnimapper::OmniMapperBase::NonlinearFactorPtr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between (new gtsam::BetweenFactor<gtsam::Pose3> (sym1, sym2, relative_pose, noise));
     between->print ("TF BetweenFactor:\n");

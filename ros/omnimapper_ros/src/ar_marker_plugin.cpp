@@ -38,7 +38,8 @@ namespace omnimapper
       if (known_markers_.count (msg.markers[i].id) == 0)
       {
         ROS_INFO ("AR Plugin: New marker %d observed!\n", msg.markers[i].id);
-        mapper_->addNewValue (marker_symbol, relative_pose);
+        gtsam::GenericValue<gtsam::Pose3> relative_pose_val(relative_pose);
+        mapper_->addNewValue (marker_symbol, relative_pose_val);
         known_markers_.insert (msg.markers[i].id);
       }
 
