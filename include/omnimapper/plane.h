@@ -99,10 +99,10 @@ namespace gtsam {
 
 
     /** print with optional string */
-    virtual void print(const std::string& s = "") const;
+    void print(const std::string& s = "") const;
 
     /** equals with an tolerance, prints out message if unequal*/
-    virtual bool equals(const Plane& q, double tol = 1e-9) const;
+    bool equals(const Plane& q, double tol = 1e-9) const;
 
     double a() const{ return a_; }
     double b() const{ return b_; }
@@ -137,11 +137,13 @@ namespace gtsam {
     			  boost::optional<Matrix&> dhbydxr,
     			  boost::optional<Matrix&> xhbydxf)const;
 
+    constexpr static size_t dimension = 4;
+
     /** return DOF, dimensionality of tangent space */
-    virtual size_t dim() const { return 4;}
+    size_t dim() const { return Plane<PointT>::dimension;}
 
     /** return vectorized form (column-wise) */
-    virtual Vector vector() const {
+    Vector vector() const {
       Vector v(4);
       v(0)=a_;v(1)=b_;v(2)=c_;v(3)=d_;
       return v;
@@ -177,5 +179,7 @@ namespace gtsam {
   // inline void print(const Plane<PointT>& obj, const std::string& str = "") {
   //   obj.print(str);
   // }
+  template <typename PointT> struct traits<Plane<PointT> >
+    : internal::Manifold<Plane<PointT> > { };
 }
 
