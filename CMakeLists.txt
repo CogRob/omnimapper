@@ -64,7 +64,8 @@ set(incs
   include/omnimapper/plane_plugin.h
   include/omnimapper/no_motion_pose_plugin.h
   include/omnimapper/object_plugin.h
-  include/omnimapper/object.h include/omnimapper/icp_pose_plugin.h
+  include/omnimapper/object.h
+  include/omnimapper/icp_pose_plugin.h
   include/omnimapper/measurement_plugin.h
   include/omnimapper/omnimapper_visualizer_pcl.h
   include/omnimapper/object_discovery.h
@@ -100,7 +101,7 @@ set(srcs
  # src/BoundedPlaneFactor.cpp
  # src/plane_plugin.cpp
  # src/bounded_plane_plugin.cpp
- src/object_plugin.cpp
+ # src/object_plugin.cpp
  src/object_segment_propagation.cpp
  src/object_recognition.cpp
  src/object_discovery.cpp
