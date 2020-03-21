@@ -1,7 +1,7 @@
 #include <omnimapper/omnimapper_base.h>
 #include <pcl/common/time.h> //TODO: remove, debug only
 
-omnimapper::OmniMapperBase::OmniMapperBase () 
+omnimapper::OmniMapperBase::OmniMapperBase ()
   : initialized_ (false),
     initial_pose_ (gtsam::Pose3::identity ()),
     get_time_ (new GetSystemTimeFunctor ())
@@ -27,7 +27,7 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
     printf ("OmniMapperBase: ERROR!  CALLED INITIALIZE WHEN ALREADY INITIALIZED!\n");
     return;
   }
-  
+
 
   // TODO: make this a default param, but changeable
   gtsam::Symbol init_symbol ('x', 0);
@@ -36,13 +36,13 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   //new_values.insert (init_symbol, init_pose);
   new_values.insert (init_symbol, initial_pose_);
   //gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, init_pose, gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
-  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, initial_pose_, gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+  gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, initial_pose_, gtsam::noiseModel::Diagonal::Sigmas ((gtsam::Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
   new_factors.add (posePrior);
   PoseChainNode init_node (t, init_symbol);
   init_node.status = omnimapper::PoseChainNode::COMMITTED;
   //chain.push_back (init_node);
   std::list<omnimapper::PoseChainNode>::iterator new_itr = chain.insert (chain.end (), init_node);
-  
+
   symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(init_symbol, new_itr));
   time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
   //optimize ();
@@ -52,7 +52,7 @@ omnimapper::OmniMapperBase::initializePose (Time& t)
   //current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
   new_factors = gtsam::NonlinearFactorGraph ();
   new_values.clear ();
-  
+
   initialized_ = true;
   latest_committed_node = new_itr;
   printf ("OmnimapperBase: Initialized!\n");
@@ -79,9 +79,9 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
 {
   //boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
-  
+
   if (debug_ && false)
-  {  
+  {
     printf ("chain size: %zu\n", chain.size ());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin (); itr != chain.end (); itr++)
     {
@@ -89,8 +89,8 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       std::cout << "stamp: " << itr->time << std::endl;
     }
   }
-  
-  
+
+
   // Do nothing if there are no new factors
   std::list<omnimapper::PoseChainNode>::iterator to_commit = latest_committed_node;
   to_commit++;
@@ -106,10 +106,10 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       printf ("OmniMapper: commitNext called when latest node has already been committed!\n");
     return (false);
   }
-  
+
   // Check that enough time has elapsed
   if (!suppress_commit_window_)
-  {  
+  {
     //if (!((boost::posix_time::microsec_clock::local_time() - to_commit->time) > boost::posix_time::seconds (commit_window)))
     if (!(((*get_time_)() - to_commit->time) > boost::posix_time::seconds (commit_window)))
     {
@@ -117,7 +117,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       return (false);
     }
   }
-  
+
 
   if (debug_)
     printf ("OmniMapper: Commiting...\n");
@@ -139,14 +139,14 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol).compose (relative_pose);
 
       // Note: this is a workaround for a GTSAM bug, where compose (also between) return invalid/nan poses for small motions
-      if (!(std::isfinite (new_pose_value.x ()) && 
-            std::isfinite (new_pose_value.y ()) && 
+      if (!(std::isfinite (new_pose_value.x ()) &&
+            std::isfinite (new_pose_value.y ()) &&
             std::isfinite (new_pose_value.z ()) &&
             std::isfinite (new_pose_value.rotation ().matrix ().determinant ())))
       {
         new_pose_value = current_solution.at<gtsam::Pose3>(latest_committed_node->symbol);
       }
-      
+
       new_values.insert (to_commit->symbol, new_pose_value);
       initialized = true;
     }
@@ -164,21 +164,21 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
         gtsam::Pose3 relative_pose = between->measured ();
         gtsam::Pose3 new_pose_value = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol).compose (relative_pose);
         // Note: this is a workaround for a GTSAM bug, where compose (also between) return invalid/nan poses for small motions
-        if (!(std::isfinite (new_pose_value.x ()) && 
-              std::isfinite (new_pose_value.y ()) && 
+        if (!(std::isfinite (new_pose_value.x ()) &&
+              std::isfinite (new_pose_value.y ()) &&
               std::isfinite (new_pose_value.z ()) &&
               std::isfinite (new_pose_value.rotation ().matrix ().determinant ())))
         {
           new_pose_value = current_solution.at<gtsam::Pose3>(latest_committed_node->symbol);
         }
-        
+
 
         new_values.insert (to_commit->symbol, new_pose_value);
         initialized = true;
         break;
       }
     }
-    
+
     // If we didn't find any, we can't commit yet!
     if (!initialized)
     {
@@ -190,7 +190,7 @@ omnimapper::OmniMapperBase::commitNextPoseNode ()
       return (false);
     }
   }
-  
+
   // Commit
   //printf ("Committing!\n");
   new_factors.push_back (to_commit->factors);
@@ -234,7 +234,8 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
   //boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   // Find the pose keys related to this factor, adding this to the latest one
-  const std::vector<gtsam::Key> keys = new_factor->keys ();
+  const std::vector<gtsam::Key> keys(
+      new_factor->keys().begin(), new_factor->keys().end());
 
   int latest_pose_idx = -1;
   Time latest_pose_time = boost::posix_time::neg_infin; // Probably nobody has data earlier than this?
@@ -260,7 +261,7 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
 
       }
   }
-  
+
   // Add this factor to the pose chain at the latest pose
   // TODO: handle factors unrelated to any pose.  We can probably just go ahead and add them directly
   if (latest_pose_idx == -1)
@@ -268,7 +269,7 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
     printf ("OmniMapper: Error - no pose factor associated with this factor.  Not yet supported!\n");
     return false;
   }
-  
+
   if (debug_)
     symbol_lookup[keys[latest_pose_idx]]->symbol.print ("OmniMapper: Added factor to pose: ");
 
@@ -290,7 +291,7 @@ omnimapper::OmniMapperBase::addFactor (gtsam::NonlinearFactor::shared_ptr& new_f
     if (debug_)
       printf ("Added to the pending factors!\n");
   }
-  
+
   return true;
 }
 
@@ -364,7 +365,7 @@ omnimapper::OmniMapperBase::getPoseSymbolAtTime (Time& t, gtsam::Symbol& sym)
         break;
     }
     itr++;
-    
+
     std::list<omnimapper::PoseChainNode>::iterator new_itr = chain.insert (itr, new_node);
     time_lookup.insert (std::pair<Time, std::list<omnimapper::PoseChainNode>::iterator>(t, new_itr));
     symbol_lookup.insert (std::pair<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>(new_sym, new_itr));
@@ -401,7 +402,7 @@ omnimapper::OmniMapperBase::getGraphAndUncommitted ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-gtsam::Values 
+gtsam::Values
 omnimapper::OmniMapperBase::getSolution ()
 {
   //boost::mutex::scoped_lock (omnimapper_mutex_);
@@ -410,17 +411,17 @@ omnimapper::OmniMapperBase::getSolution ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-gtsam::Values 
+gtsam::Values
 omnimapper::OmniMapperBase::getSolutionAndUncommitted ()
 {
   //boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   // Start with the  initial solution
   gtsam::Values solution = current_solution;
-  
+
   // Now add all landmarks from the new values
-  solution.insert (new_values);  
-  
+  solution.insert (new_values);
+
   return (solution);
 }
 
@@ -448,7 +449,7 @@ omnimapper::OmniMapperBase::optimize ()
     new_factors.print ("New Factors: ");
     new_values.print ("New Values: ");
   }
-  
+
   gtsam::ISAM2Result result = isam2.update (new_factors, new_values);
   current_solution = isam2.calculateEstimate ();
   current_graph = isam2.getFactorsUnsafe (); // TODO: is this necessary and okay?
@@ -601,7 +602,7 @@ omnimapper::OmniMapperBase::predictPose (gtsam::Symbol& pose_sym)
             printf ("THIS WASNT ACTUALLY COMMITTED PROPERLY!!!\N");
             exit (1);
           }
-          
+
           gtsam::Pose3 prev_pose = current_solution.at<gtsam::Pose3> (latest_committed_node->symbol);
           gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr predicted_pose_factor = pose_plugins[0]->addRelativePose (latest_committed_node->time, latest_committed_node->symbol, itr->time, itr->symbol);
           gtsam::Pose3 incremental_prediction = predicted_pose_factor->measured ();
@@ -663,14 +664,14 @@ omnimapper::OmniMapperBase::spinOnce ()
       printf ("OMB Latest Pose: %lf %lf %lf\n", new_pose_value.x (), new_pose_value.y (), new_pose_value.z ());
       printf ("OMB Latest pose det: %lf\n", new_pose_value.rotation ().matrix ().determinant ());
     }
-    
-  } 
-  else 
+
+  }
+  else
   {
     if (debug_)
       printf ("OMB: No new factors to optimize\n");
   }
-  
+
 }
 
 gtsam::Pose3
@@ -723,7 +724,7 @@ void
 omnimapper::OmniMapperBase::reset ()
 {
   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
-  
+
   // Clear state
   isam2 = gtsam::ISAM2 ();
   new_factors = gtsam::NonlinearFactorGraph ();
@@ -733,7 +734,7 @@ omnimapper::OmniMapperBase::reset ()
   chain.clear ();
   time_lookup.clear ();
   symbol_lookup.clear ();
-  
+
   latest_committed_node = chain.begin ();
   latest_commit_time = (*get_time_)();
 

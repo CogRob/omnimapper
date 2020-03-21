@@ -48,8 +48,7 @@ namespace gtsam {
    * Derived from testable so has standard print and equals, and assert_equals works
    * Functional, so no set functions: once created, a point is constant.
    */
-  template <typename PointT>
-  class Plane: public DerivedValue<Plane<PointT> > {
+  template <typename PointT> class Plane {
   private:
     //double theta_, phi_,rho_;
     double a_, b_, c_, d_;
@@ -63,8 +62,8 @@ namespace gtsam {
   public:
     Plane();
 
-    // Plane(const gtsam::Pose3& pose, 
-	  // const omnimapper_msgs::PlaneInfo& plane_info, 
+    // Plane(const gtsam::Pose3& pose,
+	  // const omnimapper_msgs::PlaneInfo& plane_info,
 	  // const bool& concave=false);
     // Plane(const gtsam::Pose3& pose,
 	  // const omnimapper_msgs::WallFeature& wall_feature);
@@ -77,12 +76,12 @@ namespace gtsam {
     // Plane(const omnimapper_msgs::WallFeature& wall_feature);
 
 
-    Plane(double a, 
-	  double b, 
-	  double c, 
-	  double d, 
-	  const pcl::PointCloud<PointT>& hull, 
-	  const pcl::PointCloud<PointT>& inliers, 
+    Plane(double a,
+	  double b,
+	  double c,
+	  double d,
+	  const pcl::PointCloud<PointT>& hull,
+	  const pcl::PointCloud<PointT>& inliers,
 	  const bool& concave=false);
 
     Plane(double a, double b,
@@ -95,16 +94,16 @@ namespace gtsam {
 	  double c, double d,
 	  const pcl::PointCloud<PointT>& hull,
 	  const pcl::PointCloud<PointT>& inliers);
-      
+
       PointT MakePoint(float x, float y, float z);
 
 
     /** print with optional string */
     virtual void print(const std::string& s = "") const;
-    
+
     /** equals with an tolerance, prints out message if unequal*/
     virtual bool equals(const Plane& q, double tol = 1e-9) const;
-    
+
     double a() const{ return a_; }
     double b() const{ return b_; }
     double c() const{ return c_; }
@@ -118,8 +117,8 @@ namespace gtsam {
     Plane retract(const Vector& d) const;
     Vector localCoordinates(const Plane& p2) const;
     Vector GetXo(const gtsam::Pose3& xr) const;
-      void Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane);    
-      void Extend2(const Pose3& pose, const gtsam::Plane<PointT>& plane);    
+      void Extend(const Pose3& pose, const gtsam::Plane<PointT>& plane);
+      void Extend2(const Pose3& pose, const gtsam::Plane<PointT>& plane);
       void Retract(const Pose3& pose, const gtsam::Plane<PointT>& plane);
     void populateCloud();
     gtsam::Vector GetXf()const;
@@ -127,7 +126,7 @@ namespace gtsam {
 		// 		 const omnimapper_msgs::WallFeature& measured,
 		// 		 boost::optional<Matrix&> dhbydxr,
 		// 		 boost::optional<Matrix&> dhbydxf) const;
-      
+
     // Vector GetLinearState(const gtsam::Pose3& xr,
 		// 	  const omnimapper_msgs::PlaneInfo& measured,
 		// 	  boost::optional<Matrix&> dhbydxr,
@@ -175,8 +174,8 @@ namespace gtsam {
   };
 
   /** print using member print function, currently used by LieConfig */
-  // inline void print(const Plane<PointT>& obj, const std::string& str = "") { 
-  //   obj.print(str); 
+  // inline void print(const Plane<PointT>& obj, const std::string& str = "") {
+  //   obj.print(str);
   // }
 }
 

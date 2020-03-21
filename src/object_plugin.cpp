@@ -440,7 +440,7 @@ namespace omnimapper
     gtsam::Symbol obj_symbol = object.sym;
     gtsam::SharedDiagonal measurement_noise;
     measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-        (gtsam::Vector (3) << 0.05, 0.05, 0.05));
+        (gtsam::Vector (3) << 0.05, 0.05, 0.05).finished());
 
 
     for (it = cluster.begin (); it != cluster.end (); it++)
@@ -476,7 +476,7 @@ namespace omnimapper
 
     /* check if use_object_landmarks is on */
     if(!use_object_landmarks_)return;
-    
+
     Eigen::Vector4f obj_centroid;
     pcl::compute3DCentroid (transformed_cloud_opt_, obj_centroid);
 
@@ -703,7 +703,7 @@ namespace omnimapper
         gtsam::Symbol object_symbol = object.sym;
         gtsam::SharedDiagonal measurement_noise;
         measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-            (gtsam::Vector (3) << 5.5, 5.5, 5.5));
+            (gtsam::Vector (3) << 5.5, 5.5, 5.5).finished());
 
         gtsam::Symbol match_symbol = gtsam::Symbol ('o', obj.first);  // matching object symbol
 
@@ -741,7 +741,7 @@ namespace omnimapper
           gtsam::Symbol object_symbol = object.sym;
           gtsam::SharedDiagonal measurement_noise;
           measurement_noise = gtsam::noiseModel::Diagonal::Sigmas (
-              (gtsam::Vector (3) << 0.5, 0.5, 0.5));
+              (gtsam::Vector (3) << 0.5, 0.5, 0.5).finished());
 
           if(verbose_)
           match_symbol.print ("[ObjectPlugin] object matched\n");
@@ -960,7 +960,7 @@ namespace omnimapper
     std::vector<pcl::PointIndices> indices_base (clusters_base.size ());
 
 
-    
+
     gtsam::Values solution;
     if (filter_points_near_planes_)
     {

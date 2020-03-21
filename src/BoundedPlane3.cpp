@@ -29,7 +29,7 @@ omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
   
   // Retract coefficients
   gtsam::Vector2 n_v (v (0), v (1));
-  gtsam::Sphere2 n_retracted = n_.retract (n_v, gtsam::Sphere2::EXPMAP);
+  gtsam::Unit3 n_retracted = n_.retract (n_v, gtsam::Unit3::EXPMAP);
   double d_retracted = d_ + v (2);
 
   // Retract the boundary too.
@@ -73,7 +73,7 @@ omnimapper::BoundedPlane3<PointT>::retract (const gtsam::Vector& v) const
 
 template <typename PointT> gtsam::Vector 
 omnimapper::BoundedPlane3<PointT>::localCoordinates(const omnimapper::BoundedPlane3<PointT>& y) const {
-  gtsam::Vector n_local = n_.localCoordinates (y.n_, gtsam::Sphere2::EXPMAP);
+  gtsam::Vector n_local = n_.localCoordinates (y.n_, gtsam::Unit3::EXPMAP);
   double d_local = d_ - y.d_;
   return gtsam::Vector (3) << n_local (0), n_local (1), -d_local;
 }
@@ -94,7 +94,7 @@ omnimapper::BoundedPlane3<PointT>::Transform (const omnimapper::BoundedPlane3<Po
   // TODO: this should be renamed, as it does not transform the planar boundary, only the coefficients.
   gtsam::Matrix n_hr;
   gtsam::Matrix n_hp;
-  gtsam::Sphere2 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
+  gtsam::Unit3 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
   
   gtsam::Vector n_unit = plane.n_.unitVector ();
   gtsam::Vector unit_vec = n_rotated.unitVector ();
@@ -131,7 +131,7 @@ omnimapper::BoundedPlane3<PointT>::Transform (const omnimapper::BoundedPlane3<Po
 template <typename PointT> Eigen::Vector4d
 omnimapper::BoundedPlane3<PointT>::TransformCoefficients (const omnimapper::BoundedPlane3<PointT>& plane, const gtsam::Pose3& xr)
 {
-  gtsam::Sphere2 n_rotated = xr.rotation ().unrotate (plane.n_);
+  gtsam::Unit3 n_rotated = xr.rotation ().unrotate (plane.n_);
   gtsam::Vector n_rotated_unit = n_rotated.unitVector ();
   gtsam::Vector n_unit = plane.n_.unitVector ();
   double pred_d = n_unit.dot (xr.translation ().vector ()) + plane.d_;
@@ -150,7 +150,7 @@ omnimapper::BoundedPlane3<PointT>::TransformCoefficients (const omnimapper::Boun
 template <typename PointT> gtsam::Vector 
 omnimapper::BoundedPlane3<PointT>::error (const omnimapper::BoundedPlane3<PointT>& plane) const
 {
-  gtsam::Vector n_error = -n_.localCoordinates (plane.n_, gtsam::Sphere2::EXPMAP);
+  gtsam::Vector n_error = -n_.localCoordinates (plane.n_, gtsam::Unit3::EXPMAP);
 
   if (!(std::isfinite (n_error[0]) && std::isfinite (n_error[1])))
   {
