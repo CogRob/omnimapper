@@ -494,7 +494,8 @@ namespace omnimapper
     {
       if(verbose_)
       obj_symbol.print ("[ObjectPlugin] Added object");
-      mapper_->addNewValue (obj_symbol, object_centroid_pt);
+      gtsam::GenericValue<gtsam::Point3> object_centroid_pt_val(object_centroid_pt);
+      mapper_->addNewValue (obj_symbol, object_centroid_pt_val);
       object.landmark = true;
     }
 
@@ -709,7 +710,8 @@ namespace omnimapper
 
         if (!mapper_->getSolution ().exists (match_symbol))
         {
-          mapper_->addNewValue (match_symbol, matched_centroid_pt);
+          gtsam::GenericValue<gtsam::Point3> matched_centroid_pt_val(matched_centroid_pt);
+          mapper_->addNewValue (match_symbol, matched_centroid_pt_val);
         }
 
         // add a between factor between the two objects
@@ -750,7 +752,8 @@ namespace omnimapper
           {
             if(verbose_)
             std::cout << "[ObjectPlugin] Adding new value" << std::endl;
-            mapper_->addNewValue (match_symbol, matched_centroid_pt);
+            gtsam::GenericValue<gtsam::Point3> matched_centroid_pt_val(matched_centroid_pt);
+            mapper_->addNewValue (match_symbol, matched_centroid_pt_val);
           }
 
           // add between factor

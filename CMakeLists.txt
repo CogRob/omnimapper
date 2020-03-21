@@ -101,7 +101,7 @@ set(srcs
  # src/BoundedPlaneFactor.cpp
  # src/plane_plugin.cpp
  # src/bounded_plane_plugin.cpp
- # src/object_plugin.cpp
+ src/object_plugin.cpp
  src/object_segment_propagation.cpp
  src/object_recognition.cpp
  src/object_discovery.cpp
