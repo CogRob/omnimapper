@@ -98,7 +98,7 @@ set(srcs
  src/BoundedPlane3.cpp
  src/object.cpp
  # src/plane_factor.cpp
- # src/BoundedPlaneFactor.cpp
+ src/BoundedPlaneFactor.cpp
  # src/plane_plugin.cpp
  # src/bounded_plane_plugin.cpp
  src/object_plugin.cpp
