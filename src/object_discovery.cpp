@@ -1,199 +1,193 @@
 
 #include <omnimapper/object_discovery.h>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-template<typename PointT>
-ObjectDiscovery<PointT>::ObjectDiscovery(): max_current_size(0),
-max_object_size(0), object_dir_("/home/siddharth/kinect/"){
+template <typename PointT>
+ObjectDiscovery<PointT>::ObjectDiscovery()
+    : max_current_size(0),
+      max_object_size(0),
+      object_dir_("/home/siddharth/kinect/") {}
 
-}
-
-
-template<typename PointT>
+template <typename PointT>
 float ObjectDiscovery<PointT>::computeJaccardIndex(Eigen::Vector4f min_pt_1,
-		Eigen::Vector4f min_pt_2, Eigen::Vector4f max_pt_1,
-		Eigen::Vector4f max_pt_2) {
+                                                   Eigen::Vector4f min_pt_2,
+                                                   Eigen::Vector4f max_pt_1,
+                                                   Eigen::Vector4f max_pt_2) {
+  // compute intersection of boxes
+  float minX = min_pt_1[0];
+  float minY = min_pt_1[1];
+  float minZ = min_pt_1[2];
+  float maxX = max_pt_1[0];
+  float maxY = max_pt_1[1];
+  float maxZ = max_pt_1[2];
 
-	// compute intersection of boxes
-	float minX = min_pt_1[0];
-	float minY = min_pt_1[1];
-	float minZ = min_pt_1[2];
-	float maxX = max_pt_1[0];
-	float maxY = max_pt_1[1];
-	float maxZ = max_pt_1[2];
+  float minX1 = min_pt_2[0];
+  float minY1 = min_pt_2[1];
+  float minZ1 = min_pt_2[2];
+  float maxX1 = max_pt_2[0];
+  float maxY1 = max_pt_2[1];
+  float maxZ1 = max_pt_2[2];
 
-	float minX1 = min_pt_2[0];
-	float minY1 = min_pt_2[1];
-	float minZ1 = min_pt_2[2];
-	float maxX1 = max_pt_2[0];
-	float maxY1 = max_pt_2[1];
-	float maxZ1 = max_pt_2[2];
+  float inter_area = MAX(MIN(maxX, maxX1) - MAX(minX, minX1), 0) *
+                     MAX(MIN(maxY, maxY1) - MAX(minY, minY1), 0) *
+                     MAX(MIN(maxZ, maxZ1) - MAX(minZ, minZ1), 0);
 
-	float inter_area = MAX(MIN(maxX,maxX1)-MAX(minX,minX1),0)
-			* MAX(MIN(maxY,maxY1)-MAX(minY,minY1),0)
-			* MAX(MIN(maxZ,maxZ1)-MAX(minZ,minZ1),0);
+  float areaA = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
+  float areaB = (maxX1 - minX1) * (maxY1 - minY1) * (maxZ1 - minZ1);
 
-	float areaA = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
-	float areaB = (maxX1 - minX1) * (maxY1 - minY1) * (maxZ1 - minZ1);
+  float jaccard_index = inter_area / (areaA + areaB - inter_area);
 
-	float jaccard_index = inter_area / (areaA + areaB - inter_area);
-
-//    std::cout << "[inside jaccard] " << inter_area << " " << areaA << " "
-//        << areaB << std::endl;
-	return jaccard_index;
+  //    std::cout << "[inside jaccard] " << inter_area << " " << areaA << " "
+  //        << areaB << std::endl;
+  return jaccard_index;
 }
 
-template<typename PointT>
+template <typename PointT>
 void ObjectDiscovery<PointT>::loadRepresentations(std::string object_location) {
-
   object_dir_ = object_location;
-	std::cout << "Inside loadDesc" << std::endl;
-	pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D = new pcl::SIFTKeypoint<
-			PointT, pcl::PointXYZI>;
-	sift3D->setScales(0.01f, 3, 2);
-	sift3D->setMinimumContrast(0.0);
+  std::cout << "Inside loadDesc" << std::endl;
+  pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D =
+      new pcl::SIFTKeypoint<PointT, pcl::PointXYZI>;
+  sift3D->setScales(0.01f, 3, 2);
+  sift3D->setMinimumContrast(0.0);
 
-	boost::shared_ptr<pcl::Keypoint<PointT, pcl::PointXYZI> > keypoint_detector;
-	keypoint_detector.reset(sift3D);
+  boost::shared_ptr<pcl::Keypoint<PointT, pcl::PointXYZI> > keypoint_detector;
+  keypoint_detector.reset(sift3D);
 
-	/* and descriptors */
+  /* and descriptors */
 
-	pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>* shot =
-			new pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>;
-	shot->setRadiusSearch(0.1);
-	typename pcl::Feature<PointT, pcl::SHOT1344>::Ptr feature_extractor(shot);
-	pcl::PointCloud<pcl::SHOT1344>::Ptr features(
-			new pcl::PointCloud<pcl::SHOT1344>);
+  pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>* shot =
+      new pcl::SHOTColorEstimationOMP<PointT, pcl::Normal, pcl::SHOT1344>;
+  shot->setRadiusSearch(0.1);
+  typename pcl::Feature<PointT, pcl::SHOT1344>::Ptr feature_extractor(shot);
+  pcl::PointCloud<pcl::SHOT1344>::Ptr features(
+      new pcl::PointCloud<pcl::SHOT1344>);
 
-	/* initialize correspondence estimator */
-	correspondence_estimator.reset(
-			new ObjectRecognition<pcl::SHOT1344>(keypoint_detector,
-					feature_extractor));
+  /* initialize correspondence estimator */
+  correspondence_estimator.reset(new ObjectRecognition<pcl::SHOT1344>(
+      keypoint_detector, feature_extractor));
 
-	std::cout << "Descriptor Loaded " << std::endl;
+  std::cout << "Descriptor Loaded " << std::endl;
 
-	/* load object descriptors */
+  /* load object descriptors */
 
-	int max_segment = correspondence_estimator->loadDatabase(object_location);
+  int max_segment = correspondence_estimator->loadDatabase(object_location);
 
-	max_object_size = max_segment + 1;
-	max_current_size = max_object_size;
-	std::cout << "Size of max_segment " << max_segment + 1 << std::endl;
-
+  max_object_size = max_segment + 1;
+  max_current_size = max_object_size;
+  std::cout << "Size of max_segment " << max_segment + 1 << std::endl;
 }
 
-template<typename PointT>
+template <typename PointT>
 int ObjectDiscovery<PointT>::findMin(int segment, std::vector<int> seg_vec) {
-	int min_obj = segment;
+  int min_obj = segment;
 
-	for (int i = 0; i < seg_vec.size(); i++) {
-		if (min_obj > seg_vec[i])
-			min_obj = seg_vec[i];
-	}
+  for (int i = 0; i < seg_vec.size(); i++) {
+    if (min_obj > seg_vec[i]) min_obj = seg_vec[i];
+  }
 
-	return min_obj;
+  return min_obj;
 }
 
-template<typename PointT>
+template <typename PointT>
 int ObjectDiscovery<PointT>::findLabel(int segment) {
-	int label = segment;
-	while (segment_arr[label] != label) {
-		if (segment_arr[label] == -1) {
-			// no label is assigned yet
-			segment_arr[label] = label;
-			break;
-		}
-		label = segment_arr[label];
-	}
-	return label;
-
+  int label = segment;
+  while (segment_arr[label] != label) {
+    if (segment_arr[label] == -1) {
+      // no label is assigned yet
+      segment_arr[label] = label;
+      break;
+    }
+    label = segment_arr[label];
+  }
+  return label;
 }
 
+template <typename PointT>
+void ObjectDiscovery<PointT>::reconstructSurface(
+    typename pcl::PointCloud<PointT>::Ptr merged, int id) {
+  std::cout << "surface reconstruction..." << std::flush;
 
-template<typename PointT>
-void ObjectDiscovery<PointT>::reconstructSurface(typename pcl::PointCloud<PointT>::Ptr merged, int id) {
-	std::cout << "surface reconstruction..." << std::flush;
+  // apply grid filtering to reduce amount of points as well as to make them
+  // uniform distributed
+  pcl::VoxelGrid<pcl::PointXYZRGBA> voxel_grid;
+  voxel_grid.setInputCloud(merged);
+  voxel_grid.setLeafSize(0.002f, 0.002f, 0.002f);
+  voxel_grid.setDownsampleAllData(true);
+  voxel_grid.filter(*merged);
 
-	// apply grid filtering to reduce amount of points as well as to make them uniform distributed
-	pcl::VoxelGrid<pcl::PointXYZRGBA> voxel_grid;
-	voxel_grid.setInputCloud(merged);
-	voxel_grid.setLeafSize(0.002f, 0.002f, 0.002f);
-	voxel_grid.setDownsampleAllData(true);
-	voxel_grid.filter(*merged);
+  std::cout << "ran voxel grid" << std::endl;
 
-	std::cout << "ran voxel grid" << std::endl;
+  pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr vertices(
+      new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+  pcl::copyPointCloud(*merged, *vertices);
 
-	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr vertices(
-			new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-	pcl::copyPointCloud(*merged, *vertices);
+  std::cout << "copied" << std::endl;
 
-	std::cout << "copied" << std::endl;
+  pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::PointXYZRGBNormal>
+      normal_estimation;
+  normal_estimation.setSearchMethod(pcl::search::Search<pcl::PointXYZRGBA>::Ptr(
+      new pcl::search::KdTree<pcl::PointXYZRGBA>));
+  normal_estimation.setRadiusSearch(0.01);
+  normal_estimation.setInputCloud(merged);
+  normal_estimation.compute(*vertices);
+  std::cout << "normal estimated" << std::endl;
 
-	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::PointXYZRGBNormal> normal_estimation;
-	normal_estimation.setSearchMethod(
-			pcl::search::Search<pcl::PointXYZRGBA>::Ptr(
-					new pcl::search::KdTree<pcl::PointXYZRGBA>));
-	normal_estimation.setRadiusSearch(0.01);
-	normal_estimation.setInputCloud(merged);
-	normal_estimation.compute(*vertices);
-	std::cout << "normal estimated" << std::endl;
+  pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree(
+      new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
+  tree->setInputCloud(vertices);
 
+  std::cout << "set cloud" << std::endl;
 
-	pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree(
-			new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
-	tree->setInputCloud(vertices);
+  pcl::PolygonMesh surface_;
 
-	std::cout << "set cloud" << std::endl;
-
-	pcl::PolygonMesh surface_;
-
-
-	/*
-	  pcl::PointCloud<pcl::PointXYZRGBNormal> mls_points;
-	  pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBNormal> mls;
-	  mls.setComputeNormals (true);
-	  mls.setInputCloud (*merged);
-	  mls.setPolynomialFit (true);
-	  mls.setSearchMethod (tree);
-	  mls.setSearchRadius (0.03);
-	  mls.process (mls_points);
-		std::string pcd_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".pcd";
-		pcl::io::savePCDFile (pcd_file, mls_points);
+  /*
+    pcl::PointCloud<pcl::PointXYZRGBNormal> mls_points;
+    pcl::MovingLeastSquares<pcl::PointXYZRGBA, pcl::PointXYZRGBNormal> mls;
+    mls.setComputeNormals (true);
+    mls.setInputCloud (*merged);
+    mls.setPolynomialFit (true);
+    mls.setSearchMethod (tree);
+    mls.setSearchRadius (0.03);
+    mls.process (mls_points);
+          std::string pcd_file = "/home/siddharth/kinect/tsdf_models/" +
+    boost::lexical_cast<std::string>(id) +".pcd"; pcl::io::savePCDFile
+    (pcd_file, mls_points);
 */
 
+  boost::shared_ptr<pcl::PCLSurfaceBase<pcl::PointXYZRGBNormal> >
+      surface_reconstruction;
+  /*
+    pcl::MarchingCubes<pcl::PointXYZRGBNormal>* mc = new
+    pcl::MarchingCubesHoppe<pcl::PointXYZRGBNormal>; mc->setIsoLevel (0.001f);
+    mc->setGridResolution (1024, 1024, 1024);
+    surface_reconstruction.reset(mc);
+  */
 
-  boost::shared_ptr<pcl::PCLSurfaceBase<pcl::PointXYZRGBNormal> > surface_reconstruction;
-/*
-  pcl::MarchingCubes<pcl::PointXYZRGBNormal>* mc = new pcl::MarchingCubesHoppe<pcl::PointXYZRGBNormal>;
-  mc->setIsoLevel (0.001f);
-  mc->setGridResolution (1024, 1024, 1024);
-  surface_reconstruction.reset(mc);
-*/
+  pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal>* gp3 =
+      new pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal>;
+  gp3->setSearchRadius(1.25);
+  gp3->setMu(10.5);
+  gp3->setMaximumNearestNeighbors(100);
+  gp3->setMaximumSurfaceAngle(M_PI / 4);  // 45 degrees
+  gp3->setMinimumAngle(M_PI / 18);        // 10 degrees
+  gp3->setMaximumAngle(2 * M_PI / 3);     // 120 degrees
+  gp3->setNormalConsistency(true);
+  surface_reconstruction.reset(gp3);
 
-  pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal>* gp3 = new pcl::GreedyProjectionTriangulation<pcl::PointXYZRGBNormal>;
-    gp3->setSearchRadius (1.25);
-    gp3->setMu (10.5);
-    gp3->setMaximumNearestNeighbors (100);
-    gp3->setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3->setMinimumAngle(M_PI/18); // 10 degrees
-    gp3->setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3->setNormalConsistency(true);
-    surface_reconstruction.reset(gp3);
+  surface_reconstruction->setSearchMethod(tree);
+  surface_reconstruction->setInputCloud(vertices);
+  surface_reconstruction->reconstruct(surface_);
 
+  std::cout << "reconstruction" << std::endl;
 
-	surface_reconstruction->setSearchMethod(tree);
-	surface_reconstruction->setInputCloud(vertices);
-	surface_reconstruction->reconstruct(surface_);
+  std::cout << "OK" << std::endl;
 
-	std::cout << "reconstruction" << std::endl;
-
-	std::cout << "OK" << std::endl;
-
-	std::string output_file = object_dir_ + "tsdf_models/" + boost::lexical_cast<std::string>(id) +".ply";
-	pcl::io::savePLYFileBinary (output_file, surface_);
-
+  std::string output_file = object_dir_ + "tsdf_models/" +
+                            boost::lexical_cast<std::string>(id) + ".ply";
+  pcl::io::savePLYFileBinary(output_file, surface_);
 }
 
 #if 0
@@ -355,274 +349,245 @@ pcl::io::savePCDFileBinary (render_file, *raytraced);
 #endif
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-template<typename PointT>
+template <typename PointT>
 void ObjectDiscovery<PointT>::mergeClouds() {
-	std::map<int, std::vector<int> >::iterator it;
+  std::map<int, std::vector<int> >::iterator it;
 
+  /* clear previous content */
+  std::string to_remove = object_dir_ + "/merged_object_models/";
+  boost::filesystem::path path_to_remove(to_remove);
+  for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove);
+       it != end_dir_it; ++it) {
+    remove_all(it->path());
+  }
 
-	/* clear previous content */
-	std::string to_remove = object_dir_ + "/merged_object_models/";
-	boost::filesystem::path path_to_remove(to_remove);
-	for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove);
-			it != end_dir_it; ++it) {
-		remove_all(it->path());
-	}
+  std::string to_remove_1 = object_dir_ + "/merged_object_templates/";
+  boost::filesystem::path path_to_remove_1(to_remove_1);
+  for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove_1);
+       it != end_dir_it; ++it) {
+    remove_all(it->path());
+  }
 
+  std::string to_remove_2 = object_dir_ + "/merged_pose_templates/";
+  boost::filesystem::path path_to_remove_2(to_remove_2);
+  for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove_2);
+       it != end_dir_it; ++it) {
+    remove_all(it->path());
+  }
 
-	std::string to_remove_1 = object_dir_ + "/merged_object_templates/";
-	boost::filesystem::path path_to_remove_1(to_remove_1);
-	for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove_1);
-			it != end_dir_it; ++it) {
-		remove_all(it->path());
-	}
+  std::cout << "Size of max object " << max_object_size - 1 << std::endl;
+  segment_arr.resize(max_object_size, -1);
 
-	std::string to_remove_2 = object_dir_ + "/merged_pose_templates/";
-	boost::filesystem::path path_to_remove_2(to_remove_2);
-	for (boost::filesystem::directory_iterator end_dir_it, it(path_to_remove_2);
-			it != end_dir_it; ++it) {
-		remove_all(it->path());
-	}
+  std::cout << "MATCH GRAPH: " << std::endl;
+  for (it = match_graph.begin(); it != match_graph.end(); it++) {
+    int obj_id = it->first;
+    std::cout << "object id " << obj_id << " ";
+    std::vector<int> matching_objects = it->second;
 
+    int min_obj = findMin(obj_id, matching_objects);
+    int label = findLabel(obj_id);
+    if (label > min_obj) label = min_obj;
+    for (int i = 0; i < matching_objects.size(); i++) {
+      segment_arr[matching_objects[i]] = label;
+      std::cout << matching_objects[i] << " ";
+    }
+    segment_arr[obj_id] = label;
+    std::cout << "Minimum: " << min_obj << " Label: " << label << std::endl;
+    std::cout << std::endl;
+  }
 
+  std::map<int, std::vector<int> > object_map;
+  for (int i = 0; i < segment_arr.size(); i++) {
+    object_map.insert(std::pair<int, std::vector<int> >(i, std::vector<int>()));
+    if (segment_arr[i] == -1) continue;
+    std::cout << i << " " << segment_arr[i] << std::endl;
+    object_map.at(segment_arr[i]).push_back(i);
+  }
+  std::cout << std::endl << "---------------" << std::endl;
+  std::cout << "OBJECT GRAPH: " << std::endl;
 
-	std::cout << "Size of max object " << max_object_size - 1 << std::endl;
-	segment_arr.resize(max_object_size, -1);
+  correspondence_estimator->segment_object.clear();
+  for (it = object_map.begin(); it != object_map.end(); it++) {
+    int obj_id = it->first;
+    std::vector<int> matching_objects = it->second;
+    if (matching_objects.size() == 0) continue;
 
-	std::cout << "MATCH GRAPH: " << std::endl;
-	for (it = match_graph.begin(); it != match_graph.end(); it++) {
-		int obj_id = it->first;
-		std::cout << "object id " << obj_id << " ";
-		std::vector<int> matching_objects = it->second;
+    std::cout << "object id " << obj_id << " ";
+    pcl::PointCloud<pcl::PointXYZRGBA> merged_cloud;
+    std::vector<gtsam::Pose3> new_pose_array;
+    for (int i = 0; i < matching_objects.size(); i++) {
+      std::cout << matching_objects[i] << " ";
+      pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp_cloud =
+          map_cloud.at(matching_objects[i]);
+      merged_cloud += *temp_cloud;
 
-		int min_obj = findMin(obj_id, matching_objects);
-		int label = findLabel(obj_id);
-		if(label>min_obj)label=min_obj;
-		for (int i = 0; i < matching_objects.size(); i++) {
-			segment_arr[matching_objects[i]] = label;
-			std::cout << matching_objects[i] << " ";
-		}
-		segment_arr[obj_id]=label;
-		std::cout << "Minimum: " << min_obj << " Label: " << label << std::endl;
-		std::cout << std::endl;
-	}
+      std::vector<gtsam::Pose3> pose_array =
+          correspondence_estimator->pose_map.at(matching_objects[i])
+              .pose_vector;
+      new_pose_array.insert(new_pose_array.end(), pose_array.begin(),
+                            pose_array.end());
+    }
 
-	std::map<int, std::vector<int> > object_map;
-	for (int i = 0; i < segment_arr.size(); i++) {
-		object_map.insert(
-				std::pair<int, std::vector<int> >(i, std::vector<int>()));
-		if (segment_arr[i] == -1)
-			continue;
-			std::cout << i << " " << segment_arr[i] << std::endl;
-		object_map.at(segment_arr[i]).push_back(i);
-	}
-	std::cout << std::endl << "---------------" << std::endl;
-	std::cout << "OBJECT GRAPH: " << std::endl;
+    if (correspondence_estimator->segment_object.find(obj_id) ==
+        correspondence_estimator->segment_object.end()) {
+      // segment not found in the database
+      std::map<int, int> temp_object;
+      temp_object[obj_id] = 1;
+      correspondence_estimator->segment_object[obj_id] = temp_object;
+    }
 
-	correspondence_estimator->segment_object.clear();
-	for (it = object_map.begin(); it != object_map.end(); it++) {
-		int obj_id = it->first;
-		std::vector<int> matching_objects = it->second;
-		if (matching_objects.size() == 0)
-			continue;
+    // save merged clouds
+    std::string output_file = object_dir_ + "/merged_object_models/" +
+                              boost::lexical_cast<std::string>(obj_id) + ".pcd";
+    pcl::io::savePCDFileASCII(output_file, merged_cloud);
 
-		std::cout << "object id " << obj_id << " ";
-		pcl::PointCloud<pcl::PointXYZRGBA> merged_cloud;
-		std::vector<gtsam::Pose3> new_pose_array;
-		for (int i = 0; i < matching_objects.size(); i++) {
-			std::cout << matching_objects[i] << " ";
-			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp_cloud = map_cloud.at(
-					matching_objects[i]);
-			merged_cloud += *temp_cloud;
+    // save new poses
+    PoseVector pose_vec;
+    pose_vec.pose_vector = new_pose_array;
+    std::string pose_filename = object_dir_ + "/merged_pose_templates/object_" +
+                                boost::lexical_cast<std::string>(obj_id);
+    correspondence_estimator->savePoseArray(pose_filename, pose_vec);
+    correspondence_estimator->pose_map.at(obj_id) = pose_vec;
 
-			std::vector<gtsam::Pose3> pose_array =
-					correspondence_estimator->pose_map.at(matching_objects[i]).pose_vector;
-			new_pose_array.insert(new_pose_array.end(), pose_array.begin(),
-					pose_array.end());
+    std::string output_filename =
+        object_dir_ + "/merged_object_templates/object_" +
+        boost::lexical_cast<std::string>(obj_id) + "_0";
+    correspondence_estimator->computeAndStoreDescriptor(
+        merged_cloud.makeShared(), output_filename);
 
-		}
+    //
+    std::cout << std::endl;
+  }
 
-		if (correspondence_estimator->segment_object.find(obj_id)
-				== correspondence_estimator->segment_object.end()) {
-			// segment not found in the database
-			std::map<int, int> temp_object;
-			temp_object[obj_id] = 1;
-			correspondence_estimator->segment_object[obj_id] = temp_object;
-		}
+  std::string merged_mapping_file = object_dir_ + "/merged_mapping.txt";
+  std::string object_stats_file = object_dir_ + "/merged_stats.txt";
+  correspondence_estimator->saveMapping(merged_mapping_file);
+  correspondence_estimator->saveObjectStats(object_stats_file);
 
-		// save merged clouds
-		std::string output_file = object_dir_ + "/merged_object_models/"
-				+ boost::lexical_cast<std::string>(obj_id) + ".pcd";
-		pcl::io::savePCDFileASCII(output_file, merged_cloud);
+  std::cout << std::endl << "---------------" << std::endl;
+  std::cout << "OVERLAP GRAPH" << std::endl;
+  for (it = graph.begin(); it != graph.end(); it++) {
+    int obj_id = it->first;
+    std::cout << "object id " << obj_id << " ";
+    std::vector<int> matching_objects = it->second;
 
-		// save new poses
-		PoseVector pose_vec;
-		pose_vec.pose_vector = new_pose_array;
-		std::string pose_filename = object_dir_ + "/merged_pose_templates/object_"
-				 + boost::lexical_cast<std::string>(obj_id);
-		correspondence_estimator->savePoseArray(pose_filename, pose_vec);
-		correspondence_estimator->pose_map.at(obj_id) = pose_vec;
+    for (int i = 0; i < matching_objects.size(); i++) {
+      std::cout << matching_objects[i] << " ";
+    }
+    std::cout << std::endl;
+  }
 
-		std::string output_filename = object_dir_ + "/merged_object_templates/object_"
-				 + boost::lexical_cast<std::string>(obj_id) + "_0";
-		correspondence_estimator->computeAndStoreDescriptor(
-				merged_cloud.makeShared(), output_filename);
-
-
-
-		//
-		std::cout << std::endl;
-
-	}
-
-	std::string merged_mapping_file = object_dir_ + "/merged_mapping.txt";
-	std::string object_stats_file = object_dir_ + "/merged_stats.txt";
-	correspondence_estimator->saveMapping(merged_mapping_file);
-	correspondence_estimator->saveObjectStats(object_stats_file);
-
-	std::cout << std::endl << "---------------" << std::endl;
-	std::cout << "OVERLAP GRAPH" << std::endl;
-	for (it = graph.begin(); it != graph.end(); it++) {
-		int obj_id = it->first;
-		std::cout << "object id " << obj_id << " ";
-		std::vector<int> matching_objects = it->second;
-
-		for (int i = 0; i < matching_objects.size(); i++) {
-			std::cout << matching_objects[i] << " ";
-		}
-		std::cout << std::endl;
-	}
-
-	std::cout << std::endl << "---------------" << std::endl;
+  std::cout << std::endl << "---------------" << std::endl;
 }
 
-template<typename PointT>
+template <typename PointT>
 void ObjectDiscovery<PointT>::createGraph() {
+  std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
+  std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> > min_max;
+  std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >::iterator
+      min_max_iterator_1;
+  std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >::iterator
+      min_max_iterator_2;
 
-	std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
-	std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> > min_max;
-	std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >::iterator min_max_iterator_1;
-	std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >::iterator min_max_iterator_2;
+  int max_size = -1;
+  for (it = map_cloud.begin(); it != map_cloud.end(); it++) {
+    // compute bounding box and find other clouds having intersection
 
-	int max_size =-1;
-	for (it = map_cloud.begin(); it != map_cloud.end(); it++) {
+    int obj_id = it->first;
+    Eigen::Vector4f min_pt;
+    Eigen::Vector4f max_pt;
 
-		// compute bounding box and find other clouds having intersection
+    pcl::PointCloud<PointT> cloud = *(it->second);
+    getMinMax3D(cloud, min_pt, max_pt);
 
-		int obj_id = it->first;
-		Eigen::Vector4f min_pt;
-		Eigen::Vector4f max_pt;
+    std::pair<Eigen::Vector4f, Eigen::Vector4f> min_max_pair =
+        std::make_pair(min_pt, max_pt);
+    min_max.insert(std::pair<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >(
+        obj_id, min_max_pair));
 
-		pcl::PointCloud<PointT> cloud = *(it->second);
-		getMinMax3D(cloud, min_pt, max_pt);
+    if (obj_id > max_size) max_size = obj_id;
+  }
 
-		std::pair<Eigen::Vector4f, Eigen::Vector4f> min_max_pair =
-				std::make_pair(min_pt, max_pt);
-		min_max.insert(
-				std::pair<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >(
-						obj_id, min_max_pair));
+  max_size++;
+  max_object_size = max_size;
+  max_current_size = max_object_size;
 
-		if(obj_id > max_size)
-			max_size = obj_id;
+  for (min_max_iterator_1 = min_max.begin();
+       min_max_iterator_1 != min_max.end(); min_max_iterator_1++) {
+    int obj_id = min_max_iterator_1->first;
+    std::cout << "object: " << obj_id << " ";
+    std::vector<int> nearby_segments;
+    graph.insert(std::pair<int, std::vector<int> >(obj_id, nearby_segments));
+    match_graph.insert(
+        std::pair<int, std::vector<int> >(obj_id, nearby_segments));
 
-	}
+    for (min_max_iterator_2 = min_max.begin();
+         min_max_iterator_2 != min_max.end(); min_max_iterator_2++) {
+      int obj_id_2 = min_max_iterator_2->first;
+      if (obj_id_2 == obj_id) continue;
 
-	max_size++;
-	max_object_size = max_size;
-	max_current_size = max_object_size;
+      float jaccard_index = computeJaccardIndex(
+          min_max_iterator_1->second.first, min_max_iterator_2->second.first,
+          min_max_iterator_1->second.second, min_max_iterator_2->second.second);
 
+      if (jaccard_index != 0) {
+        graph.at(obj_id).push_back(obj_id_2);
 
-	for (min_max_iterator_1 = min_max.begin();
-			min_max_iterator_1 != min_max.end(); min_max_iterator_1++) {
+        int result = correspondence_estimator->matchToFile(
+            map_cloud.at(obj_id), map_cloud.at(obj_id_2));
 
-		int obj_id = min_max_iterator_1->first;
-		std::cout << "object: " << obj_id << " ";
-		std::vector<int> nearby_segments;
-		graph.insert(
-				std::pair<int, std::vector<int> >(obj_id, nearby_segments));
-		match_graph.insert(
-				std::pair<int, std::vector<int> >(obj_id, nearby_segments));
-
-		for (min_max_iterator_2 = min_max.begin();
-				min_max_iterator_2 != min_max.end(); min_max_iterator_2++) {
-
-			int obj_id_2 = min_max_iterator_2->first;
-			if (obj_id_2 == obj_id)
-				continue;
-
-			float jaccard_index = computeJaccardIndex(
-					min_max_iterator_1->second.first,
-					min_max_iterator_2->second.first,
-					min_max_iterator_1->second.second,
-					min_max_iterator_2->second.second);
-
-			if (jaccard_index != 0) {
-				graph.at(obj_id).push_back(obj_id_2);
-
-				int result = correspondence_estimator->matchToFile(
-						map_cloud.at(obj_id), map_cloud.at(obj_id_2));
-
-				if (result >= 12) {
-					match_graph.at(obj_id).push_back(obj_id_2);
-				}
-				std::cout << obj_id_2 << " ";
-			}
-
-		}
-		std::cout << std::endl;
-
-	}
-
+        if (result >= 12) {
+          match_graph.at(obj_id).push_back(obj_id_2);
+        }
+        std::cout << obj_id_2 << " ";
+      }
+    }
+    std::cout << std::endl;
+  }
 }
 
-template<typename PointT>
+template <typename PointT>
 void ObjectDiscovery<PointT>::createFinalCloud(std::string dir) {
+  boost::filesystem::directory_iterator end_itr;
 
-	boost::filesystem::directory_iterator end_itr;
+  for (boost::filesystem::directory_iterator itr(dir); itr != end_itr; ++itr) {
+    std::string file_name = itr->path().string();
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(
+        new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-	for (boost::filesystem::directory_iterator itr(dir); itr != end_itr;
-			++itr) {
-		std::string file_name = itr->path().string();
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(
-				new pcl::PointCloud<pcl::PointXYZRGBA>);
+    if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(file_name, *cloud) ==
+        -1)  //* load the file
+    {
+      PCL_ERROR("Couldn't read file test_pcd.pcd \n");
+    }
 
-		if (pcl::io::loadPCDFile<pcl::PointXYZRGBA>(file_name, *cloud) == -1) //* load the file
-				{
-			PCL_ERROR("Couldn't read file test_pcd.pcd \n");
-		}
+    std::vector<std::string> parsed_str, object_name;
+    boost::split(parsed_str, itr->path().string(), boost::is_any_of("/"));
+    boost::split(object_name, parsed_str[parsed_str.size() - 1],
+                 boost::is_any_of("."));
 
-		std::vector<std::string> parsed_str, object_name;
-		boost::split(parsed_str, itr->path().string(), boost::is_any_of("/"));
-		boost::split(object_name, parsed_str[parsed_str.size() - 1],
-				boost::is_any_of("."));
-
-		int obj_id_val = boost::lexical_cast<int>(object_name[0]);
-//            std::cout << obj_id_val << " " << std::endl;
-		map_cloud.insert(
-				std::pair<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>(
-						obj_id_val, cloud));
-
-	}
-
+    int obj_id_val = boost::lexical_cast<int>(object_name[0]);
+    //            std::cout << obj_id_val << " " << std::endl;
+    map_cloud.insert(std::pair<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>(
+        obj_id_val, cloud));
+  }
 }
 
 int main() {
+  std::string dir = "/home/siddharth/kinect/object_models";
+  ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
+  process_cloud.createFinalCloud(dir);
+  /*
+          std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
+          for(it = process_cloud.map_cloud.begin(); it!=
+     process_cloud.map_cloud.end(); it++){
 
-	std::string dir = "/home/siddharth/kinect/object_models";
-	ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
-	process_cloud.createFinalCloud(dir);
-/*
-	std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
-	for(it = process_cloud.map_cloud.begin(); it!= process_cloud.map_cloud.end(); it++){
+                  process_cloud.reconstructSurface(it->second, it->first);
+          }*/
 
-		process_cloud.reconstructSurface(it->second, it->first);
-	}*/
-
-	process_cloud.createGraph();
-	process_cloud.mergeClouds();
-	return 0;
-
+  process_cloud.createGraph();
+  process_cloud.mergeClouds();
+  return 0;
 }
 
-template class ObjectDiscovery<pcl::PointXYZRGBA> ;
-
+template class ObjectDiscovery<pcl::PointXYZRGBA>;

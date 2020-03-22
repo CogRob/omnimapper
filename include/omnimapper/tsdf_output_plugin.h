@@ -36,35 +36,39 @@
  *
  */
 
-#include <omnimapper/omnimapper_base.h>
 #include <omnimapper/icp_pose_plugin.h>
+#include <omnimapper/omnimapper_base.h>
 
-namespace omnimapper
-{
-  /** \brief TSDFOutputPlugin creates a TSDF from a set of point clouds used by omnimapper, in the map frame.
-   *   Many thanks to Stephen Miller for the libTSDFOctree.
-   *
-   * \author Alex Trevor
-   */
-  template <typename PointT>
-  class TSDFOutputPlugin : public omnimapper::OutputPlugin
-  {
-    typedef typename pcl::PointCloud<PointT> Cloud;
-    typedef typename Cloud::Ptr CloudPtr;
-    typedef typename Cloud::ConstPtr CloudConstPtr;
+namespace omnimapper {
+/** \brief TSDFOutputPlugin creates a TSDF from a set of point clouds used by
+ * omnimapper, in the map frame. Many thanks to Stephen Miller for the
+ * libTSDFOctree.
+ *
+ * \author Alex Trevor
+ */
+template <typename PointT>
+class TSDFOutputPlugin : public omnimapper::OutputPlugin {
+  typedef typename pcl::PointCloud<PointT> Cloud;
+  typedef typename Cloud::Ptr CloudPtr;
+  typedef typename Cloud::ConstPtr CloudConstPtr;
 
-    public:
-      TSDFOutputPlugin (omnimapper::OmniMapperBase* mapper);
-      void update (boost::shared_ptr<gtsam::Values>& vis_values, boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-      void setICPPlugin (boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >& icp_plugin) { icp_plugin_ = icp_plugin; };
-      void generateTSDF (double grid_size, int resolution);
-    protected:
-      OmniMapperBase* mapper_;
-      
-      // ICP Plugin Ref
-      boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
-      
-      boost::shared_ptr<gtsam::Values> latest_solution_;
-
+ public:
+  TSDFOutputPlugin(omnimapper::OmniMapperBase* mapper);
+  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+              boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
+  void setICPPlugin(
+      boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >&
+          icp_plugin) {
+    icp_plugin_ = icp_plugin;
   };
-}
+  void generateTSDF(double grid_size, int resolution);
+
+ protected:
+  OmniMapperBase* mapper_;
+
+  // ICP Plugin Ref
+  boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
+
+  boost::shared_ptr<gtsam::Values> latest_solution_;
+};
+}  // namespace omnimapper
