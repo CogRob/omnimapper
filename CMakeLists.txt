@@ -39,6 +39,7 @@ message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 # Find CPUTSDF
 option(WITH_CPUTSDF "CPU TSDF Support" TRUE)
 if(WITH_CPUTSDF)
+  set(CPUTSDF_DIR "/usr/local/share/cpu_tsdf")
   find_package(CPUTSDF)
   if (CPUTSDF_FOUND)
     set(HAVE_CPUTSDF ON)
