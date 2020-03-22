@@ -1,0 +1,58 @@
+<launch>
+  <param name="/use_sim_time" value="true"/>
+
+  <include file="$(find openni_launch)/launch/openni.launch">
+    <arg name="load_driver" value="false" />
+  </include>
+
+  <node name="OmniMapperROSNode" pkg="omnimapper_ros"
+        type="omnimapper_ros_node" respawn="false" output="screen"  >
+    <param name="use_planes" value="false"/>
+    <param name="use_icp" value="false"/>
+    <param name="use_csm" value="true"/>
+    <param name="use_objects" value="false"/>
+    <param name="object_loop_closures" value="false"/>
+    <param name="use_occ_edge_icp" value="false"/>
+    <param name="use_tf" value="true"/>
+    <param name="use_error_plugin" value="false"/>
+    <param name="use_tsdf_plugin" value="true"/>
+    <param name="use_init_pose" value="false"/>
+    <param name="init_pose_from_tf" value="true"/>
+    <param name="odom_frame_name" value="/odom"/>
+    <param name="base_frame_name" value="/base_link"/>
+    <param name="cloud_topic_name" value="/camera/depth_registered/points"/>
+    <param name="icp_leaf_size" value="0.05"/>
+    <param name="icp_max_correspondence_distance" value="0.2"/>
+    <param name="icp_trans_noise" value="0.15"/>
+    <param name="icp_rot_noise" value="0.15"/>
+    <param name="plane_range_threshold" value="0.1"/>
+    <param name="plane_angular_threshold" value="0.174532925"/>
+    <param name="plane_range_noise" value="0.1"/>
+    <param name="plane_angular_noise" value="0.174532925"/>
+    <param name="tf_trans_noise" value="0.05"/>
+    <param name="tf_roll_noise" value="0.001"/>
+    <param name="tf_pitch_noise" value="0.001"/>
+    <param name="tf_yaw_noise" value="0.2"/>
+    <param name="add_pose_per_cloud" value="true"/>
+    <param name="broadcast_map_to_odom" value="true"/>
+    <param name="draw_pose_array" value="true"/>
+    <param name="draw_pose_graph" value="true"/>
+    <param name="draw_label_cloud" value="true"/>
+    <param name="draw_clusters" value="true"/>
+    <param name="use_distortion_model" value="false"/>
+    <param name="distortion_model_path"
+           value="/home/siddharth/kinect/distortion_model/new_distortion_model" />
+    <param name="evaluation_mode" value="false"/>
+    <param name="evaluation_pcd_path" value="true"/>
+    <param name="evaluation_associated_txt_path" value=""/>
+    <param name="evaluation_ground_truth_txt_path"
+           value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/groundtruth.txt"/>
+    <param name="evaluation_output_trajectory_txt_path"
+                value="/home/siddharth/kinect/tum_benchmark/rgbd_dataset_freiburg1_xyz/output.txt"/>
+    <param name="object_database_location" value="/home/siddharth/kinect/" />
+  </node>
+
+  <node name="tf_world" pkg="tf" type="static_transform_publisher"
+        args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100"
+        respawn="false" output="screen"/>
+</launch>
