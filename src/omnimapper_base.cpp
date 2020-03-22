@@ -88,7 +88,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
     printf("chain size: %zu\n", chain.size());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin();
          itr != chain.end(); itr++) {
-      printf("node: %c %d %u %zu\n", itr->symbol.chr(), itr->symbol.index(),
+      printf("node: %c %zu %u %zu\n", itr->symbol.chr(), itr->symbol.index(),
              itr->time, itr->factors.size());
       std::cout << "stamp: " << itr->time << std::endl;
     }
@@ -99,9 +99,9 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
       latest_committed_node;
   to_commit++;
   if (debug_) {
-    printf("latest: %c %d\n", latest_committed_node->symbol.chr(),
+    printf("latest: %c %zu\n", latest_committed_node->symbol.chr(),
            latest_committed_node->symbol.index());
-    printf("to commit: %c %d\n", to_commit->symbol.chr(),
+    printf("to commit: %c %zu\n", to_commit->symbol.chr(),
            to_commit->symbol.index());
   }
 
@@ -199,7 +199,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
         printf(
             "OmniMapper: Tried to commit without any between factors!  Waiting "
             "for between factor!\n");
-        printf("Node has %u factors\n", to_commit->factors.size());
+        printf("Node has %zu factors\n", to_commit->factors.size());
       }
       return (false);
     }
@@ -566,11 +566,11 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::predictPose(
         // TODO: should a pose plugin be selectable through some other means?
         // if (pose_plugins.size () > 0)
         //{
-        printf("Latest: %d\n", latest_committed_node->symbol.index());
+        printf("Latest: %lu\n", latest_committed_node->symbol.index());
         if ((new_values.exists<gtsam::Pose3>(latest_committed_node->symbol)) &&
             !(current_solution.exists<gtsam::Pose3>(
                 latest_committed_node->symbol))) {
-          printf("THIS WASNT ACTUALLY COMMITTED PROPERLY!!!\N");
+          printf("THIS WASNT ACTUALLY COMMITTED PROPERLY!!!\n");
           exit(1);
         }
 
@@ -672,7 +672,7 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
   double start = pcl::getTime();
   for (int i = 0; i < output_plugins.size(); i++) {
     if (debug_)
-      printf("Updating plugin %d with %u values\n", i, vis_values->size());
+      printf("Updating plugin %d with %lu values\n", i, vis_values->size());
     output_plugins[i]->update(vis_values, vis_graph);
   }
   double end = pcl::getTime();

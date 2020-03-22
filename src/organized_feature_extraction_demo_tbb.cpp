@@ -1,4 +1,3 @@
-#include <X11/Xlib.h>
 #include <google/profiler.h>
 #include <omnimapper/organized_feature_extraction_tbb.h>
 #include <pcl/features/integral_image_normal.h>
@@ -13,6 +12,10 @@
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/visualization/image_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
+
+// clang-format off
+#include <X11/Xlib.h>
+// clang-format on
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -57,7 +60,7 @@ class OrganizedFeatureExtractionDemoTBB {
   void clusterLabelsCallback(const CloudConstPtr& cloud,
                              const LabelCloudConstPtr& labels) {
     boost::lock_guard<boost::mutex> lock(cloud_mutex_);
-    printf("cluster labels_cb: %d %d\n", cloud->points.size(),
+    printf("cluster labels_cb: %zu %zu\n", cloud->points.size(),
            labels->points.size());
     prev_cloud_ = cloud;
     prev_labels_ = labels;

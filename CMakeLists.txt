@@ -5,9 +5,12 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 #SET(CMAKE_CXX_FLAGS_DISTRIBUTION "-O3")
 #SET(CMAKE_C_FLAGS_DISTRIBUTION "-O3")
 
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
+
+SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -Werror -Wall -Wextra")
+SET(CMAKE_C_FLAGS_DEBUG "-std=c++11 -Werror -Wall -Wextra")
 
 project(omnimapper)
 

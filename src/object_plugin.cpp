@@ -23,7 +23,7 @@ ObjectPlugin<PointT>::ObjectPlugin(omnimapper::OmniMapperBase* mapper)
       use_object_landmarks_(true),
       min_cluster_height_(0.3) {
   printf("In constructor, checking size of observations_\n");
-  printf("Size: %d\n", observations_.size());
+  printf("Size: %zu\n", observations_.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,7 +308,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
       // empty_normals.resize (frame_cloud->points.size ());
 
       if (debug_)
-        printf("[ObjectPlugin] Cloud has: %d normals has: %d\n",
+        printf("[ObjectPlugin] Cloud has: %zu normals has: %zu\n",
                cloud->points.size(), empty_normals.points.size());
 
       if (cloud->points.size() > 0) {
@@ -906,7 +906,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
   }
 
   if (verbose_)
-    printf("[ObjectPlugin] Object plugin got %d clusters_base\n",
+    printf("[ObjectPlugin] Object plugin got %zu clusters_base\n",
            clusters_base.size());
 
   // Keep track of indices using indices_base
@@ -1000,7 +1000,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
 
         if (debug_)
           printf(
-              "[ObjectPlugin] cluster %d had %d points, filtered has %d "
+              "[ObjectPlugin] cluster %d had %zu points, filtered has %zu "
               "points\n",
               i, clusters_base[i]->points.size(),
               filtered_clust->points.size());
@@ -1008,12 +1008,12 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
         indices_base[i] = filtered_indices;
 
         if (debug_)
-          printf("[ObjectPlugin] filtered_indices: %d, indices_base: %d",
+          printf("[ObjectPlugin] filtered_indices: %zu, indices_base: %zu",
                  filtered_indices.indices.size(),
                  indices_base[i].indices.size());
 
         if (debug_)
-          printf("[ObjectPlugin] cluster %d now has %d points\n", i,
+          printf("[ObjectPlugin] cluster %d now has %zu points\n", i,
                  clusters_base[i]->points.size());
       } else {
         pcl::PointIndices filtered_indices;
@@ -1025,7 +1025,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
 
         if (debug_)
           printf(
-              "[ObjectPlugin] cluster has %d points, indices has %d points\n",
+              "[ObjectPlugin] cluster has %zu points, indices has %zu points\n",
               clusters_base[i]->points.size(), indices_base[i].indices.size());
       }
     }

@@ -108,11 +108,11 @@ void omnimapper::TSDFOutputPlugin<PointT>::generateTSDF(double grid_size,
 
     CloudConstPtr frame_cloud = icp_plugin_->getFullResCloudPtr(key_symbol);
     // CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr (key_symbol);
-    printf("TSDFPlugin: Cloud has %d points\n", frame_cloud->points.size());
+    printf("TSDFPlugin: Cloud has %zu points\n", frame_cloud->points.size());
     if (frame_cloud->points.size() == 0) {
       // check the other
       CloudConstPtr test_cloud = icp_plugin_->getCloudPtr(key_symbol);
-      printf("TSDFPlugin: Test Cloud has %d, full cloud has %d\n",
+      printf("TSDFPlugin: Test Cloud has %zu, full cloud has %zu\n",
              test_cloud->points.size(), frame_cloud->points.size());
     }
     CloudPtr map_cloud(new Cloud());
@@ -151,7 +151,7 @@ void omnimapper::TSDFOutputPlugin<PointT>::generateTSDF(double grid_size,
     // ne.compute (empty_normals);
     // empty_normals.resize (frame_cloud->points.size ());
 
-    printf("Cloud has: %d normals has: %d\n", frame_cloud->points.size(),
+    printf("Cloud has: %zu normals has: %zu\n", frame_cloud->points.size(),
            empty_normals.points.size());
 
     if (frame_cloud->points.size() > 0) {

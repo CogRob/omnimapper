@@ -1092,7 +1092,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   // origin_xy_meas_hull, origin_xy_fused_hull);
   bool worked = omnimapper::fusePlanarPolygonsXY<PointT>(
       origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
-  printf("Fuse Result: orig: %d meas: %d fused: %d\n",
+  printf("Fuse Result: orig: %zu meas: %zu fused: %zu\n",
          origin_xy_lm_hull.points.size(), origin_xy_meas_hull.points.size(),
          origin_xy_fused_hull.points.size());
 
@@ -1102,7 +1102,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   }
 
   if (debug_extend2) {
-    printf("lm_hull: %d meas_hull: %d fused_hull: %d\n",
+    printf("lm_hull: %zu meas_hull: %zu fused_hull: %zu\n",
            origin_xy_lm_hull.points.size(), origin_xy_meas_hull.points.size(),
            origin_xy_fused_hull.points.size());
   }
@@ -1116,7 +1116,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
 
   pcl::approximatePolygon2D<PointT>(xy_fused_points, xy_fused_approx_points,
                                     0.005, false, true);
-  printf("approximatePolygon2D: orig poly: %d new poly: %d\n",
+  printf("approximatePolygon2D: orig poly: %zu new poly: %zu\n",
          xy_fused_points.size(), xy_fused_approx_points.size());
 
   // Rotate it back

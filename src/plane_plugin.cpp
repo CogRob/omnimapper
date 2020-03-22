@@ -147,7 +147,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
     //   updated_ = false;
     // }
 
-    printf("PlaneMeasurementPlugin: Got %d planes.\n", regions.size());
+    printf("PlaneMeasurementPlugin: Got %zu planes.\n", regions.size());
 
     if (overwrite_timestamps_)
       t = boost::posix_time::ptime(
@@ -192,7 +192,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
       printf("measurement: %lf %lf %lf %lf\n", meas_plane.a(), meas_plane.b(),
              meas_plane.c(), meas_plane.d());
 
-      printf("plane_filtered size: %d\n", plane_filtered.size());
+      printf("plane_filtered size: %zu\n", plane_filtered.size());
       BOOST_FOREACH (const typename gtsam::Values::Filtered<
                          gtsam::Plane<PointT> >::KeyValuePair& key_value,
                      plane_filtered) {
@@ -238,7 +238,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
           // (lm_name, lm_hull); End debug
           if (polygonsOverlap(meas_hull_map_frame, lm_hull)) {
             if ((error < lowest_error) && (!disable_data_association_)) {
-              printf("new potential match to plane %d\n", key_symbol.index());
+              printf("new potential match to plane %zu\n", key_symbol.index());
               lowest_error = error;
               best_symbol = key_symbol;
             }

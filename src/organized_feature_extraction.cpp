@@ -42,20 +42,19 @@ OrganizedFeatureExtraction<PointT>::OrganizedFeatureExtraction(
       updated_data_(false),
       updated_cloud_(false),
       euclidean_cluster_comparator_(
-          new pcl::EuclideanClusterComparator<PointT, pcl::Normal,
-                                              pcl::Label>()),
+          new pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>()),
       debug_(true),
       timing_(false) {
   if (debug_) printf("Start!\n");
 
   // debug test
   CloudPtr test1(new Cloud());
-  printf("test1 refcount: %d\n", test1.use_count());
+  printf("test1 refcount: %ld\n", test1.use_count());
   CloudPtr test2(new Cloud());
   test2 = test1;
-  printf("test1 refcount after making test2: %d\n", test1.use_count());
+  printf("test1 refcount after making test2: %ld\n", test1.use_count());
   test1 = CloudPtr(new Cloud());
-  printf("test1 refcount after making new test1: %d\n", test1.use_count());
+  printf("test1 refcount after making new test1: %ld\n", test1.use_count());
   // test
 
   // Set up Normal Estimation
@@ -437,7 +436,7 @@ void OrganizedFeatureExtraction<PointT>::computeClusters() {
     // }
   }
 
-  printf("stage4 cloud has: %d labels has %d, exclude labels has %d\n",
+  printf("stage4 cloud has: %zu labels has %zu, exclude labels has %zu\n",
          stage4_cloud_->points.size(), stage4_labels_->points.size(),
          plane_labels.size());
   euclidean_cluster_comparator_->setInputCloud(stage4_cloud_);
@@ -511,7 +510,7 @@ void OrganizedFeatureExtraction<PointT>::computePlanes() {
     mps_times_file_ << double(end - start) << std::endl;
     std::cout << double(end - start) << std::endl;
   }
-  printf("Got %d regions!\n", stage3_regions_.size());
+  printf("Got %zu regions!\n", stage3_regions_.size());
 }
 
 // Extract edges
