@@ -18,14 +18,15 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     tsdf_plugin_ (&omb_),
     bag_error_plugin_ (&omb_),
     eval_plugin_ (&omb_),
-    fake_grabber_ (empty_files_, 1.0, false),
+    empty_fake_files_ ({"/tmp/FAKE_FILENAME"}),
+    fake_grabber_ (empty_fake_files_, 1.0, false),
     organized_feature_extraction_ (),
     tf_listener_ (ros::Duration (500.0))
 {
   if (debug_)
     ROS_INFO ("OmniMapperROS: Constructing... Loading ROS Params...");
   loadROSParams ();
-  
+
   // Use ROS Time instead of system clock
   omnimapper::GetTimeFunctorPtr time_functor_ptr (new omnimapper::GetROSTimeFunctor ());
   omb_.setTimeFunctor (time_functor_ptr);
@@ -38,13 +39,13 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
                             gtsam::Point3 (init_x_, init_y_, init_z_));
     omb_.setInitialPose (init_pose);
   }
-  
+
   // Optionally get initial pose from TF
   if (init_pose_from_tf_)
   {
     bool got_tf = false;
     tf::StampedTransform init_transform;
-    
+
     while (!got_tf)
     {
       got_tf = true;
@@ -63,18 +64,18 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
         got_tf = false;
       }
     }
-    
+
     gtsam::Pose3 init_pose = omnimapper::tf2pose3 (init_transform);
     gtsam::Pose3 init_pose_inv = init_pose.inverse ();
     omb_.setInitialPose (init_pose);
   }
-  
+
   // Optionally use distortion model
   if (use_distortion_model_)
   {
     distortion_model_.load (distortion_model_path_);
   }
-  
+
   // Add the TF Pose Plugin
   tf_plugin_.setOdomFrameName (odom_frame_name_);
   tf_plugin_.setBaseFrameName (base_frame_name_);
@@ -88,14 +89,14 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     boost::shared_ptr<omnimapper::PosePlugin> tf_plugin_ptr (&tf_plugin_);
     omb_.addPosePlugin (tf_plugin_ptr);
   }
-  
+
   // Add the No Motion Plugin (null motion model)
   if (use_no_motion_)
   {
     boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr (&no_motion_plugin_);
     omb_.addPosePlugin (no_motion_ptr);
   }
-  
+
   // Set up a sensor_to_base functor, for plugins to use
   //omnimapper::GetTransformFunctorTF rgbd_to_base (std::string ("/camera_rgb_optical_frame"), std::string ("/base_link"));
   //omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr (&rgbd_to_base);
@@ -190,7 +191,7 @@ OmniMapperROS<PointT>::OmniMapperROS (ros::NodeHandle nh)
     boost::function<void (std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >, omnimapper::Time)> plane_cb = boost::bind (&omnimapper::BoundedPlanePlugin<PointT>::planarRegionCallback, &bounded_plane_plugin_, _1, _2);
     organized_feature_extraction_.setPlanarRegionStampedCallback (plane_cb);
   }
-  
+
   // Optionally use planes in the visualizer
   if (ar_mode_)
   {
@@ -239,25 +240,25 @@ if (use_csm_)
 
    boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan> > csm_ptr (&csm_plugin_);
    csm_vis_plugin_.setCSMPlugin (csm_ptr);
-   
+
    // Install the visualizer
    boost::shared_ptr<omnimapper::OutputPlugin> csm_vis_ptr (&csm_vis_plugin_);
    omb_.addOutputPlugin (csm_vis_ptr);
-   
+
    boost::thread csm_thread (&omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan>::spin, &csm_plugin_);
  }
- 
+
 // Set the ICP Plugin on the visualizer
  boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr (&icp_plugin_);
  vis_plugin_.setICPPlugin (icp_ptr);
- 
+
  // Set up the Object Plugin with the visualizer
  boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > obj_ptr (&object_plugin_);
  vis_plugin_.setObjectPlugin (obj_ptr);
- 
+
  // Subscribe to Point Clouds
  pointcloud_sub_ = n_.subscribe (cloud_topic_name_, 1, &OmniMapperROS::cloudCallback, this);  //("/camera/depth/points", 1, &OmniMapperHandheldNode::cloudCallback, this);
- 
+
  // Install the visualizer
  if (use_rviz_plugin_)
  {
@@ -296,7 +297,7 @@ if (use_csm_)
    boost::thread edge_icp_thread (&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
  if (use_rviz_plugin_)
    boost::thread rviz_plugin_thread (&omnimapper::OmniMapperVisualizerRViz<PointT>::spin, &vis_plugin_);
- 
+
  // if (use_planes_)
  //   boost::thread plane_thread (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
 
@@ -364,10 +365,10 @@ if (use_csm_)
 }
 
 template <typename PointT> void
-OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename, 
-                                      std::string& groundtruth_filename, 
-                                      std::string& pcd_path, 
-                                      std::string& output_trajectory_filename, 
+OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
+                                      std::string& groundtruth_filename,
+                                      std::string& pcd_path,
+                                      std::string& output_trajectory_filename,
                                       std::string& output_timing_filename)
 {
   // Clear old state
@@ -376,7 +377,7 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
   eval_plugin_.reset ();
   loadROSParams ();
   resetEvaluation ();
-  
+
   // Load timestamps and ground truth files
   eval_plugin_.loadAssociatedFile (associated_filename);
   eval_plugin_.loadGroundTruthFile (groundtruth_filename);
@@ -410,17 +411,17 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
   while (!done)
   {
     bool ready = true;
-    
+
     // Check if plugins are still processing previous frames
     if (use_icp_ && !icp_plugin_.ready ())
       ready = false;
-    
+
     if (use_occ_edge_icp_ && !edge_icp_plugin_.ready ())
       ready = false;
 
     if (!organized_feature_extraction_.ready ())
       ready = false;
-    
+
     //printf ("ready: %d idx: %d\n", ready, evaluation_file_idx_);
     if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size ()))
     {
@@ -431,19 +432,19 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
       // If we're totally done
       ROS_INFO("Completed evaluation, writing output file.");
       gtsam::Values solution = omb_.getSolution ();
-      
+
       // Write trajectory
       if (evaluation_mode_write_trajectory_)
       {
         eval_plugin_.writeMapperTrajectoryFile (output_trajectory_filename, solution);
         ROS_INFO("Evaluation log written as: %s", output_trajectory_filename.c_str ());
       }
-      
+
       // Write Timing
       std::ofstream timing_file (output_timing_filename.c_str ());
       for (int i = 0; i < frame_start_times.size(); i++)
       {
-        timing_file << boost::posix_time::to_iso_extended_string(frame_start_times[i]) << " " << 
+        timing_file << boost::posix_time::to_iso_extended_string(frame_start_times[i]) << " " <<
                        boost::posix_time::to_iso_extended_string(frame_end_times[i]) << std::endl;
       }
       timing_file.close();
@@ -455,7 +456,7 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
       {
         tsdf_plugin_.generateTSDF (10.0, 1024);
       }
-      
+
       done = true;
       return;
     }
@@ -476,14 +477,14 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
         std::cout << "Loading took: " << double (load_end - load_start) << std::endl;
         ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_, cloud->points.size ());
       }
-      
+
       // Convert it
       sensor_msgs::PointCloud2Ptr cloud_msg (new sensor_msgs::PointCloud2 ());
       // We have to get the timestamp from associated.txt (parsed by eval plugin) since PCD doesn't include timestamps...
       cloud->header.stamp = eval_plugin_.getStampFromIndex (evaluation_file_idx_);
-      pcl::toROSMsg (*cloud, *cloud_msg); 
+      pcl::toROSMsg (*cloud, *cloud_msg);
       evaluation_file_idx_++;
-      
+
       sensor_msgs::PointCloud2ConstPtr cloud_msg_ptr (cloud_msg);
       first = false;
       frame_start_times.push_back(boost::posix_time::microsec_clock::local_time ());
@@ -507,7 +508,7 @@ OmniMapperROS<PointT>::runEvaluation (std::string& associated_filename,
 //   // Associated:  data_root/data_set_name/associated.txt
 //   // Groundtruth: data_root/data_set_name/groundtruth_filename
 //   // Output: data_root/data_set_name/output/output_filename
-  
+
 // }
 
 template<typename PointT> void
@@ -605,7 +606,7 @@ OmniMapperROS<PointT>::loadROSParams ()
   n_.param ("ar_mode", ar_mode_, false);
 }
 
-template<typename PointT> void 
+template<typename PointT> void
 OmniMapperROS<PointT>::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
 {
   if (debug_)
@@ -628,7 +629,7 @@ OmniMapperROS<PointT>::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& ms
     std::cout << "cloudCallback: conversion took "
               << double (end_copy - start_copy) << std::endl;
   }
-      
+
   //pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointXYZ>());
   //pcl::fromROSMsg (*msg, *xyz_cloud);
   //CloudPtr cloud (new Cloud ());
@@ -644,7 +645,7 @@ OmniMapperROS<PointT>::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& ms
       std::cout << "cloudCallback: undistortion took "
                 << double (end_undistort - start_undistort) << std::endl;
     }
-        
+
   }
 
   if (use_icp_)
@@ -654,10 +655,10 @@ OmniMapperROS<PointT>::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& ms
       std::cout << "Calling ICP Plugin with stamp: "
                 << omnimapper::stamp2ptime (cloud->header.stamp) << std::endl;
     }
-        
+
     icp_plugin_.cloudCallback (cloud);
   }
-      
+
   if (use_organized_feature_extraction_)
   {
     double start_ofe = pcl::getTime ();
@@ -756,11 +757,11 @@ OmniMapperROS<PointT>::evalTimerCallback (const ros::TimerEvent& e)
     pcl::io::loadPCDFile (evaluation_pcd_files_[evaluation_file_idx_],
                           *cloud);
     double load_end = pcl::getTime ();
-        
+
     if (debug_)
     {
       std::cout << "Loading took: " << double (load_end - load_start) << std::endl;
-          
+
       ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_,
                cloud->points.size ());
     }
@@ -791,7 +792,7 @@ OmniMapperROS<PointT>::evalTimerCallback (const ros::TimerEvent& e)
     if (debug_)
       ROS_INFO("Plugins not yet ready.\n");
   }
-      
+
   // Write the trajectory if we're finished
   if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size ()))
   {
@@ -859,9 +860,9 @@ OmniMapperROS<PointT>::publishCurrentPose ()
   omb_.getLatestPose (current_pose, current_time);
   ros::Time current_time_ros = omnimapper::ptime2rostime (current_time);
   tf::Transform current_pose_ros = omnimapper::pose3totf (current_pose);
-  
+
   tf_broadcaster_.sendTransform (tf::StampedTransform (current_pose_ros, ros::Time::now (), "/world", "/current_pose"));
-  
+
 }
 
 template <typename PointT> void

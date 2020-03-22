@@ -45,7 +45,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 
 #set (CMAKE_CXX_STANDARD 11)
 
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
 
