@@ -1,4 +1,4 @@
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <omnimapper/organized_feature_extraction_tbb.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
@@ -78,7 +78,7 @@ class OrganizedFeatureExtractionDemoTBB {
         prev_cloud_.swap(cloud);
         prev_labels_.swap(labels);
         updated_ = false;
-        printf("cloud points: %d labels points: %d\n", cloud->points.size(),
+        printf("cloud points: %zu labels points: %zu\n", cloud->points.size(),
                labels->points.size());
         if (cloud->points.size() > 200 && labels->points.size() > 200) {
           should_update = true;

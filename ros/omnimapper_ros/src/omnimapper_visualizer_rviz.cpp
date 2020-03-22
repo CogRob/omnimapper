@@ -312,9 +312,10 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
   // aggregate_cloud->header.stamp = ros::Time::now ();
 
   // Draw object cloud
-  pcl::PointCloud<pcl::PointXYZRGB> aggregate_object_observation_cloud;  // (new
-                                                                         // pcl::PointCloud<pcl::PointXYZRGB>
-                                                                         // ());
+  pcl::PointCloud<pcl::PointXYZRGB>
+      aggregate_object_observation_cloud;  // (new
+                                           // pcl::PointCloud<pcl::PointXYZRGB>
+                                           // ());
   // aggregate_object_observation_cloud.header.frame_id = "/world";
   // aggregate_object_observation_cloud.header.stamp = ros::Time::now ();
 

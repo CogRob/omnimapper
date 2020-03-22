@@ -653,7 +653,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computePlanes() {
     std::cout << double(end - start) << std::endl;
   }
   if (mps_output_regions_)
-    printf("Got %d regions!\n", mps_output_regions_->size());
+    printf("Got %zu regions!\n", mps_output_regions_->size());
 }
 
 // Extract edges

@@ -174,7 +174,7 @@ class GrabberTask {
         // printf ("updated_: %d\n", updated_);
         if (*updated_) {
           printf("UPDATED!\n");
-          printf("Cloud has %d\n", cloud_->points.size());
+          printf("Cloud has %zu\n", cloud_->points.size());
           (*updated_) = false;
           CloudConstPtr ret_cloud(cloud_);
           mutex_->unlock();

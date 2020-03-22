@@ -42,7 +42,8 @@ OrganizedFeatureExtraction<PointT>::OrganizedFeatureExtraction(
       updated_data_(false),
       updated_cloud_(false),
       euclidean_cluster_comparator_(
-          new pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>()),
+          new pcl::EuclideanClusterComparator<PointT, pcl::Normal,
+                                              pcl::Label>()),
       debug_(true),
       timing_(false) {
   if (debug_) printf("Start!\n");

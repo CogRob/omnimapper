@@ -14,7 +14,8 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
   map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("csm_map_cloud", 0);
 
   // draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds",
-  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
+  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
+  // this);
 }
 
 template <typename LScanT>

@@ -6,7 +6,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 namespace omnimapper {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ObjectPlugin<PointT>::ObjectPlugin(omnimapper::OmniMapperBase* mapper)
     : mapper_(mapper),
@@ -26,11 +26,11 @@ ObjectPlugin<PointT>::ObjectPlugin(omnimapper::OmniMapperBase* mapper)
   printf("Size: %zu\n", observations_.size());
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ObjectPlugin<PointT>::~ObjectPlugin() {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(
     std::string object_database_location) {
@@ -68,7 +68,7 @@ void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(
       &ObjectPlugin<PointT>::computeOptimalObjectModel, this);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::setObjectCallback(
     boost::function<void(std::map<gtsam::Symbol, Object<PointT> >,
@@ -77,7 +77,7 @@ void ObjectPlugin<PointT>::setObjectCallback(
   vis_flag_ = true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::loadDatabase() {
   if (debug_) std::cout << "[ObjectPlugin] Inside loadDesc" << std::endl;
@@ -155,7 +155,7 @@ void ObjectPlugin<PointT>::loadDatabase() {
               << std::endl;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::reconstructSurface(CloudPtr merged, int id) {
@@ -197,7 +197,7 @@ void ObjectPlugin<PointT>::reconstructSurface(CloudPtr merged, int id) {
   pcl::io::savePLYFileBinary(output_file, surface_);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
@@ -262,7 +262,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
                   << " Size of clust indices " << clust_indices.indices.size()
                   << std::endl;
       //	std::cout << "Size of clust indices " <<
-      //clust_indices.indices.size() << std::endl;
+      // clust_indices.indices.size() << std::endl;
 
       for (int i = 0; i < clust_indices.indices.size(); i++) {
         std::cout << "indices: " << clust_indices.indices[i] << std::endl;
@@ -272,7 +272,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
       gtsam::Pose3 sam_pose = *cloud_pose;
       // const gtsam::Rot3 rot;
       //	const gtsam::Point3 centroid_pt(obj_centroid[0],
-      //obj_centroid[1], obj_centroid[2]); gtsam::Pose3 centroid_tform(rot,
+      // obj_centroid[1], obj_centroid[2]); gtsam::Pose3 centroid_tform(rot,
       // centroid_pt); 	gtsam::Pose3 inv_tform = centroid_tform.inverse();
       // sam_pose = inv_tform*sam_pose; // order of multiplication should be
       // kept in mind
@@ -367,7 +367,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
   pcl::io::savePCDFileBinary(render_file, *raytraced);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::computeOptimalObjectModel() {
   while (1) {
@@ -423,7 +423,7 @@ void ObjectPlugin<PointT>::computeOptimalObjectModel() {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::recognizeObject(Object<PointT>& object) {
@@ -863,7 +863,7 @@ float ObjectPlugin<PointT>::computeViewIntersection(
   else
     return 1;
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::clusterCloudCallback(
     std::vector<CloudPtr> clusters, omnimapper::Time t,
@@ -1250,7 +1250,7 @@ void ObjectPlugin<PointT>::update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 typename omnimapper::ObjectPlugin<PointT>::CloudPtrVector
 ObjectPlugin<PointT>::getObservations(gtsam::Symbol sym) {

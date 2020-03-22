@@ -30,7 +30,7 @@
 #include <pcl/io/pcd_grabber.h>
 #include <boost/filesystem.hpp>
 
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
