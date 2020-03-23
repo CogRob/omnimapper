@@ -41,7 +41,7 @@ class OmniMapperHandheldNode {
   omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
 
   // Fake Grabber (TODO: Fix this)
-  std::vector<std::string> empty_files_;
+  std::vector<std::string> fake_files_;
   pcl::PCDGrabber<PointT> fake_grabber_;
   // Organized Feature Extraction
   omnimapper::OrganizedFeatureExtraction<PointT> organized_feature_extraction_;
@@ -56,7 +56,8 @@ class OmniMapperHandheldNode {
         icp_plugin_(&omb_),
         plane_plugin_(&omb_),
         vis_plugin_(&omb_),
-        fake_grabber_(empty_files_, 1.0, false),
+        fake_files_({"/tmp/FAKE_FILE_PATH"}),
+        fake_grabber_(fake_files_, 1.0, false),
         organized_feature_extraction_(fake_grabber_) {
     // Add the TF Pose Plugin
     boost::shared_ptr<omnimapper::PosePlugin> tf_plugin_ptr(&tf_plugin_);

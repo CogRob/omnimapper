@@ -14,19 +14,19 @@ ObjectRecognition<FeatureType>::ObjectRecognition(
         keypoint_detector,
     typename pcl::Feature<pcl::PointXYZRGBA, FeatureType>::Ptr
         feature_extractor)
-    : source_keypoints_(new pcl::PointCloud<pcl::PointXYZI>()),
+    : correspondences_(new pcl::Correspondences),
+      source_features_(new pcl::PointCloud<FeatureType>),
+      pose_map(),
+      source_keypoints_(new pcl::PointCloud<pcl::PointXYZI>()),
       target_keypoints_(new pcl::PointCloud<pcl::PointXYZI>()),
       keypoint_detector_(keypoint_detector),
       feature_extractor_(feature_extractor),
-      source_features_(new pcl::PointCloud<FeatureType>),
       target_features_(new pcl::PointCloud<FeatureType>),
-      correspondences_(new pcl::Correspondences),
       show_source2target_(false),
       show_target2source_(false),
       show_correspondences(false),
       verbose_(true),
       debug_(true),
-      pose_map(),
       object_centroid_map() {
   std::cout << "Constructing Feature Matches" << std::endl;
 #if USE_UNIFORM_SAMPLING == 1
@@ -105,7 +105,7 @@ int ObjectRecognition<FeatureType>::matchToFile(
     std::cout << "[After filtering]#Corr: " << correspondences_->size()
               << std::endl;
 
-  if (correspondences_->size() > max_num_corr) {
+  if (static_cast<int>(correspondences_->size()) > max_num_corr) {
     max_num_corr = correspondences_->size();
   }
 
@@ -165,7 +165,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
 
   float dist_thresh = 0;  // covX*covX + covY*covY + covZ*covZ;
   if (indices.size() != 0) {
-    for (int i = 0; i < indices[0].size(); i++) {
+    for (std::size_t i = 0; i < indices[0].size(); i++) {
       int index = indices[0][i];
       int obj_id = object_centroid_map[index];
 
@@ -207,7 +207,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
 
 #endif
 
-      for (int j = 0; j < obj_desc.size(); j++) {
+      for (std::size_t j = 0; j < obj_desc.size(); j++) {
         target_feature = feature_map[obj_id][j];
         target_keypoints_ = keypoint_map[obj_id][j].makeShared();
 
@@ -233,7 +233,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
                     << std::endl;
         if (correspondences_->size() < 3) continue;
 
-        if (correspondences_->size() > max_num_corr) {
+        if (static_cast<int>(correspondences_->size()) > max_num_corr) {
           max_num_corr = correspondences_->size();
           matching_object = obj_id;
         }
@@ -419,7 +419,7 @@ void ObjectRecognition<FeatureType>::findCorrespondences(
   const int k = 1;
   std::vector<int> k_indices(k);
   std::vector<float> k_squared_distances(k);
-  for (int i = 0; i < static_cast<int>(source->size()); ++i) {
+  for (std::size_t i = 0; i < source->size(); ++i) {
     descriptor_kdtree.nearestKSearch(*source, i, k, k_indices,
                                      k_squared_distances);
     correspondences[i] = k_indices[0];

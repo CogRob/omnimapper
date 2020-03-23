@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     }
   }
   sort(pcd_files.begin(), pcd_files.end());
-  printf("Found %d PCDs.\n", pcd_files.size());
+  printf("Found %zu PCDs.\n", pcd_files.size());
 
   // Create a PCD Grabber
   pcl::PCDGrabber<PointT> file_grabber(pcd_files, 1.0, false);

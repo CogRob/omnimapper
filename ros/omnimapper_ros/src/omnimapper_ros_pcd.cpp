@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     }
   }
   sort(pcd_files.begin(), pcd_files.end());
-  printf("Found %d PCDs.\n", pcd_files.size());
+  printf("Found %zu PCDs.\n", pcd_files.size());
 
   //  Start calling cloud CB when ready
   bool done = false;
@@ -46,11 +46,11 @@ int main(int argc, char** argv) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 
     // If we're done
-    if (ready && (file_idx == pcd_files.size())) {
+    if (ready && (file_idx == static_cast<int>(pcd_files.size()))) {
       done = true;
       ROS_INFO("OmniMapperROS PCD: All files processed.");
       return 0;
-    } else if (ready && (file_idx < pcd_files.size())) {
+    } else if (ready && (file_idx < static_cast<int>(pcd_files.size()))) {
       // Process a new frame
       CloudPtr cloud(new Cloud());
       pcl::io::loadPCDFile(pcd_files[file_idx], *cloud);

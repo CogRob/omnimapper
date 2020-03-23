@@ -159,7 +159,7 @@ class GrabberTask {
     tbb::spin_mutex::scoped_lock lock(*mutex_);
     cloud_ = cloud;
     (*updated_) = true;
-    printf("Grabber cloud callback! %d %d\n", cloud->points.size(),
+    printf("Grabber cloud callback! %zu %zu\n", cloud->points.size(),
            cloud_->points.size());
   }
 
@@ -174,7 +174,7 @@ class GrabberTask {
         // printf ("updated_: %d\n", updated_);
         if (*updated_) {
           printf("UPDATED!\n");
-          printf("Cloud has %d\n", cloud_->points.size());
+          printf("Cloud has %zu\n", cloud_->points.size());
           (*updated_) = false;
           CloudConstPtr ret_cloud(cloud_);
           mutex_->unlock();
@@ -194,6 +194,7 @@ class GrabberTask {
         // tbb::this_tbb_thread::yield ();
       }
     }
+    return nullptr;
   }
 };
 
@@ -211,7 +212,7 @@ class PublishTask {
   // void
   // operator () (CloudConstPtr cloud) const
   void operator()(boost::tuple<CloudConstPtr, NormalCloudPtr> tuple) const {
-    printf("Got cloud with %d\n", tuple.get<0>()->points.size());
+    printf("Got cloud with %zu\n", tuple.get<0>()->points.size());
     double time = pcl::getTime();
     std::cout << "Time :" << double(time - prev_time) << std::endl;
     prev_time = time;

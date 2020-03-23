@@ -50,12 +50,12 @@ OrganizedFeatureExtraction<PointT>::OrganizedFeatureExtraction(
 
   // debug test
   CloudPtr test1(new Cloud());
-  printf("test1 refcount: %d\n", test1.use_count());
+  printf("test1 refcount: %zu\n", test1.use_count());
   CloudPtr test2(new Cloud());
   test2 = test1;
-  printf("test1 refcount after making test2: %d\n", test1.use_count());
+  printf("test1 refcount after making test2: %zu\n", test1.use_count());
   test1 = CloudPtr(new Cloud());
-  printf("test1 refcount after making new test1: %d\n", test1.use_count());
+  printf("test1 refcount after making new test1: %zu\n", test1.use_count());
   // test
 
   // Set up Normal Estimation
@@ -285,7 +285,8 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
                     << std::endl;
           std::cout << "stage5 labels: " << stage5_labels_->points.size()
                     << std::endl;
-          for (int i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
+          for (std::size_t i = 0; i < cluster_label_cloud_callbacks_.size();
+               i++)
             cluster_label_cloud_callbacks_[i](stage4_cloud_, stage5_labels_);
         }
       }
@@ -293,7 +294,7 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
       if (cluster_cloud_callbacks_.size() > 0) {
         if (stage5_clusters_.size() > 0) {
           Time timestamp = stamp2ptime(stage4_cloud_->header.stamp);
-          for (int i = 0; i < cluster_cloud_callbacks_.size(); i++) {
+          for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
             cluster_cloud_callbacks_[i](stage5_clusters_, timestamp,
                                         stage5_cluster_indices_);
           }
@@ -319,7 +320,8 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
                   << std::endl;
         Time timestamp = stamp2ptime(stage2_cloud_->header.stamp);
         if (stage2_cloud_->points.size() > 200) {
-          for (int i = 0; i < planar_region_stamped_callbacks_.size(); i++)
+          for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size();
+               i++)
             planar_region_stamped_callbacks_[i](stage3_regions_, timestamp);
         }
       }
@@ -437,7 +439,7 @@ void OrganizedFeatureExtraction<PointT>::computeClusters() {
     // }
   }
 
-  printf("stage4 cloud has: %d labels has %d, exclude labels has %d\n",
+  printf("stage4 cloud has: %zu labels has %zu, exclude labels has %zu\n",
          stage4_cloud_->points.size(), stage4_labels_->points.size(),
          plane_labels.size());
   euclidean_cluster_comparator_->setInputCloud(stage4_cloud_);
@@ -511,7 +513,7 @@ void OrganizedFeatureExtraction<PointT>::computePlanes() {
     mps_times_file_ << double(end - start) << std::endl;
     std::cout << double(end - start) << std::endl;
   }
-  printf("Got %d regions!\n", stage3_regions_.size());
+  printf("Got %zu regions!\n", stage3_regions_.size());
 }
 
 // Extract edges

@@ -1,15 +1,17 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
-#SET(CMAKE_BUILD_TYPE debug)
-#SET(CMAKE_BUILD_TYPE distribution)
-#SET(CMAKE_CXX_FLAGS_DISTRIBUTION "-O3")
-#SET(CMAKE_C_FLAGS_DISTRIBUTION "-O3")
-
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
-SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
-
 project(omnimapper)
+
+SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
+# Enable asan
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+# set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
@@ -23,7 +25,9 @@ link_directories(${PCL_LIBRARY_DIRS})
 ###########################################################################
 # Find GTSAM
 find_package(GTSAM REQUIRED)
-#include_directories(${GTSAM_INCLUDE_DIR})
+# include_directories(${GTSAM_INCLUDE_DIR})
+# Use GTSAM's Eigen
+message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 
 ###########################################################################
 # Find MKL
@@ -31,22 +35,11 @@ find_package(MKL REQUIRED)
 include_directories(${MKL_INCLUDE_DIR})
 
 ###########################################################################
-# Use GTSAM's Eigen
-# Use generic Eigen include paths e.g. <Eigen/Core> set(EIGEN_INCLUDE_DIRS ${GTSAM_DIR}/../../../include/gtsam/3rdparty/Eigen/)
-message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
-
-###########################################################################
 # Find CPUTSDF
-option(WITH_CPUTSDF "CPU TSDF Support" TRUE)
-if(WITH_CPUTSDF)
-  set(CPUTSDF_DIR "/usr/local/share/cpu_tsdf")
-  find_package(CPUTSDF)
-  if (CPUTSDF_FOUND)
-    set(HAVE_CPUTSDF ON)
-    include_directories(${CPUTSDF_INCLUDE_DIRS})
-    link_directories(${CPUTSDF_LIBRARY_DIRS})
-  endif(CPUTSDF_FOUND)
-endif(WITH_CPUTSDF)
+set(CPUTSDF_DIR "/usr/local/share/cpu_tsdf")
+find_package(CPUTSDF REQUIRED)
+include_directories(${CPUTSDF_INCLUDE_DIRS})
+link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 ###########################################################################
 
@@ -112,27 +105,18 @@ set(srcs
  src/tsdf_output_plugin.cpp
 )
 
-if(CPUTSDF_FOUND)
-  list(APPEND incs include/omnimapper/tsdf_output_plugin.h)
-  list(APPEND srcs src/tsdf_output_plugin.cpp)
-endif()
-
 add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
-  cpu_tsdf ${CLOUDCV_LIBRARIES} tcmalloc profiler tbb tbbmalloc)
+  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb tbbmalloc ${MKL_LIBRARIES})
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
 install(FILES ${third_party_incs} DESTINATION include/${PROJECT_NAME}/3rdparty)
 
-configure_file (${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake DESTINATION share/omnimapper)
-
-#add_executable(omnimapper src/omnimapper.cpp)
-#target_link_libraries(omnimapper omnimapper)
-
-#add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
-#target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES})
+configure_file(${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
+               ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
+        DESTINATION share/omnimapper)
 
 add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
 target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
@@ -147,6 +131,10 @@ target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES} tbb)
 
+add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
+target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES} gtsamDebug
+  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb ${MKL_LIBRARIES})
+
 add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
 target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
 
@@ -154,10 +142,12 @@ target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
 #target_link_libraries(omnimapper_plane_test2 omnimapper ${PCL_LIBRARIES})
 
 add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
-target_link_libraries(organized_feature_extraction_demo omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tcmalloc tbb)
+target_link_libraries(organized_feature_extraction_demo
+  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
 
 add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
-target_link_libraries(organized_feature_extraction_demo_tbb omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tcmalloc tbb)
+target_link_libraries(organized_feature_extraction_demo_tbb
+  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
 
 add_executable(tbb_test src/tbb_test.cpp)
 target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})

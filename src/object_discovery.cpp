@@ -6,8 +6,8 @@
 
 template <typename PointT>
 ObjectDiscovery<PointT>::ObjectDiscovery()
-    : max_current_size(0),
-      max_object_size(0),
+    : max_object_size(0),
+      max_current_size(0),
       object_dir_("/home/siddharth/kinect/") {}
 
 template <typename PointT>
@@ -84,7 +84,7 @@ template <typename PointT>
 int ObjectDiscovery<PointT>::findMin(int segment, std::vector<int> seg_vec) {
   int min_obj = segment;
 
-  for (int i = 0; i < seg_vec.size(); i++) {
+  for (std::size_t i = 0; i < seg_vec.size(); i++) {
     if (min_obj > seg_vec[i]) min_obj = seg_vec[i];
   }
 
@@ -194,160 +194,161 @@ void ObjectDiscovery<PointT>::reconstructSurface(
 template<typename PointT>
 void ObjectDiscovery<PointT>::generateObjectModel(gtsam::Object<PointT> object, Eigen::Vector4f obj_centroid, int id)
 {
-printf ("starting generateTSDF\n");
-// Make a TSDF
+  printf ("starting generateTSDF\n");
+  // Make a TSDF
 
-//tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
-//tsdf->setGridSize (30.0, 30.0, 30.0);
-tsdf->setGridSize (10.0, 10.0, 10.0);
-tsdf->setResolution (2048, 2048, 2048);
-//tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
-//tsdf->setResolution (4096, 4096, 4096);
-
-
-Eigen::Affine3d object_center;
-object_center.translation() = Eigen::Vector3d(obj_centroid[0], obj_centroid[1],
-			obj_centroid[2]);
-Eigen::Affine3d tsdf_center = Eigen::Affine3d::Identity (); // Optionally offset the center
-tsdf->setGlobalTransform (object_center);
-//tsdf->setDepthTruncationLimits ();
-//tsdf->setDepthTruncationLimits (0.3, 10.0);
-//tsdf->setWeightTruncationLimit (100.0);
-tsdf->reset (); // Initialize it to be empty
-
-std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
-std::map<gtsam::Symbol, pcl::PointIndices> indices = object.indices_;
-
-typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
-
-	Cloud transformed_cloud_opt_;
+  //tsdf->setGridSize (10., 10., 10.); // 10m x 10m x 10m
+  //tsdf->setGridSize (30.0, 30.0, 30.0);
+  tsdf->setGridSize (10.0, 10.0, 10.0);
+  tsdf->setResolution (2048, 2048, 2048);
+  //tsdf->setResolution (2048, 2048, 2048); // Smallest sell cize = 10m / 2048 = about half a centimeter
+  //tsdf->setResolution (4096, 4096, 4096);
 
 
-	for (it = cluster.begin(); it != cluster.end(); it++) {
+  Eigen::Affine3d object_center;
+  object_center.translation() = Eigen::Vector3d(obj_centroid[0], obj_centroid[1],
+      obj_centroid[2]);
+  Eigen::Affine3d tsdf_center = Eigen::Affine3d::Identity (); // Optionally offset the center
+  tsdf->setGlobalTransform (object_center);
+  //tsdf->setDepthTruncationLimits ();
+  //tsdf->setDepthTruncationLimits (0.3, 10.0);
+  //tsdf->setWeightTruncationLimit (100.0);
+  tsdf->reset (); // Initialize it to be empty
 
-		gtsam::Symbol sym = it->first;
-		CloudPtr cloud = it->second;
+  std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;
+  std::map<gtsam::Symbol, pcl::PointIndices> indices = object.indices_;
 
+  typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
 
-		boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
-
-		if (cloud_pose) {
-			CloudPtr map_cloud(new Cloud());
-			map_cloud->width = 640;
-			map_cloud->height = 480;
-			map_cloud->resize(map_cloud->width*map_cloud->height);
-
-			for(int i=0; i< map_cloud->width*map_cloud->height; i++){
-			//	std::cout << i << std::endl;
-				PointT invalid_pt;
-				invalid_pt.x = std::numeric_limits<float>::quiet_NaN();
-				invalid_pt.y = std::numeric_limits<float>::quiet_NaN();
-				invalid_pt.z = std::numeric_limits<float>::quiet_NaN();
-				invalid_pt.r = 1; invalid_pt.g = 0; invalid_pt.b = 0; invalid_pt.a=1;
-				map_cloud->points[i] = invalid_pt;
-
-			}
-
-			pcl::PointIndices clust_indices = indices.at(sym);
-			std::cout << "Inside the loop: " << cloud->points.size() << " Size of clust indices " << clust_indices.indices.size() << std::endl;
-		//	std::cout << "Size of clust indices " << clust_indices.indices.size() << std::endl;
-
-			for(int i=0; i< clust_indices.indices.size(); i++){
-				std::cout << "indices: " << clust_indices.indices[i] << std::endl;
-				map_cloud->points[clust_indices.indices[i]] = cloud->points[i];
-			}
+  Cloud transformed_cloud_opt_;
 
 
-			gtsam::Pose3 sam_pose = *cloud_pose;
-			//const gtsam::Rot3 rot;
-		//	const gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1], obj_centroid[2]);
-			//gtsam::Pose3 centroid_tform(rot, centroid_pt);
-		//	gtsam::Pose3 inv_tform = centroid_tform.inverse();
-			//sam_pose = inv_tform*sam_pose; // order of multiplication should be kept in mind
+  for (it = cluster.begin(); it != cluster.end(); it++) {
 
-			Eigen::Matrix4f map_tform = sam_pose.matrix().cast<float>();
-			Eigen::Affine3d tform;
-			gtsam::Quaternion sam_quat = sam_pose.rotation().toQuaternion();
-			tform = Eigen::Quaterniond(sam_quat.w(), sam_quat.x(), sam_quat.y(),
-					sam_quat.z());
-			tform.translation() = Eigen::Vector3d(sam_pose.x(), sam_pose.y(),
-				sam_pose.z());
-
-			/* testing the transformation */
-			CloudPtr vis_cloud(new Cloud());
-			pcl::transformPointCloud(*map_cloud, *vis_cloud, tform);
-			transformed_cloud_opt_+= *vis_cloud;
+    gtsam::Symbol sym = it->first;
+    CloudPtr cloud = it->second;
 
 
-			//Eigen::Affine3d tform_inv = tform.inverse();
-			//pcl::transformPointCloud (*frame_cloud, *map_cloud, map_tform);
-			//Eigen::Affine3d tform (Eigen::Quaterniond(sam_quat[0],sam_quat[1],sam_quat[2],sam_quat[3]), Eigen::Vector3d (sam_pose.x (), sam_pose.y (), sam_pose.z ()));
+    boost::optional<gtsam::Pose3> cloud_pose = mapper_->predictPose(sym);
 
-			pcl::PointCloud<pcl::Normal> empty_normals;
-			pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
-			ne.setNormalEstimationMethod(ne.COVARIANCE_MATRIX);
-			ne.setMaxDepthChangeFactor(0.02f);
-			ne.setNormalSmoothingSize(20.0f);
-			ne.setDepthDependentSmoothing(true);
-			//ne.setRadiusSearch (0.1);
-			//ne.setInputCloud (frame_cloud);
-			//ne.compute (empty_normals);
-			//empty_normals.resize (frame_cloud->points.size ());
+    if (cloud_pose) {
+      CloudPtr map_cloud(new Cloud());
+      map_cloud->width = 640;
+      map_cloud->height = 480;
+      map_cloud->resize(map_cloud->width*map_cloud->height);
 
-			printf("Cloud has: %d normals has: %d\n",
-					cloud->points.size(), empty_normals.points.size());
+      for(int i=0; i< map_cloud->width*map_cloud->height; i++){
+        //  std::cout << i << std::endl;
+        PointT invalid_pt;
+        invalid_pt.x = std::numeric_limits<float>::quiet_NaN();
+        invalid_pt.y = std::numeric_limits<float>::quiet_NaN();
+        invalid_pt.z = std::numeric_limits<float>::quiet_NaN();
+        invalid_pt.r = 1; invalid_pt.g = 0; invalid_pt.b = 0; invalid_pt.a=1;
+        map_cloud->points[i] = invalid_pt;
 
-			if (cloud->points.size() > 0){
-				std::cout << "Cloud integrated " << std::endl;
-				bool integration_flag = tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal>(*map_cloud,
-						empty_normals, tform); // Integrate the cloud
-				std::cout << "Integration done: " << integration_flag << std::endl;
-			}
+      }
 
-		}
-	}
+      pcl::PointIndices clust_indices = indices.at(sym);
+      std::cout << "Inside the loop: " << cloud->points.size() << " Size of clust indices " << clust_indices.indices.size() << std::endl;
+      //  std::cout << "Size of clust indices " << clust_indices.indices.size() << std::endl;
 
-	/*
-	const gtsam::Rot3 rot;
-	const gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1], obj_centroid[2]);
-	gtsam::Pose3 centroid_tform(rot, centroid_pt);
-	gtsam::Pose3 inv_tform = centroid_tform.inverse();
-    Eigen::Matrix4f map_tform = inv_tform.matrix().cast<float>();
-
-pcl::transformPointCloud(transformed_cloud_opt_, transformed_cloud_opt_,
-		map_tform);
-*/
-
-	std::string vis_file = "/home/siddharth/kinect/test_models/" + boost::lexical_cast<std::string>(id) +".pcd";
-				pcl::io::savePCDFileASCII (vis_file, transformed_cloud_opt_);
+      for(int i=0; i< clust_indices.indices.size(); i++){
+        std::cout << "indices: " << clust_indices.indices[i] << std::endl;
+        map_cloud->points[clust_indices.indices[i]] = cloud->points[i];
+      }
 
 
-std::string vol_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".vol";
-tsdf->save (vol_file); // Save it?
+      gtsam::Pose3 sam_pose = *cloud_pose;
+      //const gtsam::Rot3 rot;
+      //  const gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1], obj_centroid[2]);
+      //gtsam::Pose3 centroid_tform(rot, centroid_pt);
+      //  gtsam::Pose3 inv_tform = centroid_tform.inverse();
+      //sam_pose = inv_tform*sam_pose; // order of multiplication should be kept in mind
 
-// Maching Cubes
-cpu_tsdf::MarchingCubesTSDFOctree mc;
-mc.setInputTSDF (tsdf);
-mc.setColorByConfidence (true);
-mc.setColorByRGB (false);
-//mc.setMinWeight (0.1);
-pcl::PolygonMesh mesh;
-mc.reconstruct (mesh);
+      Eigen::Matrix4f map_tform = sam_pose.matrix().cast<float>();
+      Eigen::Affine3d tform;
+      gtsam::Quaternion sam_quat = sam_pose.rotation().toQuaternion();
+      tform = Eigen::Quaterniond(sam_quat.w(), sam_quat.x(), sam_quat.y(),
+          sam_quat.z());
+      tform.translation() = Eigen::Vector3d(sam_pose.x(), sam_pose.y(),
+          sam_pose.z());
 
-std::string output_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".ply";
-pcl::io::savePLYFileBinary (output_file, mesh);
+      /* testing the transformation */
+      CloudPtr vis_cloud(new Cloud());
+      pcl::transformPointCloud(*map_cloud, *vis_cloud, tform);
+      transformed_cloud_opt_+= *vis_cloud;
 
-// Render from xo
-Eigen::Affine3d init_pose = Eigen::Affine3d::Identity ();
-pcl::PointCloud<pcl::PointNormal>::Ptr raytraced = tsdf->renderView (init_pose);
-std::string render_file = "/home/siddharth/kinect/tsdf_models/rendered_" + boost::lexical_cast<std::string>(id) +".pcd";
 
-pcl::io::savePCDFileBinary (render_file, *raytraced);
+      //Eigen::Affine3d tform_inv = tform.inverse();
+      //pcl::transformPointCloud (*frame_cloud, *map_cloud, map_tform);
+      //Eigen::Affine3d tform (Eigen::Quaterniond(sam_quat[0],sam_quat[1],sam_quat[2],sam_quat[3]), Eigen::Vector3d (sam_pose.x (), sam_pose.y (), sam_pose.z ()));
+
+      pcl::PointCloud<pcl::Normal> empty_normals;
+      pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+      ne.setNormalEstimationMethod(ne.COVARIANCE_MATRIX);
+      ne.setMaxDepthChangeFactor(0.02f);
+      ne.setNormalSmoothingSize(20.0f);
+      ne.setDepthDependentSmoothing(true);
+      //ne.setRadiusSearch (0.1);
+      //ne.setInputCloud (frame_cloud);
+      //ne.compute (empty_normals);
+      //empty_normals.resize (frame_cloud->points.size ());
+
+      printf("Cloud has: %d normals has: %d\n",
+          cloud->points.size(), empty_normals.points.size());
+
+      if (cloud->points.size() > 0){
+        std::cout << "Cloud integrated " << std::endl;
+        bool integration_flag = tsdf->integrateCloud<pcl::PointXYZRGBA, pcl::Normal>(*map_cloud,
+            empty_normals, tform); // Integrate the cloud
+        std::cout << "Integration done: " << integration_flag << std::endl;
+      }
+
+    }
+  }
+
+  /*
+     const gtsam::Rot3 rot;
+     const gtsam::Point3 centroid_pt(obj_centroid[0], obj_centroid[1], obj_centroid[2]);
+     gtsam::Pose3 centroid_tform(rot, centroid_pt);
+     gtsam::Pose3 inv_tform = centroid_tform.inverse();
+     Eigen::Matrix4f map_tform = inv_tform.matrix().cast<float>();
+
+     pcl::transformPointCloud(transformed_cloud_opt_, transformed_cloud_opt_,
+     map_tform);
+     */
+
+  std::string vis_file = "/home/siddharth/kinect/test_models/" + boost::lexical_cast<std::string>(id) +".pcd";
+  pcl::io::savePCDFileASCII (vis_file, transformed_cloud_opt_);
+
+
+  std::string vol_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".vol";
+  tsdf->save (vol_file); // Save it?
+
+  // Maching Cubes
+  cpu_tsdf::MarchingCubesTSDFOctree mc;
+  mc.setInputTSDF (tsdf);
+  mc.setColorByConfidence (true);
+  mc.setColorByRGB (false);
+  //mc.setMinWeight (0.1);
+  pcl::PolygonMesh mesh;
+  mc.reconstruct (mesh);
+
+  std::string output_file = "/home/siddharth/kinect/tsdf_models/" + boost::lexical_cast<std::string>(id) +".ply";
+  pcl::io::savePLYFileBinary (output_file, mesh);
+
+  // Render from xo
+  Eigen::Affine3d init_pose = Eigen::Affine3d::Identity ();
+  pcl::PointCloud<pcl::PointNormal>::Ptr raytraced = tsdf->renderView (init_pose);
+  std::string render_file = "/home/siddharth/kinect/tsdf_models/rendered_" + boost::lexical_cast<std::string>(id) +".pcd";
+
+  pcl::io::savePCDFileBinary (render_file, *raytraced);
 
 }
 
 #endif
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectDiscovery<PointT>::mergeClouds() {
@@ -387,7 +388,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     int min_obj = findMin(obj_id, matching_objects);
     int label = findLabel(obj_id);
     if (label > min_obj) label = min_obj;
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for (std::size_t i = 0; i < matching_objects.size(); i++) {
       segment_arr[matching_objects[i]] = label;
       std::cout << matching_objects[i] << " ";
     }
@@ -397,7 +398,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
   }
 
   std::map<int, std::vector<int> > object_map;
-  for (int i = 0; i < segment_arr.size(); i++) {
+  for (std::size_t i = 0; i < segment_arr.size(); i++) {
     object_map.insert(std::pair<int, std::vector<int> >(i, std::vector<int>()));
     if (segment_arr[i] == -1) continue;
     std::cout << i << " " << segment_arr[i] << std::endl;
@@ -415,7 +416,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     std::cout << "object id " << obj_id << " ";
     pcl::PointCloud<pcl::PointXYZRGBA> merged_cloud;
     std::vector<gtsam::Pose3> new_pose_array;
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for (std::size_t i = 0; i < matching_objects.size(); i++) {
       std::cout << matching_objects[i] << " ";
       pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp_cloud =
           map_cloud.at(matching_objects[i]);
@@ -471,7 +472,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     std::cout << "object id " << obj_id << " ";
     std::vector<int> matching_objects = it->second;
 
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for (std::size_t i = 0; i < matching_objects.size(); i++) {
       std::cout << matching_objects[i] << " ";
     }
     std::cout << std::endl;
@@ -573,21 +574,23 @@ void ObjectDiscovery<PointT>::createFinalCloud(std::string dir) {
   }
 }
 
-int main() {
-  std::string dir = "/home/siddharth/kinect/object_models";
-  ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
-  process_cloud.createFinalCloud(dir);
-  /*
-          std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
-          for(it = process_cloud.map_cloud.begin(); it!=
-     process_cloud.map_cloud.end(); it++){
-
-                  process_cloud.reconstructSurface(it->second, it->first);
-          }*/
-
-  process_cloud.createGraph();
-  process_cloud.mergeClouds();
-  return 0;
-}
+// int main() {
+//   std::string dir = "/home/siddharth/kinect/object_models";
+//   ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
+//   process_cloud.createFinalCloud(dir);
+//
+//   /*
+//   std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
+//   for(it = process_cloud.map_cloud.begin(); it!=
+//       process_cloud.map_cloud.end(); it++){
+//
+//     process_cloud.reconstructSurface(it->second, it->first);
+//   }
+//   */
+//
+//   process_cloud.createGraph();
+//   process_cloud.mergeClouds();
+//   return 0;
+// }
 
 template class ObjectDiscovery<pcl::PointXYZRGBA>;

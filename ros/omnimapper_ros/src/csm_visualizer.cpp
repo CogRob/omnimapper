@@ -22,7 +22,8 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
       "draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap, this);
 
   // draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds",
-  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
+  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
+  // this);
 }
 
 template <typename LScanT>

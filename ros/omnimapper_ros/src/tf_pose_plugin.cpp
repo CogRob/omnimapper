@@ -8,8 +8,8 @@ TFPosePlugin::TFPosePlugin(omnimapper::OmniMapperBase* mapper)
       tf_listener_(ros::Duration(30.0)),
       odom_frame_name_("/odom"),
       base_frame_name_("/camera_depth_optical_frame"),
-      translation_noise_(1.0),
-      rotation_noise_(1.0) {}
+      rotation_noise_(1.0),
+      translation_noise_(1.0) {}
 
 gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::addRelativePose(
     boost::posix_time::ptime t1, gtsam::Symbol sym1,
@@ -51,7 +51,7 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::addRelativePose(
     relative_pose = pose1.between(pose2);
   }
 
-  printf("TFPosePlugin: Adding factor between %d and %d\n", sym1.index(),
+  printf("TFPosePlugin: Adding factor between %zu and %zu\n", sym1.index(),
          sym2.index());
   printf("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x(),
          relative_pose.y(), relative_pose.z());

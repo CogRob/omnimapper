@@ -12,7 +12,7 @@ ARMarkerPlugin::ARMarkerPlugin(omnimapper::OmniMapperBase* mapper)
 
 void ARMarkerPlugin::markerCallback(
     const ar_track_alvar_msgs::AlvarMarkers& msg) {
-  ROS_INFO("Got some markers: %d\n", msg.markers.size());
+  ROS_INFO("Got some markers: %zu\n", msg.markers.size());
 
   // omnimapper::Time msg_time = omnimapper::rostime2ptime (msg.header.stamp);
   // HACK since at_track_alvar does not fill in header stamp
@@ -21,7 +21,7 @@ void ARMarkerPlugin::markerCallback(
   gtsam::Symbol pose_symbol;
   mapper_->getPoseSymbolAtTime(msg_time, pose_symbol);
 
-  for (int i = 0; i < msg.markers.size(); i++) {
+  for (std::size_t i = 0; i < msg.markers.size(); i++) {
     gtsam::Symbol marker_symbol('a', msg.markers[i].id);
     gtsam::Pose3 relative_pose(
         gtsam::Rot3::quaternion(msg.markers[i].pose.pose.orientation.w,

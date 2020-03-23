@@ -4,16 +4,16 @@ namespace omnimapper {
 
 template <typename PointT>
 Object<PointT>::Object()
-    : clusters_(), landmark(false), optimal_cloud_(new Cloud()) {}
+    : clusters_(), optimal_cloud_(new Cloud()), landmark(false) {}
 
 template <typename PointT>
 Object<PointT>::Object(const Object<PointT>& object)
-    : clusters_(object.clusters_),
-      landmark(object.landmark),
-      optimal_cloud_(object.optimal_cloud_),
-      factor_flag(object.factor_flag),
+    : sym(object.sym),
+      clusters_(object.clusters_),
       indices_(object.indices_),
-      sym(object.sym) {}
+      factor_flag(object.factor_flag),
+      optimal_cloud_(object.optimal_cloud_),
+      landmark(object.landmark) {}
 template <typename PointT>
 void Object<PointT>::addObservation(
     gtsam::Symbol sym, CloudPtr cluster,

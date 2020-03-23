@@ -14,9 +14,9 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
   gtsam::Pose3 result_pose = odometry_relative_pose;
   LDP from_ldp, to_ldp;
 
-  printf("Converting scan1 of %d to ldp\n", from_scan.ranges.size());
+  printf("Converting scan1 of %zu to ldp\n", from_scan.ranges.size());
   canonicalScan.laserScanToLDP(from_scan, from_ldp);
-  printf("converting scan2 of %d to ldp\n", to_scan.ranges.size());
+  printf("converting scan2 of %zu to ldp\n", to_scan.ranges.size());
   canonicalScan.laserScanToLDP(to_scan, to_ldp);
 
   gtsam::Pose2 outp_rel_pose_laser;
@@ -113,7 +113,7 @@ gtsam::Point3 GetMeanLaserPoint(
 }
 
 namespace omnimapper {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 /*
  *  template <typename PointT>
   ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin
@@ -127,13 +127,13 @@ CanonicalScanMatcherPlugin<LScanT>::CanonicalScanMatcherPlugin(
       initialized_(false),
       have_new_lscan_(false),
       first_(true),
-      downsample_(true),
-      leaf_size_(0.05f),
-      score_threshold_(0.5),
       trans_noise_(1.0),
       rot_noise_(1.0),
       debug_(true),
       overwrite_timestamps_(true),
+      leaf_size_(0.05f),
+      score_threshold_(0.5),
+      downsample_(true),
       base_frame_name_(std::string("/base_link")),
       previous_sym_(gtsam::Symbol('x', 0)),
       previous2_sym_(gtsam::Symbol('x', 0)),
@@ -163,11 +163,11 @@ CanonicalScanMatcherPlugin<LScanT>::CanonicalScanMatcherPlugin(
           "/visualization_marker_array", 0);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 CanonicalScanMatcherPlugin<LScanT>::~CanonicalScanMatcherPlugin() {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 void CanonicalScanMatcherPlugin<LScanT>::laserScanCallback(
     const LaserScanPtr& lscan) {
@@ -194,7 +194,7 @@ void CanonicalScanMatcherPlugin<LScanT>::laserScanCallback(
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 void CanonicalScanMatcherPlugin<LScanT>::spin() {
   while (true) {
@@ -203,7 +203,7 @@ void CanonicalScanMatcherPlugin<LScanT>::spin() {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 bool CanonicalScanMatcherPlugin<LScanT>::spinOnce() {
   ros::Time start_time = ros::Time::now();
@@ -311,7 +311,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::getBaseToLaserTf(
   return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 bool CanonicalScanMatcherPlugin<LScanT>::addConstraint(
     gtsam::Symbol sym1, gtsam::Symbol sym2, scan_tools::CanonicalScan& cscan,
@@ -478,7 +478,8 @@ bool CanonicalScanMatcherPlugin<LScanT>::addConstraint(
     noise = gtsam::noiseModel::Diagonal::Sigmas(
         (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)
             .finished());  //(gtsam::Vector_ (6, rot_noise, rot_noise,
-                           //rot_noise, trans_noise, trans_noise, trans_noise));
+                           // rot_noise, trans_noise, trans_noise,
+                           // trans_noise));
   printf("CSM Relative Pose: %lf %lf %lf", relative_pose.x(), relative_pose.y(),
          relative_pose.z());
 
@@ -489,7 +490,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::addConstraint(
   return (true);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym) {
   double loop_closure_dist_thresh_ = 3.0;  // 1.50;//0.5//5.0;
@@ -527,11 +528,10 @@ bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym) {
       const gtsam::Values::ConstFiltered<gtsam::Pose3>::KeyValuePair& key_value,
       pose_filtered) {
     gtsam::Symbol test_sym(key_value.key);
-    int sym_dist = sym.index() - test_sym.index();
-    printf("sym: %d test: %d\n", sym.index(), test_sym.index());
+    int sym_dist = static_cast<int>(sym.index()) - test_sym.index();
+    printf("sym: %zu test: %zu\n", sym.index(), test_sym.index());
     if (sym_dist > pose_index_thresh_) {
-      printf("(%d) > %d\n", (sym.index() - test_sym.index()),
-             pose_index_thresh_);
+      printf("(%d) > %d\n", sym_dist, pose_index_thresh_);
       gtsam::Pose3 test_pose(key_value.value);
       double test_dist = current_pose->range(test_pose);
 
@@ -562,9 +562,9 @@ bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym) {
     addConstraint(closest_sym, sym, lc_canonical_scan_,
                   false);  //, score_threshold_);
     printf(
-        "ADDED LOOP CLOSURE BETWEEN %d and "
-        "%d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+        "ADDED LOOP CLOSURE BETWEEN %zu and "
+        "%zu!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        "!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
         sym.index(), closest_sym.index());
     return (true);
   } else {
@@ -572,14 +572,14 @@ bool CanonicalScanMatcherPlugin<LScanT>::tryLoopClosure(gtsam::Symbol sym) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 bool CanonicalScanMatcherPlugin<LScanT>::ready() {
   boost::mutex::scoped_lock(current_lscan_mutex_);
   return (have_new_lscan_);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 typename omnimapper::CanonicalScanMatcherPlugin<LScanT>::LaserScanPConstPtr
 CanonicalScanMatcherPlugin<LScanT>::getLaserScanPtr(gtsam::Symbol sym) {

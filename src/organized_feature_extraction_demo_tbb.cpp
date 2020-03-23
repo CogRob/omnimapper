@@ -1,5 +1,4 @@
-#include <X11/Xlib.h>
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <omnimapper/organized_feature_extraction_tbb.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
@@ -13,6 +12,10 @@
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/visualization/image_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
+
+// clang-format off
+#include <X11/Xlib.h>
+// clang-format on
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> Cloud;
@@ -57,7 +60,7 @@ class OrganizedFeatureExtractionDemoTBB {
   void clusterLabelsCallback(const CloudConstPtr& cloud,
                              const LabelCloudConstPtr& labels) {
     boost::lock_guard<boost::mutex> lock(cloud_mutex_);
-    printf("cluster labels_cb: %d %d\n", cloud->points.size(),
+    printf("cluster labels_cb: %zu %zu\n", cloud->points.size(),
            labels->points.size());
     prev_cloud_ = cloud;
     prev_labels_ = labels;
@@ -75,7 +78,7 @@ class OrganizedFeatureExtractionDemoTBB {
         prev_cloud_.swap(cloud);
         prev_labels_.swap(labels);
         updated_ = false;
-        printf("cloud points: %d labels points: %d\n", cloud->points.size(),
+        printf("cloud points: %zu labels points: %zu\n", cloud->points.size(),
                labels->points.size());
         if (cloud->points.size() > 200 && labels->points.size() > 200) {
           should_update = true;

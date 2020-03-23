@@ -31,7 +31,7 @@
 #include <pcl/io/pcd_grabber.h>
 #include <boost/filesystem.hpp>
 
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
@@ -129,7 +129,7 @@ class OmniMapperROS {
   DistortionModelStandalone distortion_model_;
 
   // Fake Grabber (TODO: Fix this)
-  std::vector<std::string> empty_fake_files_;
+  std::vector<std::string> fake_files_;
   pcl::PCDGrabber<PointT> fake_grabber_;
   // Organized Feature Extraction
   omnimapper::OrganizedFeatureExtractionTBB<PointT>

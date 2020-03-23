@@ -46,8 +46,14 @@ link_directories(${PCL_LIBRARY_DIRS})
 #set (CMAKE_CXX_STANDARD 11)
 
 SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
-SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11 -fpermissive -w")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11 -fpermissive -w")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11 -fpermissive -w")
+
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
+# Enable asan
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+# set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
@@ -121,11 +127,7 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PCL_LIBRARIES}
-  omnimapper gtsam tcmalloc profiler tbb csm)
-
-add_dependencies(
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${catkin_EXPORTED_TARGETS})
+  omnimapper gtsam profiler tbb tbbmalloc csm)
 
 add_executable(time_test src/time_test.cpp)
 target_link_libraries(time_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})

@@ -146,7 +146,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
     //   updated_ = false;
     // }
 
-    printf("PlaneMeasurementPlugin: Got %d planes.\n", regions.size());
+    printf("PlaneMeasurementPlugin: Got %zu planes.\n", regions.size());
 
     if (overwrite_timestamps_)
       t = boost::posix_time::ptime(
@@ -176,7 +176,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
     Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
     // Data Association
-    for (int i = 0; i < plane_measurements.size(); i++) {
+    for (std::size_t i = 0; i < plane_measurements.size(); i++) {
       double lowest_error = std::numeric_limits<double>::infinity();
       gtsam::Symbol best_symbol =
           gtsam::Symbol('p', max_plane_id_);  // plane_filtered.size ());
@@ -191,7 +191,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
       printf("measurement: %lf %lf %lf %lf\n", meas_plane.a(), meas_plane.b(),
              meas_plane.c(), meas_plane.d());
 
-      printf("plane_filtered size: %d\n", plane_filtered.size());
+      printf("plane_filtered size: %zu\n", plane_filtered.size());
       BOOST_FOREACH (const typename gtsam::Values::Filtered<
                          gtsam::Plane<PointT>>::KeyValuePair& key_value,
                      plane_filtered) {
@@ -237,7 +237,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
           // (lm_name, lm_hull); End debug
           if (polygonsOverlap(meas_hull_map_frame, lm_hull)) {
             if ((error < lowest_error) && (!disable_data_association_)) {
-              printf("new potential match to plane %d\n", key_symbol.index());
+              printf("new potential match to plane %zu\n", key_symbol.index());
               lowest_error = error;
               best_symbol = key_symbol;
             }

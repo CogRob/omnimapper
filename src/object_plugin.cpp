@@ -6,7 +6,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 namespace omnimapper {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ObjectPlugin<PointT>::ObjectPlugin(omnimapper::OmniMapperBase* mapper)
     : mapper_(mapper),
@@ -23,14 +23,14 @@ ObjectPlugin<PointT>::ObjectPlugin(omnimapper::OmniMapperBase* mapper)
       use_object_landmarks_(true),
       min_cluster_height_(0.3) {
   printf("In constructor, checking size of observations_\n");
-  printf("Size: %d\n", observations_.size());
+  printf("Size: %zu\n", observations_.size());
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ObjectPlugin<PointT>::~ObjectPlugin() {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(
     std::string object_database_location) {
@@ -68,7 +68,7 @@ void ObjectPlugin<PointT>::setAndLoadObjectDatabaseLocation(
       &ObjectPlugin<PointT>::computeOptimalObjectModel, this);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::setObjectCallback(
     boost::function<void(std::map<gtsam::Symbol, Object<PointT> >,
@@ -77,7 +77,7 @@ void ObjectPlugin<PointT>::setObjectCallback(
   vis_flag_ = true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::loadDatabase() {
   if (debug_) std::cout << "[ObjectPlugin] Inside loadDesc" << std::endl;
@@ -155,7 +155,7 @@ void ObjectPlugin<PointT>::loadDatabase() {
               << std::endl;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::reconstructSurface(CloudPtr merged, int id) {
@@ -197,7 +197,7 @@ void ObjectPlugin<PointT>::reconstructSurface(CloudPtr merged, int id) {
   pcl::io::savePLYFileBinary(output_file, surface_);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
@@ -242,7 +242,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
       map_cloud->height = 480;
       map_cloud->resize(map_cloud->width * map_cloud->height);
 
-      for (int i = 0; i < map_cloud->width * map_cloud->height; i++) {
+      for (std::size_t i = 0; i < map_cloud->width * map_cloud->height; i++) {
         //	std::cout << i << std::endl;
         PointT invalid_pt;
         invalid_pt.x = std::numeric_limits<float>::quiet_NaN();
@@ -262,9 +262,9 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
                   << " Size of clust indices " << clust_indices.indices.size()
                   << std::endl;
       //	std::cout << "Size of clust indices " <<
-      //clust_indices.indices.size() << std::endl;
+      // clust_indices.indices.size() << std::endl;
 
-      for (int i = 0; i < clust_indices.indices.size(); i++) {
+      for (std::size_t i = 0; i < clust_indices.indices.size(); i++) {
         std::cout << "indices: " << clust_indices.indices[i] << std::endl;
         map_cloud->points[clust_indices.indices[i]] = cloud->points[i];
       }
@@ -272,7 +272,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
       gtsam::Pose3 sam_pose = *cloud_pose;
       // const gtsam::Rot3 rot;
       //	const gtsam::Point3 centroid_pt(obj_centroid[0],
-      //obj_centroid[1], obj_centroid[2]); gtsam::Pose3 centroid_tform(rot,
+      // obj_centroid[1], obj_centroid[2]); gtsam::Pose3 centroid_tform(rot,
       // centroid_pt); 	gtsam::Pose3 inv_tform = centroid_tform.inverse();
       // sam_pose = inv_tform*sam_pose; // order of multiplication should be
       // kept in mind
@@ -308,7 +308,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
       // empty_normals.resize (frame_cloud->points.size ());
 
       if (debug_)
-        printf("[ObjectPlugin] Cloud has: %d normals has: %d\n",
+        printf("[ObjectPlugin] Cloud has: %zu normals has: %zu\n",
                cloud->points.size(), empty_normals.points.size());
 
       if (cloud->points.size() > 0) {
@@ -367,7 +367,7 @@ void ObjectPlugin<PointT>::computeTSDF(Object<PointT> object,
   pcl::io::savePCDFileBinary(render_file, *raytraced);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::computeOptimalObjectModel() {
   while (1) {
@@ -423,7 +423,7 @@ void ObjectPlugin<PointT>::computeOptimalObjectModel() {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 void ObjectPlugin<PointT>::recognizeObject(Object<PointT>& object) {
@@ -869,7 +869,7 @@ float ObjectPlugin<PointT>::computeViewIntersection(
   else
     return 1;
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ObjectPlugin<PointT>::clusterCloudCallback(
     std::vector<CloudPtr> clusters, omnimapper::Time t,
@@ -902,7 +902,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
     if (debug_)
       std::cout << "[ObjectPlugin] Sensor to Base Transform: "
                 << sensor_to_base.matrix() << std::endl;
-    for (int i = 0; i < clusters.size(); i++) {
+    for (std::size_t i = 0; i < clusters.size(); i++) {
       CloudPtr tformed_cluster(new Cloud());
       pcl::transformPointCloud(*clusters[i], *tformed_cluster, sensor_to_base);
       clusters_base.push_back(tformed_cluster);
@@ -912,7 +912,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
   }
 
   if (verbose_)
-    printf("[ObjectPlugin] Object plugin got %d clusters_base\n",
+    printf("[ObjectPlugin] Object plugin got %zu clusters_base\n",
            clusters_base.size());
 
   // Keep track of indices using indices_base
@@ -939,7 +939,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
   EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value;
   EIGEN_ALIGN16 Eigen::Vector3f eigen_vector;
 
-  for (int i = 0; i < clusters_base.size(); i++) {
+  for (std::size_t i = 0; i < clusters_base.size(); i++) {
     // Detect nearby planes
     if (filter_points_near_planes_) {
       // See what plane (if any) is closest
@@ -980,10 +980,10 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
         // (closest_sym);
         CloudPtr filtered_clust(new Cloud());
         pcl::PointIndices filtered_indices;
-        for (int j = 0; j < clusters_base[i]->points.size(); j++) {
+        for (std::size_t j = 0; j < clusters_base[i]->points.size(); j++) {
           bool pt_ok = true;
 
-          for (int k = 0; k < nearby_symbols.size(); k++) {
+          for (std::size_t k = 0; k < nearby_symbols.size(); k++) {
             double ptp_dist =
                 fabs(nearby_coeffs[k][0] * clusters_base[i]->points[j].x +
                      nearby_coeffs[k][1] * clusters_base[i]->points[j].y +
@@ -1006,7 +1006,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
 
         if (debug_)
           printf(
-              "[ObjectPlugin] cluster %d had %d points, filtered has %d "
+              "[ObjectPlugin] cluster %zu had %zu points, filtered has %zu "
               "points\n",
               i, clusters_base[i]->points.size(),
               filtered_clust->points.size());
@@ -1014,24 +1014,24 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
         indices_base[i] = filtered_indices;
 
         if (debug_)
-          printf("[ObjectPlugin] filtered_indices: %d, indices_base: %d",
+          printf("[ObjectPlugin] filtered_indices: %zu, indices_base: %zu",
                  filtered_indices.indices.size(),
                  indices_base[i].indices.size());
 
         if (debug_)
-          printf("[ObjectPlugin] cluster %d now has %d points\n", i,
+          printf("[ObjectPlugin] cluster %zu now has %zu points\n", i,
                  clusters_base[i]->points.size());
       } else {
         pcl::PointIndices filtered_indices;
 
-        for (int j = 0; j < clusters_base[i]->points.size(); j++) {
+        for (std::size_t j = 0; j < clusters_base[i]->points.size(); j++) {
           filtered_indices.indices.push_back((*indices)[i].indices[j]);
         }
         indices_base[i] = filtered_indices;
 
         if (debug_)
           printf(
-              "[ObjectPlugin] cluster has %d points, indices has %d points\n",
+              "[ObjectPlugin] cluster has %zu points, indices has %zu points\n",
               clusters_base[i]->points.size(), indices_base[i].indices.size());
       }
     }
@@ -1058,7 +1058,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
       if (eig_sum != 0) curvature = fabsf(eigen_value / eig_sum);
 
       if (debug_) {
-        printf("[ObjectPlugin]Cluster %d:\n", i);
+        printf("[ObjectPlugin]Cluster %zu:\n", i);
         printf("[ObjectPlugin]  Dist: %lf\n", dist);
         printf("[ObjectPlugin]  Volume: %lf\n", bbox_volume);
         printf("[ObjectPlugin]  Dims: %lf, %lf, %lf\n", size[0], size[1],
@@ -1120,14 +1120,14 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
     CloudPtrVector final_cloud =
         segment_propagation_->observations_.at(pose_symbol);
 
-    for (int obj_cnt = 0; obj_cnt < final_cloud.size(); obj_cnt++) {
+    for (std::size_t obj_cnt = 0; obj_cnt < final_cloud.size(); obj_cnt++) {
       if (final_cloud[obj_cnt]->points.size() == 0) continue;
 
       CloudPtr map_cloud(new Cloud());
       gtsam::Symbol best_symbol =
           gtsam::Symbol('o', obj_cnt);  // plane_filtered.size ());
 
-      if (max_current_size <= obj_cnt) {
+      if (max_current_size <= static_cast<int>(obj_cnt)) {
         // create new object
         Object<PointT> new_object;
 
@@ -1193,7 +1193,7 @@ void ObjectPlugin<PointT>::clusterCloudCallback(
     view_direction.print("[ObjectPlugin] view_direction");
   }
   CloudPtrVector unoptimized_cloud = segment_propagation_->final_map_cloud;
-  for (int obj_cnt = 0; obj_cnt < unoptimized_cloud.size(); obj_cnt++) {
+  for (std::size_t obj_cnt = 0; obj_cnt < unoptimized_cloud.size(); obj_cnt++) {
     if (debug_)
       std::cout << "[ObjectPlugin] Size of object " << obj_cnt << " is "
                 << unoptimized_cloud[obj_cnt]->points.size() << std::endl;
@@ -1256,7 +1256,7 @@ void ObjectPlugin<PointT>::update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 typename omnimapper::ObjectPlugin<PointT>::CloudPtrVector
 ObjectPlugin<PointT>::getObservations(gtsam::Symbol sym) {

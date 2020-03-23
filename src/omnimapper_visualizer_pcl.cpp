@@ -92,15 +92,15 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::update(
     if (draw_icp_clouds_) {
       printf("About to request frame cloud\n");
       CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr(key_symbol);
-      printf("Frame cloud has %d\n", frame_cloud->points.size());
+      printf("Frame cloud has %zu\n", frame_cloud->points.size());
       char frame_name[1024];
       CloudPtr map_cloud(new Cloud());
       Eigen::Matrix4f map_tform = pose.matrix().cast<float>();
       pose.print("SAM Pose: ");
       std::cout << "Map Tform: " << map_tform << std::endl;
       pcl::transformPointCloud(*frame_cloud, *map_cloud, map_tform);
-      sprintf(frame_name, "x_%d", key_symbol.index());
-      printf("name: x_%d\n", key_symbol.index());
+      sprintf(frame_name, "x_%zu", key_symbol.index());
+      printf("name: x_%zu\n", key_symbol.index());
       (*aggregate_cloud) += (*map_cloud);
       // if (!viewer_.updatePointCloud (map_cloud, frame_name))
       //  viewer_.addPointCloud (map_cloud, frame_name);
@@ -115,7 +115,7 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::update(
 
     gtsam::Values::Filtered<gtsam::Plane<PointT> > plane_filtered =
         current_solution.filter<gtsam::Plane<PointT> >();
-    printf("Visualizing %d planes!\n", plane_filtered.size());
+    printf("Visualizing %zu planes!\n", plane_filtered.size());
     int plane_num = 0;
     BOOST_FOREACH (const typename gtsam::Values::Filtered<
                        gtsam::Plane<PointT> >::KeyValuePair& key_value,
@@ -144,7 +144,8 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::update(
     boost::lock_guard<boost::mutex> lock(vis_mutex_);
 
     if (debug_)
-      printf("Visualizer updating with %d poses\n", poses_cloud->points.size());
+      printf("Visualizer updating with %zu poses\n",
+             poses_cloud->points.size());
 
     if (poses_cloud->points.size() > 0) {
       pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> color(

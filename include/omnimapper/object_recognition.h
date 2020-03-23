@@ -14,10 +14,10 @@
 #include <pcl/features/pfh.h>
 #include <pcl/features/pfhrgb.h>
 #include <pcl/features/shot_omp.h>
+#include <pcl/filters/uniform_sampling.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/keypoints/harris_3d.h>
 #include <pcl/keypoints/sift_keypoint.h>
-#include <pcl/keypoints/uniform_sampling.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/transformation_estimation_svd.h>
