@@ -12,6 +12,10 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
 SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -Wall -Wextra")
 SET(CMAKE_C_FLAGS_DEBUG "-std=c++11 -Wall -Wextra")
 
+# Enable asan
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
 project(omnimapper)
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
