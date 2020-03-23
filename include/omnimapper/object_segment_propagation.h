@@ -59,7 +59,7 @@ class SegmentPropagation {
     std::vector<pcl::PointIndices> label_indices_, final_label_indices_;
     label_indices_.resize(labels.points.size());
 
-    for (int i = 0; i < labels.points.size(); i++) {
+    for (std::size_t i = 0; i < labels.points.size(); i++) {
       if (labels.points[i].label > labels.points.size()) continue;
       label_indices_[labels.points[i].label].indices.push_back(i);
     }
@@ -73,8 +73,8 @@ class SegmentPropagation {
     final_labels.width = labels.width;
     final_labels.height = labels.height;
 
-    for (int i = 0; i < final_label_indices_.size(); i++) {
-      for (int j = 0; j < final_label_indices_[i].indices.size(); j++) {
+    for (std::size_t i = 0; i < final_label_indices_.size(); i++) {
+      for (std::size_t j = 0; j < final_label_indices_[i].indices.size(); j++) {
         int pt = final_label_indices_[i].indices[j];
         if (labels.points[pt].label > labels.points.size()) continue;
         final_labels.points[pt].label = i;
@@ -175,12 +175,12 @@ class SegmentPropagation {
   CloudPtrVector final_map_cloud;
 
  protected:
+  bool verbose_, debug_;
+  int max_size;
   CloudConstPtr prev_cloud_;
   CloudPtrVector prev_cloud_vec_;
   gtsam::Pose3 prev_pose_;
   std::vector<pcl::PointIndices> prev_labels_;
-  int max_size;
-  bool verbose_, debug_;
   std::map<int, int> active_label_indices;
   std::vector<int> final_neighbors;
 };

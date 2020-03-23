@@ -194,6 +194,7 @@ class GrabberTask {
         // tbb::this_tbb_thread::yield ();
       }
     }
+    return nullptr;
   }
 };
 

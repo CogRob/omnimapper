@@ -121,8 +121,8 @@ void testPlanarTransform() {
   std::cout << "Transform: " << transform.translation() << std::endl;
   pcl::PointCloud<PointT> transformed_boundary1;
   pcl::transformPointCloud(boundary1, transformed_boundary1, transform);
-  for (int i = 0; i < transformed_boundary1.points.size(); i++) {
-    printf("%d: %lf %lf %lf\n", i, transformed_boundary1.points[i].x,
+  for (std::size_t i = 0; i < transformed_boundary1.points.size(); i++) {
+    printf("%zu: %lf %lf %lf\n", i, transformed_boundary1.points[i].x,
            transformed_boundary1.points[i].y,
            transformed_boundary1.points[i].z);
   }
@@ -159,8 +159,8 @@ void testPlanarTransform2() {
   boundary1.points.push_back(p4);
 
   char spherename[1024];
-  for (int i = 0; i < boundary1.points.size(); i++) {
-    sprintf(spherename, "orig_sphere_%d", i);
+  for (std::size_t i = 0; i < boundary1.points.size(); i++) {
+    sprintf(spherename, "orig_sphere_%zu", i);
     boundary1.points[i].r = 255;
     boundary1.points[i].g = 0;
     boundary1.points[i].b = 0;
@@ -248,14 +248,14 @@ void testPlanarTransform2() {
          true_transformed_plane_params[0], true_transformed_plane_params[1],
          true_transformed_plane_params[2], true_transformed_plane_params[3]);
 
-  for (int i = 0; i < true_transformed_boundary1.points.size(); i++) {
-    printf("%d: %lf %lf %lf\n", i, true_transformed_boundary1.points[i].x,
+  for (std::size_t i = 0; i < true_transformed_boundary1.points.size(); i++) {
+    printf("%zu: %lf %lf %lf\n", i, true_transformed_boundary1.points[i].x,
            true_transformed_boundary1.points[i].y,
            true_transformed_boundary1.points[i].z);
   }
 
-  for (int i = 0; i < true_transformed_boundary1.points.size(); i++) {
-    sprintf(spherename, "true_sphere_%d", i);
+  for (std::size_t i = 0; i < true_transformed_boundary1.points.size(); i++) {
+    sprintf(spherename, "true_sphere_%zu", i);
     viewer_.addSphere(true_transformed_boundary1.points[i], 0.05, 0.0, 1.0, 0.0,
                       spherename);
   }
@@ -304,14 +304,14 @@ void testPlanarTransform2() {
          our_transformed_plane_params[0], our_transformed_plane_params[1],
          our_transformed_plane_params[2], our_transformed_plane_params[3]);
 
-  for (int i = 0; i < our_transformed_boundary1.points.size(); i++) {
-    printf("%d: %lf %lf %lf\n", i, our_transformed_boundary1.points[i].x,
+  for (std::size_t i = 0; i < our_transformed_boundary1.points.size(); i++) {
+    printf("%zu: %lf %lf %lf\n", i, our_transformed_boundary1.points[i].x,
            our_transformed_boundary1.points[i].y,
            our_transformed_boundary1.points[i].z);
   }
 
-  for (int i = 0; i < our_transformed_boundary1.points.size(); i++) {
-    sprintf(spherename, "our_sphere_%d", i);
+  for (std::size_t i = 0; i < our_transformed_boundary1.points.size(); i++) {
+    sprintf(spherename, "our_sphere_%zu", i);
     viewer_.addSphere(our_transformed_boundary1.points[i], 0.05, 0.0, 0.0, 1.0,
                       spherename);
   }

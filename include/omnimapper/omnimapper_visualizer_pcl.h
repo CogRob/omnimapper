@@ -73,12 +73,12 @@ class OmniMapperVisualizerPCL : public omnimapper::OutputPlugin {
 
   // void spinAndUpdate ();
  protected:
+  // A reference to a mapper instance
+  OmniMapperBase* mapper_;
   // A PCL Visualizer
   pcl::visualization::PCLVisualizer viewer_;
   // Visualizer mutex
   boost::mutex vis_mutex_;
-  // A reference to a mapper instance
-  OmniMapperBase* mapper_;
 
   // Pose Cloud
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > pose_cloud_;

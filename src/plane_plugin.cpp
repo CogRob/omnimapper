@@ -177,7 +177,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
     Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
     // Data Association
-    for (int i = 0; i < plane_measurements.size(); i++) {
+    for (std::size_t i = 0; i < plane_measurements.size(); i++) {
       double lowest_error = std::numeric_limits<double>::infinity();
       gtsam::Symbol best_symbol =
           gtsam::Symbol('p', max_plane_id_);  // plane_filtered.size ());

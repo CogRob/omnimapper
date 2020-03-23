@@ -135,6 +135,15 @@ class ObjectPlugin {
   }
 
  protected:
+  OmniMapperBase* mapper_;
+  GetTransformFunctorPtr get_sensor_to_base_;
+  std::map<gtsam::Symbol, CloudPtrVector> observations_;
+  CloudPtrVector empty_;
+  std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
+
+  int max_object_size, max_current_size;
+  cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
+
   bool vis_flag_;              // flag to check if visualization callback is set
   bool debug_, verbose_;       // flags to control the couts
   bool do_loop_closures_;      // flag to control object object loop closures
@@ -143,11 +152,6 @@ class ObjectPlugin {
                                // landmarks or not
 
   double min_cluster_height_;  // height above the floor for each cluster
-  OmniMapperBase* mapper_;
-  GetTransformFunctorPtr get_sensor_to_base_;
-  CloudPtrVector empty_;
-  std::map<gtsam::Symbol, CloudPtrVector> observations_;
-  std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
   /** vis_callback_ calls object visualization function in
    * OmnimapperVisualizerRviz */
@@ -166,8 +170,6 @@ class ObjectPlugin {
 
   std::map<gtsam::Symbol, int> training_map;
   std::queue<gtsam::Symbol> train_queue;
-  int max_object_size, max_current_size;
-  cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
 
   /* mutexes */
   boost::mutex recog_mutex_;         // mutex for recognition queue

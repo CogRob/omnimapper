@@ -1,10 +1,12 @@
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <omnimapper/omnimapper_base.h>
 #include <pcl/common/time.h>  //TODO: remove, debug only
 
 omnimapper::OmniMapperBase::OmniMapperBase()
-    : initialized_(false),
+    :
       initial_pose_(gtsam::Pose3::identity()),
-      get_time_(new GetSystemTimeFunctor()) {
+      get_time_(new GetSystemTimeFunctor()),
+      initialized_(false) {
   debug_ = true;
   // TODO: make it optional to set an arbitrary initial pose
   // initializePose ();
@@ -88,8 +90,9 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
     printf("chain size: %zu\n", chain.size());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin();
          itr != chain.end(); itr++) {
-      printf("node: %c %zu %u %zu\n", itr->symbol.chr(), itr->symbol.index(),
-             itr->time, itr->factors.size());
+      const std::string time_str = boost::posix_time::to_simple_string(itr->time);
+      printf("node: %c %zu %s %zu\n", itr->symbol.chr(), itr->symbol.index(),
+             time_str.c_str(), itr->factors.size());
       std::cout << "stamp: " << itr->time << std::endl;
     }
   }
@@ -130,7 +133,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   // current pose time
   bool initialized = false;
 
-  for (int i = 0; i < pose_plugins.size(); i++) {
+  for (std::size_t i = 0; i < pose_plugins.size(); i++) {
     // TODO: make this a boost::optional, in case the plugin is disabled or
     // unable to give a pose
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr new_pose_factor =
@@ -167,7 +170,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   if (!initialized) {
     // If we have no pose factors, we need a relative pose measurement to
     // initialize the pose
-    for (int i = 0; i < to_commit->factors.size(); i++) {
+    for (std::size_t i = 0; i < to_commit->factors.size(); i++) {
       gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between =
           boost::dynamic_pointer_cast<gtsam::BetweenFactor<gtsam::Pose3> >(
               (to_commit->factors[i]));
@@ -238,6 +241,7 @@ bool omnimapper::OmniMapperBase::addFactorDirect(
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   new_factors.push_back(new_factor);
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -253,7 +257,7 @@ bool omnimapper::OmniMapperBase::addFactor(
       boost::posix_time::neg_infin;  // Probably nobody has data earlier than
                                      // this?
   if (debug_) printf("addFactor: starting to look at keys\n");
-  for (int i = 0; i < keys.size(); i++) {
+  for (std::size_t i = 0; i < keys.size(); i++) {
     if (gtsam::symbolChr(keys[i]) == 'x') {
       if (debug_) printf("Going to compare keys\n");
       if (symbol_lookup[keys[i]]->time > latest_pose_time) {
@@ -670,9 +674,9 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
   boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph(
       new gtsam::NonlinearFactorGraph(current_graph));
   double start = pcl::getTime();
-  for (int i = 0; i < output_plugins.size(); i++) {
+  for (std::size_t i = 0; i < output_plugins.size(); i++) {
     if (debug_)
-      printf("Updating plugin %d with %lu values\n", i, vis_values->size());
+      printf("Updating plugin %zu with %lu values\n", i, vis_values->size());
     output_plugins[i]->update(vis_values, vis_graph);
   }
   double end = pcl::getTime();

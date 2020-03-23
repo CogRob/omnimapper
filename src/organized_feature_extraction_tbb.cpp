@@ -33,8 +33,8 @@ OrganizedFeatureExtractionTBB<PointT>::OrganizedFeatureExtractionTBB()
       ne_output_cloud_(boost::none),
       mps_input_cloud_(boost::none),
       mps_input_normals_(boost::none),
-      mps_output_regions_(boost::none),
       mps_output_cloud_(boost::none),
+      mps_output_regions_(boost::none),
       mps_output_labels_(new LabelCloud()),
       clust_input_cloud_(boost::none),
       clust_input_labels_(boost::none),
@@ -255,7 +255,7 @@ void OrganizedFeatureExtractionTBB<PointT>::publish() {
   if (planar_region_stamped_callbacks_.size() > 0) {
     if (pub_mps_regions_) {
       Time timestamp = stamp2ptime((*clust_input_cloud_)->header.stamp);
-      for (int i = 0; i < planar_region_stamped_callbacks_.size(); i++)
+      for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size(); i++)
         planar_region_stamped_callbacks_[i](*pub_mps_regions_, timestamp);
     }
   }
@@ -263,7 +263,7 @@ void OrganizedFeatureExtractionTBB<PointT>::publish() {
   // Publish Cluster Labels
   if (cluster_label_cloud_callbacks_.size() > 0) {
     if (pub_cluster_cloud_ && pub_cluster_labels_) {
-      for (int i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
+      for (std::size_t i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
         cluster_label_cloud_callbacks_[i](*pub_cluster_cloud_,
                                           *pub_cluster_labels_);
     }
@@ -274,7 +274,7 @@ void OrganizedFeatureExtractionTBB<PointT>::publish() {
     std::cout << "Have cluster cloud callbacks!" << std::endl;
     if (pub_cluster_cloud_) {
       Time timestamp = stamp2ptime((*pub_cluster_cloud_)->header.stamp);
-      for (int i = 0; i < cluster_cloud_callbacks_.size(); i++) {
+      for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
         std::cout << "Publishing cluster clouds!\n" << std::endl;
         cluster_cloud_callbacks_[i](*pub_clusters_, timestamp,
                                     *pub_cluster_indices_);
@@ -554,7 +554,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computeClusters() {
 
   if (clust_input_regions_->size() > 0) {
     for (size_t i = 0; i < clust_input_label_indices_->size(); i++) {
-      if ((*clust_input_label_indices_)[i].indices.size() >
+      if (static_cast<int>((*clust_input_label_indices_)[i].indices.size()) >
           min_plane_inliers_) {
         plane_labels[i] = true;
       }

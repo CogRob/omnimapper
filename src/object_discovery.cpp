@@ -6,8 +6,8 @@
 
 template <typename PointT>
 ObjectDiscovery<PointT>::ObjectDiscovery()
-    : max_current_size(0),
-      max_object_size(0),
+    : max_object_size(0),
+      max_current_size(0),
       object_dir_("/home/siddharth/kinect/") {}
 
 template <typename PointT>
@@ -84,7 +84,7 @@ template <typename PointT>
 int ObjectDiscovery<PointT>::findMin(int segment, std::vector<int> seg_vec) {
   int min_obj = segment;
 
-  for (int i = 0; i < seg_vec.size(); i++) {
+  for(std::size_t i = 0; i < seg_vec.size(); i++) {
     if (min_obj > seg_vec[i]) min_obj = seg_vec[i];
   }
 
@@ -388,7 +388,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     int min_obj = findMin(obj_id, matching_objects);
     int label = findLabel(obj_id);
     if (label > min_obj) label = min_obj;
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for(std::size_t i = 0; i < matching_objects.size(); i++) {
       segment_arr[matching_objects[i]] = label;
       std::cout << matching_objects[i] << " ";
     }
@@ -398,7 +398,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
   }
 
   std::map<int, std::vector<int> > object_map;
-  for (int i = 0; i < segment_arr.size(); i++) {
+  for(std::size_t i = 0; i < segment_arr.size(); i++) {
     object_map.insert(std::pair<int, std::vector<int> >(i, std::vector<int>()));
     if (segment_arr[i] == -1) continue;
     std::cout << i << " " << segment_arr[i] << std::endl;
@@ -416,7 +416,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     std::cout << "object id " << obj_id << " ";
     pcl::PointCloud<pcl::PointXYZRGBA> merged_cloud;
     std::vector<gtsam::Pose3> new_pose_array;
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for(std::size_t i = 0; i < matching_objects.size(); i++) {
       std::cout << matching_objects[i] << " ";
       pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp_cloud =
           map_cloud.at(matching_objects[i]);
@@ -472,7 +472,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     std::cout << "object id " << obj_id << " ";
     std::vector<int> matching_objects = it->second;
 
-    for (int i = 0; i < matching_objects.size(); i++) {
+    for(std::size_t i = 0; i < matching_objects.size(); i++) {
       std::cout << matching_objects[i] << " ";
     }
     std::cout << std::endl;

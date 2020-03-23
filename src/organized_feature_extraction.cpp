@@ -285,7 +285,7 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
                     << std::endl;
           std::cout << "stage5 labels: " << stage5_labels_->points.size()
                     << std::endl;
-          for (int i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
+          for (std::size_t i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
             cluster_label_cloud_callbacks_[i](stage4_cloud_, stage5_labels_);
         }
       }
@@ -293,7 +293,7 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
       if (cluster_cloud_callbacks_.size() > 0) {
         if (stage5_clusters_.size() > 0) {
           Time timestamp = stamp2ptime(stage4_cloud_->header.stamp);
-          for (int i = 0; i < cluster_cloud_callbacks_.size(); i++) {
+          for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
             cluster_cloud_callbacks_[i](stage5_clusters_, timestamp,
                                         stage5_cluster_indices_);
           }
@@ -319,7 +319,7 @@ void OrganizedFeatureExtraction<PointT>::processFrame() {
                   << std::endl;
         Time timestamp = stamp2ptime(stage2_cloud_->header.stamp);
         if (stage2_cloud_->points.size() > 200) {
-          for (int i = 0; i < planar_region_stamped_callbacks_.size(); i++)
+          for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size(); i++)
             planar_region_stamped_callbacks_[i](stage3_regions_, timestamp);
         }
       }
