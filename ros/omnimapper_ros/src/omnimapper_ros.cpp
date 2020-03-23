@@ -368,7 +368,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
         evaluation_pcd_files_.push_back(itr->path().string());
     }
     sort(evaluation_pcd_files_.begin(), evaluation_pcd_files_.end());
-    ROS_INFO("OmniMapper: Loaded %d files for evaluation\n",
+    ROS_INFO("OmniMapper: Loaded %zu files for evaluation\n",
              evaluation_pcd_files_.size());
 
     eval_timer_ = n_.createTimer(ros::Duration(0.01),
@@ -407,7 +407,7 @@ void OmniMapperROS<PointT>::runEvaluation(
       evaluation_pcd_files_.push_back(itr->path().string());
   }
   sort(evaluation_pcd_files_.begin(), evaluation_pcd_files_.end());
-  ROS_INFO("OmniMapper: Loaded %d files for evaluation\n",
+  ROS_INFO("OmniMapper: Loaded %zu files for evaluation\n",
            evaluation_pcd_files_.size());
 
   // Set up timing information
@@ -436,7 +436,7 @@ void OmniMapperROS<PointT>::runEvaluation(
     if (!organized_feature_extraction_.ready()) ready = false;
 
     // printf ("ready: %d idx: %d\n", ready, evaluation_file_idx_);
-    if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size())) {
+    if (ready && (evaluation_file_idx_ == static_cast<int>(evaluation_pcd_files_.size()))) {
       frame_end_times.push_back(
           (boost::posix_time::microsec_clock::local_time()));
       exp_end_time = boost::posix_time::microsec_clock::local_time();
@@ -455,7 +455,7 @@ void OmniMapperROS<PointT>::runEvaluation(
 
       // Write Timing
       std::ofstream timing_file(output_timing_filename.c_str());
-      for (int i = 0; i < frame_start_times.size(); i++) {
+      for (std::size_t i = 0; i < frame_start_times.size(); i++) {
         timing_file
             << boost::posix_time::to_iso_extended_string(frame_start_times[i])
             << " "
@@ -473,7 +473,7 @@ void OmniMapperROS<PointT>::runEvaluation(
 
       done = true;
       return;
-    } else if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size())) {
+    } else if (ready && (evaluation_file_idx_ < static_cast<int>(evaluation_pcd_files_.size()))) {
       if (!first)
         frame_end_times.push_back(
             boost::posix_time::microsec_clock::local_time());
@@ -487,7 +487,7 @@ void OmniMapperROS<PointT>::runEvaluation(
       if (debug_) {
         std::cout << "Loading took: " << double(load_end - load_start)
                   << std::endl;
-        ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_,
+        ROS_INFO("Processing cloud %d with %zu points\n", evaluation_file_idx_,
                  cloud->points.size());
       }
 
@@ -752,7 +752,7 @@ void OmniMapperROS<PointT>::evalTimerCallback(const ros::TimerEvent& e) {
       !organized_feature_extraction_.ready())
     ready = false;
 
-  if (ready && (evaluation_file_idx_ < evaluation_pcd_files_.size())) {
+  if (ready && (evaluation_file_idx_ < static_cast<int>(evaluation_pcd_files_.size()))) {
     // Load next file
     CloudPtr cloud(new Cloud());
     double load_start = pcl::getTime();
@@ -763,7 +763,7 @@ void OmniMapperROS<PointT>::evalTimerCallback(const ros::TimerEvent& e) {
       std::cout << "Loading took: " << double(load_end - load_start)
                 << std::endl;
 
-      ROS_INFO("Processing cloud %d with %d points\n", evaluation_file_idx_,
+      ROS_INFO("Processing cloud %d with %zu points\n", evaluation_file_idx_,
                cloud->points.size());
     }
 
@@ -792,7 +792,7 @@ void OmniMapperROS<PointT>::evalTimerCallback(const ros::TimerEvent& e) {
   }
 
   // Write the trajectory if we're finished
-  if (ready && (evaluation_file_idx_ == evaluation_pcd_files_.size())) {
+  if (ready && (evaluation_file_idx_ == static_cast<int>(evaluation_pcd_files_.size()))) {
     ROS_INFO("Completed evaluation, writing output file.");
     gtsam::Values solution = omb_.getSolution();
 

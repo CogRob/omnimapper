@@ -9,8 +9,8 @@ SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -std=c++11")
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -std=c++11")
 
-SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -Werror -Wall -Wextra")
-SET(CMAKE_C_FLAGS_DEBUG "-std=c++11 -Werror -Wall -Wextra")
+SET(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -Wall -Wextra")
+SET(CMAKE_C_FLAGS_DEBUG "-std=c++11 -Wall -Wextra")
 
 project(omnimapper)
 

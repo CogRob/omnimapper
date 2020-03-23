@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   double score_thresh_step = 0.01;
 
   // For each dataset
-  for (int i = 0; i < datasets.size(); i++) {
+  for (std::size_t i = 0; i < datasets.size(); i++) {
     std::string base_path("/home/atrevor/data/tum_rgbd/");
     base_path.append(datasets[i]);
     // Set up dataset

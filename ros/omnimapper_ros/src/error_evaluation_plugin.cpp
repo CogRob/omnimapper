@@ -609,7 +609,7 @@ void omnimapper::ErrorEvaluationPlugin::loadGroundTruthFile(
         std::pair<omnimapper::Time, gtsam::Pose3>(stamp_time, pose));
   }
   printf(
-      "OmniMapper Error Evaluation Plugin: Loaded %d ground truth trajectory "
+      "OmniMapper Error Evaluation Plugin: Loaded %zu ground truth trajectory "
       "poses.\n",
       ground_truth_trajectory_.size());
 }
@@ -645,7 +645,7 @@ void omnimapper::ErrorEvaluationPlugin::loadAssociatedFile(
     std::cout << "Stamp: " << stamp_time << std::endl;
   }
   printf(
-      "OmniMapper Error Evaluation Plugin: Loaded %d timestamps from "
+      "OmniMapper Error Evaluation Plugin: Loaded %zu timestamps from "
       "associated file.\n",
       cloud_timestamps_.size());
 }
@@ -656,7 +656,7 @@ uint64_t omnimapper::ErrorEvaluationPlugin::getStampFromIndex(int idx) {
 
 gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::getPoseAtTime(
     omnimapper::Time time) {
-  for (int i = 0; i < ground_truth_trajectory_.size() - 1; i++) {
+  for (std::size_t i = 0; i < ground_truth_trajectory_.size() - 1; i++) {
     // If we've found a time interval that contains our requested time
     if ((ground_truth_trajectory_[i].first < time) &&
         (time < ground_truth_trajectory_[i + 1].first)) {
