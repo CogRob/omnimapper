@@ -574,21 +574,23 @@ void ObjectDiscovery<PointT>::createFinalCloud(std::string dir) {
   }
 }
 
-int main() {
-  std::string dir = "/home/siddharth/kinect/object_models";
-  ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
-  process_cloud.createFinalCloud(dir);
-  /*
-          std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
-          for(it = process_cloud.map_cloud.begin(); it!=
-     process_cloud.map_cloud.end(); it++){
-
-                  process_cloud.reconstructSurface(it->second, it->first);
-          }*/
-
-  process_cloud.createGraph();
-  process_cloud.mergeClouds();
-  return 0;
-}
+// int main() {
+//   std::string dir = "/home/siddharth/kinect/object_models";
+//   ObjectDiscovery<pcl::PointXYZRGBA> process_cloud;
+//   process_cloud.createFinalCloud(dir);
+//
+//   /*
+//   std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
+//   for(it = process_cloud.map_cloud.begin(); it!=
+//       process_cloud.map_cloud.end(); it++){
+//
+//     process_cloud.reconstructSurface(it->second, it->first);
+//   }
+//   */
+//
+//   process_cloud.createGraph();
+//   process_cloud.mergeClouds();
+//   return 0;
+// }
 
 template class ObjectDiscovery<pcl::PointXYZRGBA>;

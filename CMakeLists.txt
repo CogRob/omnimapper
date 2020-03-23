@@ -100,7 +100,7 @@ set(srcs
 
 add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsamDebug
-  cpu_tsdf ${CLOUDCV_LIBRARIES} tcmalloc profiler tbb tbbmalloc)
+  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb tbbmalloc ${MKL_LIBRARIES})
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
@@ -117,16 +117,20 @@ target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES} tbb)
 
+add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
+target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES} gtsamDebug
+  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb ${MKL_LIBRARIES})
+
 add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
 target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
 
 add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
 target_link_libraries(organized_feature_extraction_demo
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tcmalloc tbb)
+  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
 
 add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
 target_link_libraries(organized_feature_extraction_demo_tbb
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tcmalloc tbb)
+  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
 
 add_executable(tbb_test src/tbb_test.cpp)
 target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
