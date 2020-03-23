@@ -125,7 +125,7 @@ class OmniMapperROS {
   DistortionModelStandalone distortion_model_;
 
   // Fake Grabber (TODO: Fix this)
-  std::vector<std::string> empty_files_;
+  std::vector<std::string> fake_files_;
   pcl::PCDGrabber<PointT> fake_grabber_;
   // Organized Feature Extraction
   omnimapper::OrganizedFeatureExtractionTBB<PointT>
