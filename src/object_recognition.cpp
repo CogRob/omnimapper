@@ -165,7 +165,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
 
   float dist_thresh = 0;  // covX*covX + covY*covY + covZ*covZ;
   if (indices.size() != 0) {
-    for(std::size_t i = 0; i < indices[0].size(); i++) {
+    for (std::size_t i = 0; i < indices[0].size(); i++) {
       int index = indices[0][i];
       int obj_id = object_centroid_map[index];
 
@@ -207,7 +207,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
 
 #endif
 
-      for(std::size_t j = 0; j < obj_desc.size(); j++) {
+      for (std::size_t j = 0; j < obj_desc.size(); j++) {
         target_feature = feature_map[obj_id][j];
         target_keypoints_ = keypoint_map[obj_id][j].makeShared();
 
@@ -419,7 +419,7 @@ void ObjectRecognition<FeatureType>::findCorrespondences(
   const int k = 1;
   std::vector<int> k_indices(k);
   std::vector<float> k_squared_distances(k);
-  for(std::size_t i = 0; i < source->size(); ++i) {
+  for (std::size_t i = 0; i < source->size(); ++i) {
     descriptor_kdtree.nearestKSearch(*source, i, k, k_indices,
                                      k_squared_distances);
     correspondences[i] = k_indices[0];

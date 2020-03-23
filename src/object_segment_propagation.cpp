@@ -511,7 +511,8 @@ std::vector<pcl::PointIndices> SegmentPropagation<PointT>::findFinalLabels(
                 << " size of euclidean label indices: "
                 << euclidean_label_indices[idx].indices.size() << " "
                 << final_label_indices.size() << std::endl;
-    for (std::size_t j = 0; j < euclidean_label_indices[idx].indices.size(); j++) {
+    for (std::size_t j = 0; j < euclidean_label_indices[idx].indices.size();
+         j++) {
       final_label_indices[nn_index].indices.push_back(
           euclidean_label_indices[idx].indices[j]);
       //	euclidean_labels.points[euclidean_label_indices[idx].indices[j]].label

@@ -1,10 +1,9 @@
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <omnimapper/omnimapper_base.h>
 #include <pcl/common/time.h>  //TODO: remove, debug only
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 omnimapper::OmniMapperBase::OmniMapperBase()
-    :
-      initial_pose_(gtsam::Pose3::identity()),
+    : initial_pose_(gtsam::Pose3::identity()),
       get_time_(new GetSystemTimeFunctor()),
       initialized_(false) {
   debug_ = true;
@@ -90,7 +89,8 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
     printf("chain size: %zu\n", chain.size());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin();
          itr != chain.end(); itr++) {
-      const std::string time_str = boost::posix_time::to_simple_string(itr->time);
+      const std::string time_str =
+          boost::posix_time::to_simple_string(itr->time);
       printf("node: %c %zu %s %zu\n", itr->symbol.chr(), itr->symbol.index(),
              time_str.c_str(), itr->factors.size());
       std::cout << "stamp: " << itr->time << std::endl;
