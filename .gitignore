@@ -1,15 +1,1 @@
 build/
-ros/omnimapper_ros/build
-ros/omnimapper_ros/bin
-ros/omnimapper_ros/lib
-ros/omnimapper_ros/msg_gen
-ros/omnimapper_ros/srv_genbuild
-ros/omnimapper_ros_csm/build
-ros/omnimapper_ros_csm/bin
-ros/omnimapper_ros_csm/lib
-ros/omnimapper_ros_csm/msg_gen
-ros/omnimapper_ros_csm/srv_gen
-ros/omnimapper_ros/srv_gen
-*~
-\#*\#
-.#*
