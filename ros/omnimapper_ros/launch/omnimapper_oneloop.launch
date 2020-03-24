@@ -21,14 +21,14 @@
     <param name="use_error_eval_plugin" value="false" />
     <param name="use_no_motion" value="false" />
     <param name="odom_frame_name" value="/odom" />
-    <param name="base_frame_name" value="/camera_depth_optical_frame" />
-    <param name="cloud_topic_name" value="/throttled_points" />
+    <param name="base_frame_name" value="/base_link" />
+    <param name="cloud_topic_name" value="/camera/depth_registered/points" />
     <param name="rgbd_frame_name" value="/camera_rgb_optical_frame" />
     <param name="icp_leaf_size" value="0.05" />
-    <param name="icp_max_correspondence_distance" value="0.5" />
+    <param name="icp_max_correspondence_distance" value="0.2" />
     <param name="icp_score_thresh" value="0.8" />
-    <param name="icp_trans_noise" value="0.1" />
-    <param name="icp_rot_noise" value="0.1" />
+    <param name="icp_trans_noise" value="0.15" />
+    <param name="icp_rot_noise" value="0.15" />
     <param name="icp_add_identity_on_fail" value="false" />
     <param name="icp_add_loop_closures" value="true" />
     <param name="icp_loop_closure_distance_threshold" value="1.0" />
@@ -37,18 +37,18 @@
     <param name="occ_edge_score_thresh" value="0.1" />
     <param name="occ_edge_max_correspondence_dist" value="0.1" />
     <param name="occ_edge_add_identity_on_fail" value="false" />
-    <param name="plane_range_threshold" value="0.6" />
-    <param name="plane_angular_threshold" value="pcl::deg2rad(10.0)" />
-    <param name="plane_range_noise" value="0.2" />
-    <param name="plane_angular_noise" value="0.26" />
+    <param name="plane_range_threshold" value="0.1" />
+    <param name="plane_angular_threshold" value="0.174532925" />
+    <param name="plane_range_noise" value="0.1" />
+    <param name="plane_angular_noise" value="0.174532925" />
     <param name="tf_trans_noise" value="0.05" />
     <param name="tf_rot_noise" value="pcl::deg2rad(10.0)" />
-    <param name="tf_roll_noise" value="tf_rot_noise_" />
-    <param name="tf_pitch_noise" value="tf_rot_noise_" />
-    <param name="tf_yaw_noise" value="tf_rot_noise_" />
+    <param name="tf_roll_noise" value="0.001" />
+    <param name="tf_pitch_noise" value="0.001" />
+    <param name="tf_yaw_noise" value="0.2" />
     <param name="use_init_pose" value="false" />
     <param name="suppress_commit_window" value="false" />
-    <param name="init_pose_from_tf" value="false" />
+    <param name="init_pose_from_tf" value="true" />
     <param name="init_x" value="0.0" />
     <param name="init_y" value="0.0" />
     <param name="init_z" value="0.0" />
@@ -60,17 +60,17 @@
     <param name="draw_pose_array" value="true" />
     <param name="draw_pose_graph" value="true" />
     <param name="draw_label_cloud" value="true" />
-    <param name="draw_clusters" value="false" />
+    <param name="draw_clusters" value="true" />
     <param name="draw_icp_clouds_always" value="false" />
     <param name="use_label_cloud" value="false" />
     <param name="add_pose_per_cloud" value="true" />
-    <param name="broadcast_map_to_odom" value="false" />
+    <param name="broadcast_map_to_odom" value="true" />
     <param name="broadcast_current_pose" value="false" />
     <param name="use_distortion_model" value="false" />
     <param name="use_rgbd_sensor_base_tf_functor" value="false" />
     <param name="distortion_model_path" value="/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model" />
     <param name="evaluation_mode" value="false" />
-    <param name="evaluation_pcd_path" value="" />
+    <param name="evaluation_pcd_path" value="true" />
     <param name="evaluation_associated_txt_path" value="" />
     <param name="evaluation_ground_truth_txt_path" value="" />
     <param name="evaluation_output_trajectory_txt_path" value="" />
@@ -79,7 +79,7 @@
     <param name="evaluation_mode_paused" value="false" />
     <param name="evaluation_show_frames" value="true" />
     <param name="object_database_location" value="/home/siddharth/kinect/" />
-    <param name="object_loop_closures" value="true" />
+    <param name="object_loop_closures" value="false" />
     <param name="object_landmarks" value="true" />
     <param name="save_object_models" value="true" />
     <param name="object_min_height" value="0.3" />

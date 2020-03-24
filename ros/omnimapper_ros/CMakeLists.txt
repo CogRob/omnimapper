@@ -46,11 +46,11 @@ link_directories(${PCL_LIBRARY_DIRS})
 #set (CMAKE_CXX_STANDARD 11)
 
 SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11 -fpermissive -w")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11 -fpermissive -w")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -faligned-new -std=c++11 -fpermissive -w")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native -faligned-new -std=c++11 -fpermissive -w")
 
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=native -faligned-new -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -march=native -faligned-new -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
 # Enable asan
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")

@@ -320,7 +320,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
       "generate_map_tsdf", &OmniMapperROS::generateMapTSDFCallback, this);
 
   // OmniMapper thread
-  omb_.setDebug(false);
+  omb_.setDebug(debug_);
   boost::thread omb_thread(&omnimapper::OmniMapperBase::spin, &omb_);
   if (use_icp_)
     boost::thread icp_thread(

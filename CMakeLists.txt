@@ -125,10 +125,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES})
 
-add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
-target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES}
-  ${OMNIMAPPER_LINK_GTSAM} cpu_tsdf ${CLOUDCV_LIBRARIES} profiler
-  ${MKL_LIBRARIES})
+# add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
+# target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES}
+#   ${OMNIMAPPER_LINK_GTSAM} cpu_tsdf ${CLOUDCV_LIBRARIES} profiler
+#   ${MKL_LIBRARIES})
 
 # add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
 # target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)

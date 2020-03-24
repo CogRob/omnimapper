@@ -256,7 +256,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::spinOnce() {
   }
 
   if (first_) {
-    // have_new_lscan_ = false;
+    have_new_lscan_ = false;
     getBaseToLaserTf(current_lscan->header.frame_id);
     previous_sym_ = current_sym;
     first_ = false;
