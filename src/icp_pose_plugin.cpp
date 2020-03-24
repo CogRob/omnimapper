@@ -514,7 +514,8 @@ bool ICPPoseMeasurementPlugin<PointT>::tryLoopClosure(gtsam::Symbol sym) {
     if (sym_dist > pose_index_thresh_) {
       if (debug_)
         printf("(%d) > %d\n",
-               (static_cast<int>(sym.index()) - test_sym.index()),
+               (static_cast<int>(sym.index()) -
+                static_cast<int>(test_sym.index())),
                pose_index_thresh_);
       gtsam::Pose3 test_pose(key_value.value);
       double test_dist = current_pose.range(test_pose);

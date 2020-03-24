@@ -40,7 +40,7 @@ void omnimapper::OmniMapperBase::initializePose(Time& t) {
   gtsam::PriorFactor<gtsam::Pose3> posePrior(
       init_symbol, initial_pose_,
       gtsam::noiseModel::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)
+          (gtsam::Vector6 << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)
               .finished()));
   new_factors.add(posePrior);
   PoseChainNode init_node(t, init_symbol);
@@ -203,7 +203,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
         printf(
             "OmniMapper: Tried to commit without any between factors!  Waiting "
             "for between factor!\n");
-        printf("Node has %u factors\n", to_commit->factors.size());
+        printf("Node has %zu factors\n", to_commit->factors.size());
       }
       return (false);
     }

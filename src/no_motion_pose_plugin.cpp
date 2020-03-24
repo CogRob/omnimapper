@@ -18,8 +18,8 @@ NoMotionPosePlugin::addRelativePose(boost::posix_time::ptime t1,
                                  // 3).cast<double>()), gtsam::Point3
                                  // (cloud_tform (0,3), cloud_tform (1,3),
                                  // cloud_tform (2,3)));
-  double trans_noise = 100.0;  // 0.1;//100.0;
-  double rot_noise = 100.0;    // 0.1;//100.0;
+  double trans_noise = 100.0;    // 0.1;//100.0;
+  double rot_noise = 100.0;      // 0.1;//100.0;
   gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas(
       (gtsam::Vector(6) << rot_noise, rot_noise, rot_noise, trans_noise,
        trans_noise, trans_noise)

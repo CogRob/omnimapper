@@ -4,14 +4,15 @@ project(omnimapper)
 
 SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
+set(IGNORE_WARNING_FLAGS "-Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
 # Enable asan
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-# set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
@@ -24,10 +25,13 @@ link_directories(${PCL_LIBRARY_DIRS})
 
 ###########################################################################
 # Find GTSAM
-find_package(GTSAM REQUIRED)
+# find_package(GTSAM REQUIRED)
 # include_directories(${GTSAM_INCLUDE_DIR})
 # Use GTSAM's Eigen
 message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
+message("GTSAM_LIBS: " ${GTSAM_LIBS})
+
+set(OMNIMAPPER_LINK_GTSAM "gtsamDebug")
 
 ###########################################################################
 # Find MKL
@@ -67,7 +71,7 @@ set(incs
   include/omnimapper/tsdf_output_plugin.h
   include/omnimapper/geometry.h
   include/omnimapper/output_plugin.h
-  include/omnimapper/organized_feature_extraction_tbb.h
+  # include/omnimapper/organized_feature_extraction_tbb.h
   include/omnimapper/plane_factor.h
   include/omnimapper/pose_chain.h
   include/omnimapper/plane.h
@@ -87,7 +91,7 @@ set(srcs
  src/icp_pose_plugin.cpp
  src/omnimapper_visualizer_pcl.cpp
  src/organized_feature_extraction.cpp
- src/organized_feature_extraction_tbb.cpp
+ # src/organized_feature_extraction_tbb.cpp
  src/plane.cpp
  src/BoundedPlane3.cpp
  src/object.cpp
@@ -99,15 +103,15 @@ set(srcs
  src/object_segment_propagation.cpp
  src/object_recognition.cpp
  src/object_discovery.cpp
- #src/cloud_registration_plugin.cpp
+ # src/cloud_registration_plugin.cpp
  src/transform_helpers.cpp
  src/no_motion_pose_plugin.cpp
  src/tsdf_output_plugin.cpp
 )
 
 add_library(omnimapper SHARED ${incs} ${srcs})
-target_link_libraries(omnimapper ${PCL_LIBRARIES} gtsam
-  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb tbbmalloc ${MKL_LIBRARIES})
+target_link_libraries(omnimapper ${PCL_LIBRARIES} ${OMNIMAPPER_LINK_GTSAM}
+  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler ${MKL_LIBRARIES})
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
@@ -118,39 +122,40 @@ configure_file(${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
         DESTINATION share/omnimapper)
 
-add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
-
-#add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
-#target_link_libraries(omnimapper_handheld_pcd omnimapper
-#${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
-
-#add_executable(isam_splice_test src/isam_splice_test.cpp)
-#target_link_libraries(isam_splice_test gtsam)
-
 add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES} tbb)
+target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES})
 
 add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
-target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES} gtsamDebug
-  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler tbb ${MKL_LIBRARIES})
+target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES}
+  ${OMNIMAPPER_LINK_GTSAM} cpu_tsdf ${CLOUDCV_LIBRARIES} profiler
+  ${MKL_LIBRARIES})
 
-add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
-
-#add_executable(omnimapper_plane_test2 src/omnimapper_plane_test2.cpp)
-#target_link_libraries(omnimapper_plane_test2 omnimapper ${PCL_LIBRARIES})
-
-add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
-target_link_libraries(organized_feature_extraction_demo
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-
-add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
-target_link_libraries(organized_feature_extraction_demo_tbb
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-
-add_executable(tbb_test src/tbb_test.cpp)
-target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
-
-#add_executable(tbb_test2 src/tbb_test2.cpp)
-#target_link_libraries(tbb_test2 omnimapper ${PCL_LIBRARIES} tbb)
+# add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
+# target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
+#
+# #add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
+# #target_link_libraries(omnimapper_handheld_pcd omnimapper
+# #${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+#
+# #add_executable(isam_splice_test src/isam_splice_test.cpp)
+# #target_link_libraries(isam_splice_test ${OMNIMAPPER_LINK_GTSAM})
+#
+# add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+# target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
+#
+# #add_executable(omnimapper_plane_test2 src/omnimapper_plane_test2.cpp)
+# #target_link_libraries(omnimapper_plane_test2 omnimapper ${PCL_LIBRARIES})
+#
+# add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
+# target_link_libraries(organized_feature_extraction_demo
+#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
+#
+# add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
+# target_link_libraries(organized_feature_extraction_demo_tbb
+#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
+#
+# add_executable(tbb_test src/tbb_test.cpp)
+# target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
+#
+# #add_executable(tbb_test2 src/tbb_test2.cpp)
+# #target_link_libraries(tbb_test2 omnimapper ${PCL_LIBRARIES} tbb)

@@ -48,7 +48,7 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
   //*boundary_ = *new_boundary;
   // boundary_.swap(new_boundary);
 
-  for (int i = 0; i < new_boundary->points.size(); i++) {
+  for (std::size_t i = 0; i < new_boundary->points.size(); i++) {
     // printf ("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
     //   meas_boundary_map->points[i].x ,
     //   meas_boundary_map->points[i].y ,
@@ -205,7 +205,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   // TEST
   if (check_input) {
     Eigen::Vector4d map_coeffs = planeCoefficients();
-    for (int i = 0; i < boundary_->points.size(); i++) {
+    for (std::size_t i = 0; i < boundary_->points.size(); i++) {
       // printf ("Internal Boundary: Boundary Point: %lf %lf %lf\n",
       // boundary_->points[i].x ,
       // boundary_->points[i].y ,
@@ -221,7 +221,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
       }
     }
 
-    for (int i = 0; i < meas_xy->points.size(); i++) {
+    for (std::size_t i = 0; i < meas_xy->points.size(); i++) {
       // printf ("MeasXY: Boundary Point: %lf %lf %lf\n",
       // meas_xy->points[i].x ,
       // meas_xy->points[i].y ,
@@ -236,7 +236,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
       }
     }
 
-    for (int i = 0; i < map_xy->points.size(); i++) {
+    for (std::size_t i = 0; i < map_xy->points.size(); i++) {
       // printf ("MapXY: Boundary Point: %lf %lf %lf\n",
       // map_xy->points[i].x ,
       // map_xy->points[i].y ,
@@ -261,8 +261,9 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
     if (meas_boundary_intersects)
       printf("BoundedPlane3: meas boundary intersects!\n");
 
-    printf("BoundedPlane3: Attempting to merge meas_xy (%d) with map_xy (%d)\n",
-           meas_xy->points.size(), map_xy->points.size());
+    printf(
+        "BoundedPlane3: Attempting to merge meas_xy (%zu) with map_xy (%zu)\n",
+        meas_xy->points.size(), map_xy->points.size());
     bool meas_xy_intersect = boost::geometry::intersects(meas_xy->points);
     if (meas_xy_intersect) printf("BoundedPlane3: Meas_xy_intersects!\n");
     bool map_xy_intersect = boost::geometry::intersects(map_xy->points);
@@ -291,7 +292,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
     // exit(1);
   }
 
-  printf("BoundedPlane3: Merged: map: %d meas: %d combined: %d \n",
+  printf("BoundedPlane3: Merged: map: %zu meas: %zu combined: %zu \n",
          map_xy->points.size(), meas_xy->points.size(),
          merged_xy->points.size());
   double merged_area = boost::geometry::area(merged_xy->points);
@@ -322,7 +323,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
       merged_map->points, simple_merged_map->points, 0.005, false, true);
 
   Eigen::Vector4d map_lm_coeffs = planeCoefficients();
-  for (int i = 0; i < merged_map->points.size(); i++) {
+  for (std::size_t i = 0; i < merged_map->points.size(); i++) {
     // printf ("Merged Map: Boundary Point: %lf %lf %lf\n",
     // merged_map->points[i].x ,
     // merged_map->points[i].y ,

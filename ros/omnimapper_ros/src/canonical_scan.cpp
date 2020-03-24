@@ -132,12 +132,11 @@ void CanonicalScan::initParams(ros::NodeHandle& nh_private_) {
     input_.outliers_adaptive_mult = 2.0;
 
   // If you already have a guess of the solution, you can compute the polar
-  // angle 	of the points of one scan in the new position. If the polar angle
-  // is
-  // not a monotone 	function of the readings index, it means that the surface
-  // is
-  // not visible in the 	next position. If it is not visible, then we don't
-  // use it for matching.
+  // angle 	of the points of one scan in the new position. If the polar
+  // angle is
+  // not a monotone 	function of the readings index, it means that the
+  // surface is not visible in the 	next position. If it is not visible,
+  // then we don't use it for matching.
   if (!nh_private_.getParam("do_visibility_test", input_.do_visibility_test))
     input_.do_visibility_test = 0;
 

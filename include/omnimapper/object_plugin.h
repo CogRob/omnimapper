@@ -170,8 +170,6 @@ class ObjectPlugin {
 
   std::map<gtsam::Symbol, int> training_map;
   std::queue<gtsam::Symbol> train_queue;
-  int max_object_size, max_current_size;
-  cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
 
   /* mutexes */
   boost::mutex recog_mutex_;         // mutex for recognition queue
