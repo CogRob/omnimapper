@@ -532,6 +532,12 @@ void OrganizedFeatureExtraction<PointT>::computeEdges() {
                       *stage3_occluding_cloud_);
 }
 
+template <typename PointT>
+bool OrganizedFeatureExtraction<PointT>::ready() {
+  boost::mutex::scoped_lock lock(cloud_mutex);
+  return true;
+}
+
 /** \brief Run the visualizer
  *
  */

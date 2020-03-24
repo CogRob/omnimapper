@@ -791,7 +791,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
 
       Eigen::Vector4d plane_coeffs = key_value.value.planeCoefficients();
 
-      for (int i = 0; i < lm_cloud->points.size(); i++) {
+      for (std::size_t i = 0; i < lm_cloud->points.size(); i++) {
         if (!pcl::isFinite(lm_cloud->points[i]))
           printf("Error!  Point is not finite!\n");
       }
@@ -799,7 +799,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
       Eigen::Vector4f centroid;
       pcl::compute3DCentroid(*lm_cloud, centroid);
 
-      printf("RViz Plugin: Cloud had %d points\n", lm_cloud->points.size());
+      printf("RViz Plugin: Cloud had %zu points\n", lm_cloud->points.size());
       printf("RViz Plugin Centroid: %lf %lf %lf\n", centroid[0], centroid[1],
              centroid[2]);
 

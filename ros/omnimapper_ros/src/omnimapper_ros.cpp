@@ -20,7 +20,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
       eval_plugin_(&omb_),
       fake_files_({"/tmp/FAKE_FILE_PATH"}),
       fake_grabber_(fake_files_, 1.0, false),
-      organized_feature_extraction_(),
+      organized_feature_extraction_(fake_grabber_),
       tf_listener_(ros::Duration(500.0)) {
   if (debug_) ROS_INFO("OmniMapperROS: Constructing... Loading ROS Params...");
   loadROSParams();

@@ -190,6 +190,7 @@ class OrganizedFeatureExtraction {
   void computePlanes();
   void computeClusters();
   void computeEdges();
+  bool ready();
   void spin();
   void setPlanarRegionCallback(
       boost::function<void(

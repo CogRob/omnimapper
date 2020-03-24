@@ -40,7 +40,7 @@ void omnimapper::OmniMapperBase::initializePose(Time& t) {
   gtsam::PriorFactor<gtsam::Pose3> posePrior(
       init_symbol, initial_pose_,
       gtsam::noiseModel::Diagonal::Sigmas(
-          (gtsam::Vector6 << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)
+          (gtsam::Vector6() << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)
               .finished()));
   new_factors.add(posePrior);
   PoseChainNode init_node(t, init_symbol);
