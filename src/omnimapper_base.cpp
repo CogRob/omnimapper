@@ -593,11 +593,11 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::predictPose(
         // TODO: should a pose plugin be selectable through some other means?
         // if (pose_plugins.size () > 0)
         //{
-        printf("Latest: %d\n", latest_committed_node->symbol.index());
+        printf("Latest: %zu\n", latest_committed_node->symbol.index());
         if ((new_values.exists<gtsam::Pose3>(latest_committed_node->symbol)) &&
             !(current_solution.exists<gtsam::Pose3>(
                 latest_committed_node->symbol))) {
-          printf("THIS WASNT ACTUALLY COMMITTED PROPERLY!!!\N");
+          printf("THIS WASNT ACTUALLY COMMITTED PROPERLY!!!\n");
           exit(1);
         }
 
@@ -697,9 +697,9 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
   boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph(
       new gtsam::NonlinearFactorGraph(current_graph));
   double start = pcl::getTime();
-  for (int i = 0; i < output_plugins.size(); i++) {
+  for (std::size_t i = 0; i < output_plugins.size(); i++) {
     if (debug_)
-      printf("Updating plugin %d with %u values\n", i, vis_values->size());
+      printf("Updating plugin %zu with %zu values\n", i, vis_values->size());
     output_plugins[i]->update(vis_values, vis_graph);
   }
   double end = pcl::getTime();

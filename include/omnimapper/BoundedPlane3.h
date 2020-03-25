@@ -1,12 +1,12 @@
 #pragma once
 
 #include <gtsam/base/DerivedValue.h>
-#include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/thread/mutex.hpp>
+#include <omnimapper/OrientedPlane3.h>
 
 namespace omnimapper {
 /**
@@ -20,7 +20,7 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   typedef typename boost::shared_ptr<boost::mutex> MutexPtr;
 
  protected:
-  gtsam::Sphere2 n_;
+  gtsam::Unit3 n_;
   double d_;
 
   CloudPtr boundary_;
@@ -44,7 +44,7 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
     // boundary_ = plane.boundary_;
   }
 
-  BoundedPlane3(const gtsam::Sphere2& s, double d, CloudPtr boundary,
+  BoundedPlane3(const gtsam::Unit3& s, double d, CloudPtr boundary,
                 MutexPtr boundary_mutex)
       : n_(s),
         d_(d),
@@ -56,14 +56,14 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
 
   BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary,
                 MutexPtr boundary_mutex = MutexPtr(new boost::mutex()))
-      : n_(gtsam::Sphere2(gtsam::Point3(a, b, c))),
+      : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
         boundary_(new Cloud(*boundary)),
         plane_mutex_(boundary_mutex) {
     // boost::lock_guard<boost::mutex> lock (*plane_mutex_);
     // boundary_ = boundary;
     // gtsam::Point3 p (a, b, c);
-    // n_ = gtsam::Sphere2 (p);
+    // n_ = gtsam::Unit3 (p);
     // d_ = d;
     // boundary_ = boundary;
   }
@@ -92,7 +92,7 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   /// Returns the plane coefficients (a, b, c, d)
   gtsam::Vector planeCoefficients() const;
 
-  inline gtsam::Sphere2 normal() const { return n_; }
+  inline gtsam::Unit3 normal() const { return n_; }
 
   // Override Plane3 retract to additionally reproject the boundary when needed
   BoundedPlane3 retract(const gtsam::Vector& v) const;

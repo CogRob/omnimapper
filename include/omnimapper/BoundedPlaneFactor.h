@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/slam/OrientedPlane3Factor.h>
+#include <omnimapper/OrientedPlane3Factor.h>
 #include <omnimapper/BoundedPlane3.h>
 
 namespace omnimapper {

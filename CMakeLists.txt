@@ -50,6 +50,7 @@ link_directories(${CPUTSDF_LIBRARY_DIRS})
 include_directories(include)
 
 set(incs
+  include/omnimapper/impl/geometry.hpp
   include/omnimapper/geometry.h
   include/omnimapper/get_transform_functor.h
   include/omnimapper/icp_pose_plugin.h
@@ -77,7 +78,8 @@ set(incs
   include/omnimapper/BoundedPlane3.h
   include/omnimapper/BoundedPlaneFactor.h
   include/omnimapper/bounded_plane_plugin.h
-  include/omnimapper/impl/geometry.hpp
+  include/omnimapper/OrientedPlane3.h
+  include/omnimapper/OrientedPlane3Factor.h
 )
 
 set(third_party_incs
@@ -106,6 +108,8 @@ set(srcs
   src/BoundedPlane3.cpp
   src/BoundedPlaneFactor.cpp
   src/bounded_plane_plugin.cpp
+  src/OrientedPlane3.cpp
+  src/OrientedPlane3Factor.cpp
 )
 
 add_library(omnimapper SHARED ${incs} ${srcs})
@@ -125,10 +129,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test omnimapper)
 
-add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
-target_link_libraries(omnimapper_static_test
-  ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
-  tbb tbbmalloc cpu_tsdf profiler)
+# add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
+# target_link_libraries(omnimapper_static_test
+#   ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
+#   tbb tbbmalloc cpu_tsdf profiler)
 
 # add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
 # target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)

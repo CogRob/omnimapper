@@ -26,11 +26,11 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
 
   // Retract coefficients
   gtsam::Vector2 n_v(v(0), v(1));
-  gtsam::Sphere2 n_retracted = n_.retract(n_v, gtsam::Sphere2::EXPMAP);
+  gtsam::Unit3 n_retracted = n_.retract(n_v);
   double d_retracted = d_ + v(2);
 
   // Retract the boundary too.
-  Eigen::Vector3d n_retracted_unit = n_retracted.unitVector();
+  Eigen::Vector3d n_retracted_unit = n_retracted.point3().vector();
   Eigen::Vector4d new_coeffs(n_retracted_unit[0], n_retracted_unit[1],
                              n_retracted_unit[2], d_retracted);
   Eigen::Vector4d old_coeffs = planeCoefficients();
@@ -75,14 +75,14 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
 template <typename PointT>
 gtsam::Vector omnimapper::BoundedPlane3<PointT>::localCoordinates(
     const omnimapper::BoundedPlane3<PointT>& y) const {
-  gtsam::Vector n_local = n_.localCoordinates(y.n_, gtsam::Sphere2::EXPMAP);
+  gtsam::Vector n_local = n_.localCoordinates(y.n_);
   double d_local = d_ - y.d_;
   return gtsam::Vector(3) << n_local(0), n_local(1), -d_local;
 }
 
 template <typename PointT>
 gtsam::Vector omnimapper::BoundedPlane3<PointT>::planeCoefficients() const {
-  gtsam::Vector unit_vec = n_.unitVector();
+  gtsam::Vector unit_vec = n_.point3().vector();
   return (gtsam::Vector(4) << unit_vec[0], unit_vec[1], unit_vec[2], d_);
 }
 
@@ -94,10 +94,10 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::Transform(
   // only the coefficients.
   gtsam::Matrix n_hr;
   gtsam::Matrix n_hp;
-  gtsam::Sphere2 n_rotated = xr.rotation().unrotate(plane.n_, n_hr, n_hp);
+  gtsam::Unit3 n_rotated = xr.rotation().unrotate(plane.n_, n_hr, n_hp);
 
-  gtsam::Vector n_unit = plane.n_.unitVector();
-  gtsam::Vector unit_vec = n_rotated.unitVector();
+  gtsam::Vector n_unit = plane.n_.point3().vector();
+  gtsam::Vector unit_vec = n_rotated.point3().vector();
   double pred_d = n_unit.dot(xr.translation().vector()) + plane.d_;
   // OrientedPlane3 transformed_plane (unit_vec (0), unit_vec (1), unit_vec (2),
   // pred_d);
@@ -134,9 +134,9 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::Transform(
 template <typename PointT>
 Eigen::Vector4d omnimapper::BoundedPlane3<PointT>::TransformCoefficients(
     const omnimapper::BoundedPlane3<PointT>& plane, const gtsam::Pose3& xr) {
-  gtsam::Sphere2 n_rotated = xr.rotation().unrotate(plane.n_);
-  gtsam::Vector n_rotated_unit = n_rotated.unitVector();
-  gtsam::Vector n_unit = plane.n_.unitVector();
+  gtsam::Unit3 n_rotated = xr.rotation().unrotate(plane.n_);
+  gtsam::Vector n_rotated_unit = n_rotated.point3().vector();
+  gtsam::Vector n_unit = plane.n_.point3().vector();
   double pred_d = n_unit.dot(xr.translation().vector()) + plane.d_;
   Eigen::Vector4d result(n_rotated_unit[0], n_rotated_unit[1],
                          n_rotated_unit[2], pred_d);
@@ -155,7 +155,7 @@ template <typename PointT>
 gtsam::Vector omnimapper::BoundedPlane3<PointT>::error(
     const omnimapper::BoundedPlane3<PointT>& plane) const {
   gtsam::Vector n_error =
-      -n_.localCoordinates(plane.n_, gtsam::Sphere2::EXPMAP);
+      -n_.localCoordinates(plane.n_);
 
   if (!(std::isfinite(n_error[0]) && std::isfinite(n_error[1]))) {
     printf("BoundedPlane3: ERROR: Got NaN error on local coords!\n");
