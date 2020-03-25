@@ -5,14 +5,14 @@ project(omnimapper)
 SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 
 set(IGNORE_WARNING_FLAGS "-Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-deprecated-declarations")
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=native -faligned-new -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -march=native -faligned-new -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
 # Enable asan
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -faligned-new -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native -faligned-new -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11 ${IGNORE_WARNING_FLAGS}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
@@ -31,7 +31,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 message("GTSAM_LIBS: " ${GTSAM_LIBS})
 
-set(OMNIMAPPER_LINK_GTSAM "gtsamDebug")
+set(GTSAM_LINK_LIB "gtsam")
 
 ###########################################################################
 # Find MKL
@@ -109,8 +109,9 @@ set(srcs
 )
 
 add_library(omnimapper SHARED ${incs} ${srcs})
-target_link_libraries(omnimapper ${PCL_LIBRARIES} ${OMNIMAPPER_LINK_GTSAM}
-  cpu_tsdf ${CLOUDCV_LIBRARIES} profiler ${MKL_LIBRARIES})
+target_link_libraries(omnimapper
+  ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
+  tbb tbbmalloc cpu_tsdf profiler)
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
@@ -121,30 +122,30 @@ configure_file(${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
         DESTINATION share/omnimapper)
 
-add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
-
 add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test omnimapper ${PCL_LIBRARIES})
+target_link_libraries(omnimapper_test omnimapper)
 
 add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
-target_link_libraries(omnimapper_static_test ${PCL_LIBRARIES}
-  ${OMNIMAPPER_LINK_GTSAM} cpu_tsdf ${CLOUDCV_LIBRARIES} profiler
-  ${MKL_LIBRARIES})
+target_link_libraries(omnimapper_static_test
+  ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
+  tbb tbbmalloc cpu_tsdf profiler)
 
-add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
+# add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
+# target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
 
-add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
-target_link_libraries(organized_feature_extraction_demo
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-
-add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
-target_link_libraries(organized_feature_extraction_demo_tbb
-  omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-
-add_executable(tbb_test src/tbb_test.cpp)
-target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
+# add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+# target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
+#
+# add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
+# target_link_libraries(organized_feature_extraction_demo
+#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
+#
+# add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
+# target_link_libraries(organized_feature_extraction_demo_tbb
+#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
+#
+# add_executable(tbb_test src/tbb_test.cpp)
+# target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
 
 # add_executable(omnimapper src/omnimapper.cpp)
 # target_link_libraries(omnimapper omnimapper)
@@ -164,4 +165,3 @@ target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
 
 # add_executable(tbb_test2 src/tbb_test2.cpp)
 # target_link_libraries(tbb_test2 omnimapper ${PCL_LIBRARIES} tbb)
-
