@@ -325,7 +325,7 @@ Plane<PointT> Plane<PointT>::retract(const Vector& d) const {
     if (verify_ptp_dist) {
       double orig_dist = 0.0;
       double new_dist = 0.0;
-      for (int i = 0; i < hull_.points.size(); i++) {
+      for (std::size_t i = 0; i < hull_.points.size(); i++) {
         double ptp_dist = fabs(new_norm[0] * hull_.points[i].x +
                                new_norm[1] * hull_.points[i].y +
                                new_norm[2] * hull_.points[i].z + (d_ + d(3)));
@@ -827,7 +827,7 @@ void Plane<PointT>::Extend(const Pose3& pose,
   bool verify_ptp_dist = true;
   if (verify_ptp_dist) {
     double orig_dist = 0.0;
-    for (int i = 0; i < test_out.points.size(); i++) {
+    for (std::size_t i = 0; i < test_out.points.size(); i++) {
       double ptp_dist =
           fabs(a_ * test_out.points[i].x + b_ * test_out.points[i].y +
                c_ * test_out.points[i].z + d_);
@@ -973,7 +973,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
     double hull1_dist = 0.0;
     double hull2_dist = 0.0;
     double hull3_dist = 0.0;
-    for (int i = 0; i < meas_hull_aligned_map.points.size(); i++) {
+    for (std::size_t i = 0; i < meas_hull_aligned_map.points.size(); i++) {
       double ptp_dist1 = fabs(a_ * meas_hull_aligned_map.points[i].x +
                               b_ * meas_hull_aligned_map.points[i].y +
                               c_ * meas_hull_aligned_map.points[i].z + d_);
@@ -990,7 +990,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
       // meas_hull_aligned_map.points[i].z);
       //}
     }
-    for (int i = 0; i < hull_.points.size(); i++) {
+    for (std::size_t i = 0; i < hull_.points.size(); i++) {
       double ptp_dist3 = fabs(a_ * hull_.points[i].x + b_ * hull_.points[i].y +
                               c_ * hull_.points[i].z + d_);
       hull3_dist += ptp_dist3;
@@ -1092,8 +1092,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   // origin_xy_meas_hull, origin_xy_fused_hull);
   bool worked = omnimapper::fusePlanarPolygonsXY<PointT>(
       origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
-
-  printf("Fuse Result: orig: %d meas: %d fused: %d\n",
+  printf("Fuse Result: orig: %zu meas: %zu fused: %zu\n",
          origin_xy_lm_hull.points.size(), origin_xy_meas_hull.points.size(),
          origin_xy_fused_hull.points.size());
 
@@ -1103,7 +1102,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   }
 
   if (debug_extend2) {
-    printf("lm_hull: %d meas_hull: %d fused_hull: %d\n",
+    printf("lm_hull: %zu meas_hull: %zu fused_hull: %zu\n",
            origin_xy_lm_hull.points.size(), origin_xy_meas_hull.points.size(),
            origin_xy_fused_hull.points.size());
   }
@@ -1117,7 +1116,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
 
   pcl::approximatePolygon2D<PointT>(xy_fused_points, xy_fused_approx_points,
                                     0.005, false, true);
-  printf("approximatePolygon2D: orig poly: %d new poly: %d\n",
+  printf("approximatePolygon2D: orig poly: %zu new poly: %zu\n",
          xy_fused_points.size(), xy_fused_approx_points.size());
 
   // Rotate it back
@@ -1138,7 +1137,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
 
   if (debug_extend2) {
     // now check the point to plane distance of each point from the landmark
-    for (int i = 0; i < hull_.points.size(); i++) {
+    for (std::size_t i = 0; i < hull_.points.size(); i++) {
       double ptp_dist = fabs(a_ * hull_.points[i].x + b_ * hull_.points[i].y +
                              c_ * hull_.points[i].z + d_);
       if (ptp_dist >= 0.001) {

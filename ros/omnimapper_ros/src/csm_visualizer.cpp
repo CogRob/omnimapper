@@ -22,7 +22,8 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
       "draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap, this);
 
   // draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds",
-  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback, this);
+  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
+  // this);
 }
 
 template <typename LScanT>
@@ -169,6 +170,7 @@ bool omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap(
   //   gtsam::Symbol key_symbol (key_value.key);
   //   gtsam::Pose3 sam_pose = key_value.value;
   // }
+  return true;
 }
 
 // template <typename LScanT> bool

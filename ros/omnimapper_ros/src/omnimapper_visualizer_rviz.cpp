@@ -136,7 +136,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu() {
       menu_handler_->insert(
           visualization_menu_, "Output Graphviz",
           boost::bind(
-              &omnimapper::OmniMapperVisualizerRViz<PointT>::setOutputGraphviz,
+              &omnimapper::OmniMapperVisualizerRViz<PointT>::outputGraphvizCb,
               this, _1));
 
   menu_handler_->apply(*marker_server_, "OmniMapper");
@@ -160,6 +160,12 @@ template <typename PointT>
 void omnimapper::OmniMapperVisualizerRViz<PointT>::drawPoseMarginalsCb(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
   draw_pose_marginals_ = true;
+}
+
+template <typename PointT>
+void omnimapper::OmniMapperVisualizerRViz<PointT>::outputGraphvizCb(
+    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
+  setOutputGraphviz(true);
 }
 
 template <typename PointT>
@@ -313,9 +319,10 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
   // aggregate_cloud->header.stamp = ros::Time::now ();
 
   // Draw object cloud
-  pcl::PointCloud<pcl::PointXYZRGB> aggregate_object_observation_cloud;  // (new
-                                                                         // pcl::PointCloud<pcl::PointXYZRGB>
-                                                                         // ());
+  pcl::PointCloud<pcl::PointXYZRGB>
+      aggregate_object_observation_cloud;  // (new
+                                           // pcl::PointCloud<pcl::PointXYZRGB>
+                                           // ());
   // aggregate_object_observation_cloud.header.frame_id = "/world";
   // aggregate_object_observation_cloud.header.stamp = ros::Time::now ();
 
@@ -373,8 +380,8 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
       // pose.print ("SAM Pose: ");
       std::cout << "Map Tform: " << map_tform << std::endl;
       pcl::transformPointCloud(*frame_cloud, *map_cloud, map_tform);
-      sprintf(frame_name, "x_%d", key_symbol.index());
-      printf("name: x_%d\n", key_symbol.index());
+      sprintf(frame_name, "x_%zu", key_symbol.index());
+      printf("name: x_%zu\n", key_symbol.index());
 
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_map_cloud(
           new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -392,7 +399,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
 
       pcl::PointCloud<pcl::PointXYZRGB> cluster;
 
-      for (int i = 0; i < obs_clouds.size(); i++) {
+      for (std::size_t i = 0; i < obs_clouds.size(); i++) {
         // Get the cluster
         pcl::copyPointCloud((*(obs_clouds[i])), cluster);
 
@@ -645,10 +652,8 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
   if (draw_icp_clouds_) {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>());
-
     if (passthrough_filter_map_cloud_) {
       // CloudPtr filtered_cloud (new Cloud ());
-
       pcl::PassThrough<pcl::PointXYZRGB> passthrough;
       passthrough.setInputCloud(aggregate_cloud);
       passthrough.setFilterFieldName("z");
@@ -704,7 +709,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
       Cloud lm_cloud = key_value.value.hull();
       (*plane_boundary_cloud) += lm_cloud;
 
-      for (int i = 0; i < lm_cloud.points.size(); i++) {
+      for (std::size_t i = 0; i < lm_cloud.points.size(); i++) {
         if (!pcl::isFinite(lm_cloud.points[i]))
           printf("Error!  Point is not finite!\n");
       }
@@ -712,7 +717,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
       Eigen::Vector4f centroid;
       pcl::compute3DCentroid(lm_cloud, centroid);
 
-      printf("RViz Plugin: Cloud had %d points\n", lm_cloud.points.size());
+      printf("RViz Plugin: Cloud had %zu points\n", lm_cloud.points.size());
       printf("RViz Plugin Centroid: %lf %lf %lf\n", centroid[0], centroid[1],
              centroid[2]);
 
@@ -785,7 +790,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
 
       Eigen::Vector4d plane_coeffs = key_value.value.planeCoefficients();
 
-      for (int i = 0; i < lm_cloud->points.size(); i++) {
+      for (std::size_t i = 0; i < lm_cloud->points.size(); i++) {
         if (!pcl::isFinite(lm_cloud->points[i]))
           printf("Error!  Point is not finite!\n");
       }
@@ -793,7 +798,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
       Eigen::Vector4f centroid;
       pcl::compute3DCentroid(*lm_cloud, centroid);
 
-      printf("RViz Plugin: Cloud had %d points\n", lm_cloud->points.size());
+      printf("RViz Plugin: Cloud had %zu points\n", lm_cloud->points.size());
       printf("RViz Plugin Centroid: %lf %lf %lf\n", centroid[0], centroid[1],
              centroid[2]);
 
@@ -859,7 +864,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback(
 
   // Display the segmented planar regions
   pcl::PointCloud<PointT> aggregate_cloud;
-  for (int i = 0; i < regions.size(); i++) {
+  for (std::size_t i = 0; i < regions.size(); i++) {
     pcl::PointCloud<PointT> border_cloud;
     std::vector<PointT, Eigen::aligned_allocator<PointT> > border =
         regions[i].getContour();
@@ -889,7 +894,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback(
   unsigned char grn[6] = {0, 255, 0, 255, 0, 255};
   unsigned char blu[6] = {0, 0, 255, 0, 255, 255};
 
-  for (int i = 0; i < labeled_cloud.points.size(); i++) {
+  for (std::size_t i = 0; i < labeled_cloud.points.size(); i++) {
     labeled_cloud.points[i].r =
         (labeled_cloud.points[i].r + red[labels->points[i].label % 6]) / 2;
     labeled_cloud.points[i].g =
@@ -910,7 +915,7 @@ template <typename PointT>
 void omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback(
     std::vector<CloudPtr> clusters, omnimapper::Time t,
     boost::optional<std::vector<pcl::PointIndices> > indices) {
-  printf("Omnimappervisualizerrviz: Got %d clusters\n", clusters.size());
+  printf("Omnimappervisualizerrviz: Got %zu clusters\n", clusters.size());
 
   if (clusters.size() == 0) return;
 
@@ -922,15 +927,15 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback(
 
   // color the clouds
   pcl::PointCloud<pcl::PointXYZRGB> color_cluster;
-  for (int i = 0; i < clusters.size(); i++) {
+  for (std::size_t i = 0; i < clusters.size(); i++) {
     // if (clusters[i]->points.size () > 0)
     // aggregate_cloud += ((*(clusters[i])));
 
     if (clusters[i]->points.size() > 0) {
-      printf("Cluster %d has %d points\n", i, clusters[i]->points.size());
+      printf("Cluster %zu has %zu points\n", i, clusters[i]->points.size());
       color_cluster.resize(clusters[i]->points.size());
       pcl::copyPointCloud((*(clusters[i])), color_cluster);
-      for (int j = 0; j < color_cluster.points.size(); j++) {
+      for (std::size_t j = 0; j < color_cluster.points.size(); j++) {
         color_cluster.points[j].r =
             (color_cluster.points[j].r + red[i % 6]) / 2;
         color_cluster.points[j].g =
@@ -1134,7 +1139,7 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel(
 
   // compute intersection of camera viewpoint with all planes in the scene
   std::vector<Eigen::Vector3f> intersections;
-  for (int i = 0; i < latest_planes_.size(); i++) {
+  for (std::size_t i = 0; i < latest_planes_.size(); i++) {
     Eigen::Vector4f model = latest_planes_[i].getCoefficients();
     Eigen::Vector3f centroid = latest_planes_[i].getCentroid();
     Eigen::Vector3f norm3(model[0], model[1], model[2]);
@@ -1154,7 +1159,7 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel(
   Eigen::Vector3f closest_intersection(0.0, 0.0, 0.0);
   double closest_dist = 999999.9;
   int best_idx = 0;
-  for (int i = 0; i < intersections.size(); i++) {
+  for (std::size_t i = 0; i < intersections.size(); i++) {
     if (intersections[i].norm() < closest_dist) {
       best_idx = i;
       closest_dist = intersections[i].norm();

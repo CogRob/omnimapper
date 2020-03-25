@@ -85,6 +85,7 @@ add_service_files(
   OutputMapTSDF.srv
   PublishModel.srv
   VisualizeFullCloud.srv
+  WriteTrajectoryFile.srv
   )
 
 generate_messages(DEPENDENCIES

@@ -103,10 +103,10 @@ void BoundedPlanePlugin<PointT>::regionsToMeasurements(
     border_cloud->points = border;
     pcl::PointCloud<PointT> empty_inliers;
 
-    printf("border before: %d\n", border.size());
+    printf("border before: %zu\n", border.size());
     removeDuplicatePoints(*border_cloud);
     border = border_cloud->points;
-    printf("border after: %d\n", border.size());
+    printf("border after: %zu\n", border.size());
 
     // TODO : remove debug
     // PointVector poly(border);
@@ -172,12 +172,12 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
         regions,
     omnimapper::Time t) {
-  printf("BoundedPlanePlugin: Got %d regions.\n", regions.size());
+  printf("BoundedPlanePlugin: Got %zu regions.\n", regions.size());
 
   // Convert the regions to omnimapper::BoundedPlane3
   std::vector<omnimapper::BoundedPlane3<PointT> > plane_measurements;
   regionsToMeasurements(regions, t, plane_measurements);
-  printf("BoundedPlanePlugin: Have %d measurements\n",
+  printf("BoundedPlanePlugin: Have %zu measurements\n",
          plane_measurements.size());
 
   // Get the planes from the mapper
@@ -204,7 +204,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
   gtsam::Pose3 new_pose_inv = new_pose->inverse();
   Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
-  for (int i = 0; i < plane_measurements.size(); i++) {
+  for (std::size_t i = 0; i < plane_measurements.size(); i++) {
     double lowest_error = std::numeric_limits<double>::infinity();
     gtsam::Symbol best_symbol = gtsam::Symbol('p', max_plane_id_);
 
@@ -220,7 +220,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
     Eigen::Vector4d meas_map_coeffs =
         omnimapper::BoundedPlane3<PointT>::TransformCoefficients(meas_plane,
                                                                  new_pose_inv);
-    for (int i = 0; i < meas_boundary_map->points.size(); i++) {
+    for (std::size_t i = 0; i < meas_boundary_map->points.size(); i++) {
       printf("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
              meas_boundary_map->points[i].x, meas_boundary_map->points[i].y,
              meas_boundary_map->points[i].z);

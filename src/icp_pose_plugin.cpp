@@ -11,7 +11,7 @@
 #include <pcl/registration/icp_nl.h>
 
 namespace omnimapper {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin(
     omnimapper::OmniMapperBase* mapper)
@@ -28,10 +28,10 @@ ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin(
       rot_noise_(1.0),
       debug_(true),
       overwrite_timestamps_(true),
-      icp_max_correspondence_distance_(3.5),
       previous_sym_(gtsam::Symbol('x', 0)),
       previous2_sym_(gtsam::Symbol('x', 0)),
       previous3_sym_(gtsam::Symbol('x', 0)),
+      icp_max_correspondence_distance_(3.5),
       use_gicp_(true),
       add_identity_on_failure_(false),
       add_multiple_links_(false),
@@ -43,11 +43,11 @@ ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin(
   first_ = true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 ICPPoseMeasurementPlugin<PointT>::~ICPPoseMeasurementPlugin() {}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ICPPoseMeasurementPlugin<PointT>::cloudCallback(
     const CloudConstPtr& cloud) {
@@ -97,7 +97,7 @@ occured
 }
 */
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ICPPoseMeasurementPlugin<PointT>::spin() {
   // while (grabber_.isRunning ())
@@ -303,7 +303,7 @@ bool ICPPoseMeasurementPlugin<PointT>::spinOnce() {
   return (true);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 bool ICPPoseMeasurementPlugin<PointT>::addConstraint(
     gtsam::Symbol sym1, gtsam::Symbol sym2, double icp_score_threshold) {
@@ -416,7 +416,7 @@ bool ICPPoseMeasurementPlugin<PointT>::addConstraint(
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 bool ICPPoseMeasurementPlugin<PointT>::registerClouds(CloudConstPtr& cloud1,
                                                       CloudConstPtr& cloud2,
@@ -475,7 +475,7 @@ bool ICPPoseMeasurementPlugin<PointT>::registerClouds(CloudConstPtr& cloud1,
   return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 bool ICPPoseMeasurementPlugin<PointT>::tryLoopClosure(gtsam::Symbol sym) {
   // Check if we have a cloud for this
@@ -511,7 +511,9 @@ bool ICPPoseMeasurementPlugin<PointT>::tryLoopClosure(gtsam::Symbol sym) {
     if (debug_) printf("sym: %zu test: %zu\n", sym.index(), test_sym.index());
     if (sym_dist > pose_index_thresh_) {
       if (debug_)
-        printf("(%d) > %d\n", (sym.index() - test_sym.index()),
+        printf("(%d) > %d\n",
+               (static_cast<int>(sym.index()) -
+                static_cast<int>(test_sym.index())),
                pose_index_thresh_);
       gtsam::Pose3 test_pose(key_value.value);
       double test_dist = current_pose.range(test_pose);
@@ -548,22 +550,22 @@ bool ICPPoseMeasurementPlugin<PointT>::tryLoopClosure(gtsam::Symbol sym) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 bool ICPPoseMeasurementPlugin<PointT>::ready() {
   boost::mutex::scoped_lock(current_cloud_mutex_);
-  if (debug_) printf("ICPTest: ready: %zu\n", (!have_new_cloud_));
+  if (debug_) printf("ICPTest: ready: %d\n", (!have_new_cloud_));
   return (!have_new_cloud_);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 omnimapper::Time ICPPoseMeasurementPlugin<PointT>::getLastProcessedTime() {
   boost::mutex::scoped_lock(current_cloud_mutex_);
   return (last_processed_time_);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ICPPoseMeasurementPlugin<PointT>::pause(bool pause) {
   paused_ = pause;
@@ -574,7 +576,7 @@ void ICPPoseMeasurementPlugin<PointT>::pause(bool pause) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudConstPtr
 ICPPoseMeasurementPlugin<PointT>::getCloudPtr(gtsam::Symbol sym) {
@@ -588,7 +590,7 @@ ICPPoseMeasurementPlugin<PointT>::getCloudPtr(gtsam::Symbol sym) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudPtr
 ICPPoseMeasurementPlugin<PointT>::getFullResCloudPtr(gtsam::Symbol sym) {
@@ -605,7 +607,7 @@ ICPPoseMeasurementPlugin<PointT>::getFullResCloudPtr(gtsam::Symbol sym) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 typename Eigen::Affine3d
 ICPPoseMeasurementPlugin<PointT>::getSensorToBaseAtSymbol(gtsam::Symbol sym) {
@@ -616,7 +618,7 @@ ICPPoseMeasurementPlugin<PointT>::getSensorToBaseAtSymbol(gtsam::Symbol sym) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
 void ICPPoseMeasurementPlugin<PointT>::reset() {
   initialized_ = false;

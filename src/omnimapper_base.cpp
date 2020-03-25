@@ -2,9 +2,9 @@
 #include <pcl/common/time.h>  //TODO: remove, debug only
 
 omnimapper::OmniMapperBase::OmniMapperBase()
-    : initialized_(false),
-      initial_pose_(gtsam::Pose3::identity()),
-      get_time_(new GetSystemTimeFunctor()) {
+    : initial_pose_(gtsam::Pose3::identity()),
+      get_time_(new GetSystemTimeFunctor()),
+      initialized_(false) {
   debug_ = true;
   // TODO: make it optional to set an arbitrary initial pose
   // initializePose ();
@@ -16,7 +16,7 @@ omnimapper::OmniMapperBase::OmniMapperBase()
   commit_window = 3.0;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void omnimapper::OmniMapperBase::initializePose(Time& t) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
 
@@ -34,8 +34,8 @@ void omnimapper::OmniMapperBase::initializePose(Time& t) {
   // gtsam::Point3 (0.0, 0.0, 0.0)); new_values.insert (init_symbol, init_pose);
   new_values.insert(init_symbol, initial_pose_);
   // gtsam::PriorFactor<gtsam::Pose3> posePrior (init_symbol, init_pose,
-  // gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001, 0.001,
-  // 0.001, 0.001, 0.001)));
+  // gtsam::noiseModel::Diagonal::Sigmas (gtsam::Vector_ (6, 0.001, 0.001,
+  // 0.001, 0.001, 0.001, 0.001)));
   gtsam::PriorFactor<gtsam::Pose3> posePrior(
       init_symbol, initial_pose_,
       gtsam::noiseModel::Diagonal::Sigmas(
@@ -68,18 +68,18 @@ void omnimapper::OmniMapperBase::initializePose(Time& t) {
   return;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void omnimapper::OmniMapperBase::setInitialPose(gtsam::Pose3& initial_pose) {
   initial_pose_ = initial_pose;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void omnimapper::OmniMapperBase::setTimeFunctor(
     omnimapper::GetTimeFunctorPtr time_functor) {
   get_time_ = time_functor;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -88,8 +88,10 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
     printf("chain size: %zu\n", chain.size());
     for (std::list<omnimapper::PoseChainNode>::iterator itr = chain.begin();
          itr != chain.end(); itr++) {
-      printf("node: %c %d %u %zu\n", itr->symbol.chr(), itr->symbol.index(),
-             itr->time, itr->factors.size());
+      const std::string time_str =
+          boost::posix_time::to_simple_string(itr->time);
+      printf("node: %c %zu %s %zu\n", itr->symbol.chr(), itr->symbol.index(),
+             time_str.c_str(), itr->factors.size());
       std::cout << "stamp: " << itr->time << std::endl;
     }
   }
@@ -99,9 +101,9 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
       latest_committed_node;
   to_commit++;
   if (debug_) {
-    printf("latest: %c %d\n", latest_committed_node->symbol.chr(),
+    printf("latest: %c %zu\n", latest_committed_node->symbol.chr(),
            latest_committed_node->symbol.index());
-    printf("to commit: %c %d\n", to_commit->symbol.chr(),
+    printf("to commit: %c %zu\n", to_commit->symbol.chr(),
            to_commit->symbol.index());
   }
 
@@ -130,7 +132,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   // current pose time
   bool initialized = false;
 
-  for (int i = 0; i < pose_plugins.size(); i++) {
+  for (std::size_t i = 0; i < pose_plugins.size(); i++) {
     // TODO: make this a boost::optional, in case the plugin is disabled or
     // unable to give a pose
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr new_pose_factor =
@@ -167,7 +169,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   if (!initialized) {
     // If we have no pose factors, we need a relative pose measurement to
     // initialize the pose
-    for (int i = 0; i < to_commit->factors.size(); i++) {
+    for (std::size_t i = 0; i < to_commit->factors.size(); i++) {
       gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between =
           boost::dynamic_pointer_cast<gtsam::BetweenFactor<gtsam::Pose3> >(
               (to_commit->factors[i]));
@@ -199,7 +201,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
         printf(
             "OmniMapper: Tried to commit without any between factors!  Waiting "
             "for between factor!\n");
-        printf("Node has %u factors\n", to_commit->factors.size());
+        printf("Node has %zu factors\n", to_commit->factors.size());
       }
       return (false);
     }
@@ -232,15 +234,16 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   return (true);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 bool omnimapper::OmniMapperBase::addFactorDirect(
     gtsam::NonlinearFactor::shared_ptr& new_factor) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   new_factors.push_back(new_factor);
+  return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 bool omnimapper::OmniMapperBase::addFactor(
     gtsam::NonlinearFactor::shared_ptr& new_factor) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
@@ -253,7 +256,7 @@ bool omnimapper::OmniMapperBase::addFactor(
       boost::posix_time::neg_infin;  // Probably nobody has data earlier than
                                      // this?
   if (debug_) printf("addFactor: starting to look at keys\n");
-  for (int i = 0; i < keys.size(); i++) {
+  for (std::size_t i = 0; i < keys.size(); i++) {
     if (gtsam::symbolChr(keys[i]) == 'x') {
       if (debug_) printf("Going to compare keys\n");
       if (symbol_lookup[keys[i]]->time > latest_pose_time) {
@@ -300,7 +303,7 @@ bool omnimapper::OmniMapperBase::addFactor(
   return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void omnimapper::OmniMapperBase::getPoseSymbolAtTime(Time& t,
                                                      gtsam::Symbol& sym) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
@@ -383,21 +386,21 @@ void omnimapper::OmniMapperBase::getPoseSymbolAtTime(Time& t,
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void omnimapper::OmniMapperBase::getTimeAtPoseSymbol(gtsam::Symbol& sym,
                                                      Time& t) {
   // boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   t = symbol_lookup[sym]->time;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 gtsam::NonlinearFactorGraph omnimapper::OmniMapperBase::getGraph() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   return (current_graph);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 gtsam::NonlinearFactorGraph
 omnimapper::OmniMapperBase::getGraphAndUncommitted() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
@@ -407,14 +410,14 @@ omnimapper::OmniMapperBase::getGraphAndUncommitted() {
   return (graph);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 gtsam::Values omnimapper::OmniMapperBase::getSolution() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   return (current_solution);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 gtsam::Values omnimapper::OmniMapperBase::getSolutionAndUncommitted() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);

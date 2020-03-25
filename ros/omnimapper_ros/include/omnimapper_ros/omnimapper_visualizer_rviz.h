@@ -98,6 +98,9 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
   void drawPoseMarginalsCb(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
+  void outputGraphvizCb(
+      const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
   /** \brief objectCallback draws the estimated objects computed by
    * object_plugin */
   void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map,

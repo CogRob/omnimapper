@@ -3,7 +3,7 @@
 #include <omnimapper/no_motion_pose_plugin.h>
 #include <omnimapper/object_plugin.h>
 #include <omnimapper/omnimapper_base.h>
-#include <omnimapper/organized_feature_extraction_tbb.h>
+#include <omnimapper/organized_feature_extraction.h>
 #include <omnimapper/plane_plugin.h>
 #include <omnimapper/time.h>
 #include <omnimapper/tsdf_output_plugin.h>
@@ -19,7 +19,7 @@
 
 #include <omnimapper_ros/ar_marker_plugin.h>
 
-#include <distortion_model/distortion_model_standalone.h>
+#include <omnimapper/3rdparty/distortion_model_standalone.h>
 
 #include <pcl/common/time.h>
 #include <pcl/io/openni_grabber.h>
@@ -31,7 +31,7 @@
 #include <pcl/io/pcd_grabber.h>
 #include <boost/filesystem.hpp>
 
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
@@ -129,11 +129,10 @@ class OmniMapperROS {
   DistortionModelStandalone distortion_model_;
 
   // Fake Grabber (TODO: Fix this)
-  std::vector<std::string> empty_files_;
+  std::vector<std::string> fake_files_;
   pcl::PCDGrabber<PointT> fake_grabber_;
   // Organized Feature Extraction
-  omnimapper::OrganizedFeatureExtractionTBB<PointT>
-      organized_feature_extraction_;
+  omnimapper::OrganizedFeatureExtraction<PointT> organized_feature_extraction_;
 
   // TF Listener  (for initialization)
   tf::TransformListener tf_listener_;

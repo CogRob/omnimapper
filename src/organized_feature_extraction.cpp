@@ -50,12 +50,12 @@ OrganizedFeatureExtraction<PointT>::OrganizedFeatureExtraction(
 
   // debug test
   CloudPtr test1(new Cloud());
-  printf("test1 refcount: %ld\n", test1.use_count());
+  printf("test1 refcount: %zu\n", test1.use_count());
   CloudPtr test2(new Cloud());
   test2 = test1;
-  printf("test1 refcount after making test2: %ld\n", test1.use_count());
+  printf("test1 refcount after making test2: %zu\n", test1.use_count());
   test1 = CloudPtr(new Cloud());
-  printf("test1 refcount after making new test1: %ld\n", test1.use_count());
+  printf("test1 refcount after making new test1: %zu\n", test1.use_count());
   // test
 
   // Set up Normal Estimation
@@ -530,6 +530,12 @@ void OrganizedFeatureExtraction<PointT>::computeEdges() {
   stage3_occluding_cloud_ = CloudPtr(new Cloud());
   pcl::copyPointCloud(*stage2_cloud_, label_indices[1],
                       *stage3_occluding_cloud_);
+}
+
+template <typename PointT>
+bool OrganizedFeatureExtraction<PointT>::ready() {
+  boost::mutex::scoped_lock lock(cloud_mutex);
+  return true;
 }
 
 /** \brief Run the visualizer
