@@ -52,8 +52,8 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -std=c++11 -fpermissive 
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-parameter")
 # Enable asan
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-# set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
@@ -127,7 +127,7 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PCL_LIBRARIES}
-  omnimapper gtsamDebug profiler tbb tbbmalloc csm)
+  omnimapper gtsam profiler tbb tbbmalloc csm)
 
 add_executable(time_test src/time_test.cpp)
 target_link_libraries(time_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -137,16 +137,16 @@ target_link_libraries(
   omnimapper_ros_nodelet ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper)
 
 add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsamDebug tbbmalloc profiler)
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler)
 
 add_executable(benchmark_icp_seq src/benchmark_icp_seq.cpp)
-target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsamDebug tbbmalloc profiler tbb)
+target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler tbb)
 
 add_executable(benchmark_icp_lc src/benchmark_icp_lc.cpp)
-target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsamDebug tbbmalloc profiler tbb)
+target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler tbb)
 
 add_executable(omnimapper_pcd src/omnimapper_ros_pcd.cpp)
-target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsamDebug tbbmalloc tbb)
+target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc tbb)
 
 add_executable(omnimapper_openni src/omnimapper_ros_openni.cpp)
-target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsamDebug tbbmalloc tbb)
+target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc tbb)
