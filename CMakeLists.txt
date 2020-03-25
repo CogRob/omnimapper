@@ -70,6 +70,9 @@ set(incs
   include/omnimapper/time.h
   include/omnimapper/transform_helpers.h
   include/omnimapper/tsdf_output_plugin.h
+  include/omnimapper/BoundedPlane3.h
+  include/omnimapper/BoundedPlaneFactor.h
+  include/omnimapper/bounded_plane_plugin.h
   include/omnimapper/impl/geometry.hpp
 )
 
@@ -96,6 +99,9 @@ set(srcs
   src/transform_helpers.cpp
   src/no_motion_pose_plugin.cpp
   src/tsdf_output_plugin.cpp
+  src/BoundedPlane3.cpp
+  src/BoundedPlaneFactor.cpp
+  src/bounded_plane_plugin.cpp
 )
 
 add_library(omnimapper SHARED ${incs} ${srcs})
