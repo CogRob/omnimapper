@@ -121,8 +121,8 @@ public:
    *  NOTE(hayk): The derivatives are zero when normals are exactly orthogonal.
    * @param the other plane
    */
-  gtsam::Vector3 errorVector(const OrientedPlane3& other, boost::optional<gtsam::Matrix&> H1 = boost::none, //
-                      boost::optional<gtsam::Matrix&> H2 = boost::none) const;
+  // gtsam::Vector3 errorVector(const OrientedPlane3& other, boost::optional<gtsam::Matrix&> H1 = boost::none, //
+  //                     boost::optional<gtsam::Matrix&> H2 = boost::none) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
@@ -135,7 +135,7 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const gtsam::Vector3& v, boost::optional<gtsam::Matrix&> H = boost::none) const;
+  OrientedPlane3 retract(const gtsam::Vector3& v) const;
 
   /// The local coordinates function
   gtsam::Vector3 localCoordinates(const OrientedPlane3& s) const;

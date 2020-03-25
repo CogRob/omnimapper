@@ -27,8 +27,6 @@
 
 using namespace std;
 using gtsam::Matrix;
-using Matrix22 = Eigen::Matrix<double, 2, 2>;
-using Matrix23 = Eigen::Matrix<double, 2, 3>;
 using gtsam::Unit3;
 using gtsam::Vector;
 using gtsam::Vector3;
@@ -46,8 +44,8 @@ void OrientedPlane3::print(const string& s) const {
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, boost::optional<Matrix&> Hp,
     boost::optional<Matrix&> Hr) const {
-  Matrix23 D_rotated_plane;
-  Matrix22 D_rotated_pose;
+  Matrix D_rotated_plane;
+  Matrix D_rotated_pose;
   Unit3 n_rotated = xr.rotation().unrotate(n_, D_rotated_plane, D_rotated_pose);
 
   Vector3 unit_vec = n_rotated.point3().vector();
@@ -76,32 +74,27 @@ Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, boost::optional<Matrix&> H1,
-                                    boost::optional<Matrix&> H2) const {
-  Matrix22 H_n_error_this, H_n_error_other;
-  Vector2 n_error = n_.errorVector(other.normal(), H1 ? &H_n_error_this : 0,
-                                   H2 ? &H_n_error_other : 0);
-
-  double d_error = d_ - other.d_;
-
-  if (H1) {
-    *H1 << H_n_error_this, Vector2::Zero(), 0, 0, 1;
-  }
-  if (H2) {
-    *H2 << H_n_error_other, Vector2::Zero(), 0, 0, -1;
-  }
-
-  return Vector3(n_error(0), n_error(1), d_error);
-}
+// Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, boost::optional<Matrix&> H1,
+//                                      boost::optional<Matrix&> H2) const {
+//   Matrix22 H_n_error_this, H_n_error_other;
+//   Vector2 n_error = n_.errorVector(other.normal(), H1 ? &H_n_error_this : 0,
+//                                    H2 ? &H_n_error_other : 0);
+//
+//   double d_error = d_ - other.d_;
+//
+//   if (H1) {
+//     *H1 << H_n_error_this, Vector2::Zero(), 0, 0, 1;
+//   }
+//   if (H2) {
+//     *H2 << H_n_error_other, Vector2::Zero(), 0, 0, -1;
+//   }
+//
+//   return Vector3(n_error(0), n_error(1), d_error);
+// }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::retract(const Vector3& v,
-                                       boost::optional<Matrix&>H) const {
-  Matrix22 H_n;
-  Unit3 n_retract (n_.retract(Vector2(v(0), v(1)), H? &H_n : nullptr));
-  if (H) {
-    *H << H_n, Vector2::Zero(), 0, 0, 1;
-  }
+OrientedPlane3 OrientedPlane3::retract(const Vector3& v) const {
+  Unit3 n_retract (n_.retract(Vector2(v(0), v(1))));
   return OrientedPlane3(n_retract, d_ + v(2));
 }
 
