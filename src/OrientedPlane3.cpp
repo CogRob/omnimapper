@@ -17,21 +17,21 @@
  * @brief  A plane, represented by a normal direction and perpendicular distance
  */
 
-#include <omnimapper/OrientedPlane3.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Unit3.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Unit3.h>
+#include <omnimapper/OrientedPlane3.h>
 #include <iostream>
 
 using namespace std;
 using gtsam::Matrix;
+using gtsam::Pose3;
 using gtsam::Unit3;
 using gtsam::Vector;
-using gtsam::Vector3;
 using gtsam::Vector2;
-using gtsam::Pose3;
+using gtsam::Vector3;
 
 namespace omnimapper {
 
@@ -42,8 +42,9 @@ void OrientedPlane3::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, boost::optional<Matrix&> Hp,
-    boost::optional<Matrix&> Hr) const {
+OrientedPlane3 OrientedPlane3::transform(const Pose3& xr,
+                                         boost::optional<Matrix&> Hp,
+                                         boost::optional<Matrix&> Hr) const {
   Matrix D_rotated_plane;
   Matrix D_rotated_pose;
   Unit3 n_rotated = xr.rotation().unrotate(n_, D_rotated_plane, D_rotated_pose);
@@ -52,7 +53,7 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, boost::optional<Matrix
   double pred_d = n_.point3().vector().dot(xr.translation().vector()) + d_;
 
   if (Hr) {
-    *Hr = Matrix::Zero(3,6);
+    *Hr = Matrix::Zero(3, 6);
     Hr->block<2, 3>(0, 0) = D_rotated_plane;
     Hr->block<1, 3>(2, 3) = unit_vec;
   }
@@ -74,7 +75,8 @@ Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
 }
 
 /* ************************************************************************* */
-// Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, boost::optional<Matrix&> H1,
+// Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other,
+// boost::optional<Matrix&> H1,
 //                                      boost::optional<Matrix&> H2) const {
 //   Matrix22 H_n_error_this, H_n_error_other;
 //   Vector2 n_error = n_.errorVector(other.normal(), H1 ? &H_n_error_this : 0,
@@ -94,7 +96,7 @@ Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
 
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::retract(const Vector3& v) const {
-  Unit3 n_retract (n_.retract(Vector2(v(0), v(1))));
+  Unit3 n_retract(n_.retract(Vector2(v(0), v(1))));
   return OrientedPlane3(n_retract, d_ + v(2));
 }
 
@@ -105,4 +107,4 @@ Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
   return Vector3(n_local(0), n_local(1), -d_local);
 }
 
-}
+}  // namespace omnimapper

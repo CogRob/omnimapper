@@ -3,10 +3,10 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
+#include <omnimapper/OrientedPlane3.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/thread/mutex.hpp>
-#include <omnimapper/OrientedPlane3.h>
 
 namespace omnimapper {
 /**

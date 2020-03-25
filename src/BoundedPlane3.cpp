@@ -154,8 +154,7 @@ Eigen::Vector4d omnimapper::BoundedPlane3<PointT>::TransformCoefficients(
 template <typename PointT>
 gtsam::Vector omnimapper::BoundedPlane3<PointT>::error(
     const omnimapper::BoundedPlane3<PointT>& plane) const {
-  gtsam::Vector n_error =
-      -n_.localCoordinates(plane.n_);
+  gtsam::Vector n_error = -n_.localCoordinates(plane.n_);
 
   if (!(std::isfinite(n_error[0]) && std::isfinite(n_error[1]))) {
     printf("BoundedPlane3: ERROR: Got NaN error on local coords!\n");

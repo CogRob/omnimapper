@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gtsam/linear/NoiseModel.h>
-#include <omnimapper/OrientedPlane3Factor.h>
 #include <omnimapper/BoundedPlane3.h>
+#include <omnimapper/OrientedPlane3Factor.h>
 
 namespace omnimapper {
 template <typename PointT>
