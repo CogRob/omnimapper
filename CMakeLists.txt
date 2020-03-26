@@ -114,22 +114,22 @@ set(srcs
   src/OrientedPlane3Factor.cpp
 )
 
-add_library(omnimapper SHARED ${incs} ${srcs})
-target_link_libraries(omnimapper
-  ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
-  tbb tbbmalloc cpu_tsdf profiler)
-
-install(TARGETS omnimapper DESTINATION lib)
-install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
-install(FILES ${third_party_incs} DESTINATION include/${PROJECT_NAME}/3rdparty)
-
-configure_file(${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
-               ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
-        DESTINATION share/omnimapper)
-
-add_executable(omnimapper_test src/omnimapper_test.cpp)
-target_link_libraries(omnimapper_test omnimapper)
+# add_library(omnimapper SHARED ${incs} ${srcs})
+# target_link_libraries(omnimapper
+#   ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
+#   tbb tbbmalloc cpu_tsdf profiler)
+#
+# install(TARGETS omnimapper DESTINATION lib)
+# install(FILES ${incs} DESTINATION include/${PROJECT_NAME})
+# install(FILES ${third_party_incs} DESTINATION include/${PROJECT_NAME}/3rdparty)
+#
+# configure_file(${PROJECT_SOURCE_DIR}/cmake/omnimapperConfig.cmake.in
+#                ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake)
+# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
+#         DESTINATION share/omnimapper)
+#
+# add_executable(omnimapper_test src/omnimapper_test.cpp)
+# target_link_libraries(omnimapper_test omnimapper)
 
 # add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
 # target_link_libraries(omnimapper_static_test
@@ -171,3 +171,37 @@ target_link_libraries(omnimapper_test omnimapper)
 
 # add_executable(tbb_test2 src/tbb_test2.cpp)
 # target_link_libraries(tbb_test2 omnimapper ${PCL_LIBRARIES} tbb)
+
+add_library(omnimapper_fake
+src/BoundedPlane3.cpp
+src/BoundedPlaneFactor.cpp
+src/bounded_plane_plugin.cpp
+src/icp_pose_plugin.cpp
+src/isam_splice_test.cpp
+src/no_motion_pose_plugin.cpp
+src/object.cpp
+src/object_discovery.cpp
+src/object_plugin.cpp
+src/object_recognition.cpp
+src/object_segment_propagation.cpp
+src/omnimapper_base.cpp
+src/omnimapper_handheld_demo.cpp
+src/omnimapper_handheld_pcd_demo.cpp
+src/omnimapper_plane_test.cpp
+src/omnimapper_simple_icp_demo.cpp
+src/omnimapper_test.cpp
+src/omnimapper_visualizer_pcl.cpp
+src/organized_feature_extraction.cpp
+src/organized_feature_extraction_demo.cpp
+src/organized_feature_extraction_demo_tbb.cpp
+src/organized_feature_extraction_tbb.cpp
+src/OrientedPlane3.cpp
+src/OrientedPlane3Factor.cpp
+src/plane.cpp
+src/plane_factor.cpp
+src/plane_plugin.cpp
+src/tbb_test.cpp
+src/time.cpp
+src/transform_helpers.cpp
+src/tsdf_output_plugin.cpp
+)

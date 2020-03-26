@@ -47,9 +47,9 @@ struct PoseVector : std::vector<gtsam::Pose3> {
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int version) {
-    // ar &  boost::serialization::base_object<std::vector<gtsam::Pose3>
-    // >(*this);
-    ar& pose_vector;
+    // (ar &
+    //  boost::serialization::base_object<std::vector<gtsam::Pose3> >(*this));
+    ar & pose_vector;
   }
 };
 
@@ -119,10 +119,10 @@ class ObjectRecognition {
    * @param segmented the resulting segmented point cloud containing only points
    * of the largest cluster
    */
-  //                    void segmentation (typename
-  //                    pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr input,
-  //                    typename pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
-  //                    segmented) const;
+  // void segmentation(
+  //     typename pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr input,
+  //     typename pcl::PointCloud<pcl::PointXYZRGBA>::Ptr segmented) const;
+
   /**
    * @brief Detects key points in the input point cloud
    * @param input the input point cloud
@@ -183,14 +183,14 @@ class ObjectRecognition {
    */
 
  private:
-  //                    pcl::visualization::PCLVisualizer visualizer_;
+  // pcl::visualization::PCLVisualizer visualizer_;
   pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints_;
   pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints_;
   boost::shared_ptr<pcl::Keypoint<pcl::PointXYZRGBA, pcl::PointXYZI> >
       keypoint_detector_;
   typename pcl::Feature<pcl::PointXYZRGBA, FeatureType>::Ptr feature_extractor_;
   // boost::shared_ptr<pcl::PCLSurfaceBase<pcl::PointXYZRGBANormal> >
-  // surface_reconstructor_;
+  //     surface_reconstructor_;
   typename pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr source_;
   typename pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr target_;
   typename pcl::PointCloud<pcl::PointXYZRGBA>::Ptr source_segmented_;
@@ -222,11 +222,7 @@ class ObjectRecognition {
   std::vector<float> centroid_data;
 
   // std::map < int, std::map<int, int> > object_segment;
-
   // std::vector<pcl::PointCloud<PointT> > pcd_files;
-  // map<int>
 };
-
-//#include <pcl/cloudcv/impl/feature_matches.hpp>
 
 /* OBJECT_RECOGNITION_H_ */

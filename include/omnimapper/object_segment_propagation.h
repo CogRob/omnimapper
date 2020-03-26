@@ -106,7 +106,7 @@ class SegmentPropagation {
                 << prev_cloud_vec_.size();
       std::cout << std::endl;
 
-      //	prev_pose_ = pose_;
+      // prev_pose_ = pose_;
     } else {
       std::cout << "[propagating labels] PrevCloudPtrVector is empty:  "
                 << prev_cloud_vec_.size()

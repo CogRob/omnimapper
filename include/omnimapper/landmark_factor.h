@@ -61,24 +61,23 @@ class LandmarkTransformFactor : public NoiseModelFactor2<POSE, LANDMARK> {
     return (e != NULL && Base::equals(*e, tol) &&
             this->measured_.equals(e->measured_, tol));
   }
-  //
-  //    void
-  //    print (const std::string& s = "", const KeyFormatter& keyFormatter =
-  //    DefaultKeyFormatter) const
-  //    {
-  //      std::cout << s << "LandmarkTransformFactor, range = " << measured_ <<
-  //      std::endl; Base::print ("", keyFormatter);
-  //    }
+
+  // void print(const std::string& s = "",
+  //            const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  //   std::cout << s << "LandmarkTransformFactor, range = " << measured_ <<
+  //   std::endl; Base::print ("", keyFormatter);
+  // }
 
  private:
   /** Serialization function */
   friend class boost::serialization::access;
+
   // template<class ARCHIVE>
-  // void serialize(ARCHIVE & ar, const unsigned int version) {
-  //	ar & boost::serialization::make_nvp("NoiseModelFactor1",
-  //			boost::serialization::base_object<Base>(*this));
-  //	ar & BOOST_SERIALIZATION_NVP(prior_);
-  //}
+  //     void serialize(ARCHIVE & ar, const unsigned int version) {
+  //   ar & boost::serialization::make_nvp("NoiseModelFactor1",
+  //       boost::serialization::base_object<Base>(*this));
+  //   ar & BOOST_SERIALIZATION_NVP(prior_);
+  // }
 };
 
 }  // namespace gtsam
