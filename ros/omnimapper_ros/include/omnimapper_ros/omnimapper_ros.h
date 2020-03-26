@@ -44,33 +44,33 @@ class OmniMapperROS {
   OmniMapperROS(ros::NodeHandle nh);
 
   // Load (or reload) ROS Parameters
-  void loadROSParams();
+  void LoadROSParams();
 
   // Point Cloud Callback
-  void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
+  void CloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
 
   // Laser Scan Callback
-  void laserScanCallback(const sensor_msgs::LaserScanConstPtr& msg);
+  void LaserScanCallback(const sensor_msgs::LaserScanConstPtr& msg);
 
   // Evaluation Timer Callback
-  void evalTimerCallback(const ros::TimerEvent& e);
+  void EvalTimerCallback(const ros::TimerEvent& e);
 
   // Map To Odometry Correction Publication
-  void publishMapToOdom();
+  void PublishMapToOdom();
 
   // Publish the current pose in the map frame
-  void publishCurrentPose();
+  void PublishCurrentPose();
 
   // Service call for generating a map TSDF
-  bool generateMapTSDFCallback(omnimapper_ros::OutputMapTSDF::Request& req,
+  bool GenerateMapTSDFCallback(omnimapper_ros::OutputMapTSDF::Request& req,
                                omnimapper_ros::OutputMapTSDF::Response& res);
 
-  void runEvaluation(std::string& associated_filename,
+  void RunEvaluation(std::string& associated_filename,
                      std::string& groundtruth_filename, std::string& pcd_path,
                      std::string& output_trajectory_filename,
                      std::string& output_timing_filename);
 
-  void resetEvaluation();
+  void ResetEvaluation();
 
  protected:
   // ROS Node Handle

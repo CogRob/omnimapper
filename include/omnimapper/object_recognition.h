@@ -139,7 +139,7 @@ class ObjectRecognition {
    * @param keypoints locations where descriptors are to be extracted
    * @param features resulting descriptors
    */
-  void extractDescriptors(
+  void ExtractDescriptors(
       typename pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr input,
       typename pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints,
       typename pcl::PointCloud<FeatureType>::Ptr features);
@@ -151,25 +151,25 @@ class ObjectRecognition {
    * @param correspondences indices out of the target descriptors that
    * correspond (nearest neighbor) to the source descriptors
    */
-  void findCorrespondences(typename pcl::PointCloud<FeatureType>::Ptr source,
+  void FindCorrespondences(typename pcl::PointCloud<FeatureType>::Ptr source,
                            typename pcl::PointCloud<FeatureType>::Ptr target,
                            std::vector<int>& correspondences) const;
 
   /**
    * @brief  remove non-consistent correspondences
    */
-  void filterCorrespondences();
+  void FilterCorrespondences();
 
   /**
    * @brief calculate the initial rigid transformation from filtered
    * corresponding keypoints
    */
-  void determineInitialTransformation();
+  void DetermineInitialTransformation();
 
   /**
    * @brief calculate the final rigid transformation using ICP over all points
    */
-  void determineFinalTransformation();
+  void DetermineFinalTransformation();
 
   /**
    * @brief reconstructs the surface from merged point clouds

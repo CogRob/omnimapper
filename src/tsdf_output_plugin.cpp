@@ -50,7 +50,7 @@ omnimapper::TSDFOutputPlugin<PointT>::TSDFOutputPlugin(
     : mapper_(mapper) {}
 
 template <typename PointT>
-void omnimapper::TSDFOutputPlugin<PointT>::update(
+void omnimapper::TSDFOutputPlugin<PointT>::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   printf("tsdf_plugin: updating latest solution!\n");
@@ -60,7 +60,7 @@ void omnimapper::TSDFOutputPlugin<PointT>::update(
 }
 
 template <typename PointT>
-void omnimapper::TSDFOutputPlugin<PointT>::generateTSDF(double grid_size,
+void omnimapper::TSDFOutputPlugin<PointT>::GenerateTSDF(double grid_size,
                                                         int resolution) {
   printf("tsdf_plugin: starting generateTSDF\n");
   // Make a TSDF

@@ -2,7 +2,7 @@
 #include <pcl/surface/convex_hull.h>
 
 template <typename PointT>
-bool omnimapper::fusePlanarPolygonsXY(const pcl::PointCloud<PointT>& poly1,
+bool omnimapper::FusePlanarPolygonsXY(const pcl::PointCloud<PointT>& poly1,
                                       const pcl::PointCloud<PointT>& poly2,
                                       pcl::PointCloud<PointT>& poly_out) {
   PointVector poly1vec(poly1.points);
@@ -133,7 +133,7 @@ bool omnimapper::fusePlanarPolygonsXY(const pcl::PointCloud<PointT>& poly1,
 }
 
 template <typename PointT>
-bool omnimapper::fusePlanarPolygonsConvexXY(
+bool omnimapper::FusePlanarPolygonsConvexXY(
     const pcl::PointCloud<PointT>& poly1, const pcl::PointCloud<PointT>& poly2,
     pcl::PointCloud<PointT>& poly_out) {
   boost::shared_ptr<pcl::PointCloud<PointT> > merged_cloud(

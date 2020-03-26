@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   omnimapper::OrganizedFeatureExtractionTBB<PointT> ofe;
 
   boost::function<void(const CloudConstPtr&)> f = boost::bind(
-      &omnimapper::OrganizedFeatureExtractionTBB<PointT>::cloudCallback, &ofe,
+      &omnimapper::OrganizedFeatureExtractionTBB<PointT>::CloudCallback, &ofe,
       _1);
   boost::signals2::connection c = ni_grabber.registerCallback(f);
 
@@ -136,12 +136,12 @@ int main(int argc, char** argv) {
           &OrganizedFeatureExtractionDemoTBB<PointT>::clusterLabelsCallback,
           &demo, _1, _2);
   // ofe.setPlaneLabelsCallback (label_callback);
-  ofe.setClusterLabelsCallback(label_callback);
+  ofe.SetClusterLabelsCallback(label_callback);
 
   ni_grabber.start();
 
   // Start spinning
-  ofe.spin();
+  ofe.Spin();
 
   ProfilerStart("tbb.prof");
   while (true) {

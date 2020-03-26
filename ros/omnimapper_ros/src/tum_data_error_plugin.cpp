@@ -7,7 +7,7 @@ omnimapper::TUMDataErrorPlugin::TUMDataErrorPlugin(
       "/visualization_marker_array", 0);
 }
 
-void omnimapper::TUMDataErrorPlugin::update(
+void omnimapper::TUMDataErrorPlugin::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   printf("Updating  TUM ERROR Plugin!\n");
@@ -84,9 +84,9 @@ void omnimapper::TUMDataErrorPlugin::update(
     boost::posix_time::ptime pose_ptime;
     tf::StampedTransform true_pose;
     printf("TUM Error plugin: Looking up time!\n");
-    mapper_->getTimeAtPoseSymbol(key_symbol, pose_ptime);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, pose_ptime);
     printf("TUM Error plugin: got the time!\n");
-    ros::Time pose_time = ptime2rostime(pose_ptime);
+    ros::Time pose_time = PtimeToRosTime(pose_ptime);
     tf_listener_.waitForTransform("/world", "/openni_rgb_optical_frame",
                                   pose_time, ros::Duration(0.2));
     tf_listener_.lookupTransform("/world", "/openni_rgb_optical_frame",

@@ -9,7 +9,7 @@ omnimapper::GetTransformFunctorTF::GetTransformFunctorTF(
 
 Eigen::Affine3d omnimapper::GetTransformFunctorTF::operator()(
     omnimapper::Time t) {
-  ros::Time ros_time = ptime2rostime(t);
+  ros::Time ros_time = PtimeToRosTime(t);
   tf::StampedTransform tf_transform;
   try {
     tf_listener_.waitForTransform(base_frame_name_, sensor_frame_name_,
@@ -23,7 +23,7 @@ Eigen::Affine3d omnimapper::GetTransformFunctorTF::operator()(
   }
 
   // TODO: make a function for this
-  gtsam::Pose3 transform_p3 = omnimapper::tf2pose3(tf_transform);
+  gtsam::Pose3 transform_p3 = omnimapper::TfToPose3(tf_transform);
   Eigen::Affine3d transform(transform_p3.matrix().cast<double>());
   return (transform);
 }

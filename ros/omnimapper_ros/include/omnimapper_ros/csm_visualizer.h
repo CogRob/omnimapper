@@ -13,14 +13,14 @@ template <typename LScanT>
 class CSMVisualizerRViz : public omnimapper::OutputPlugin {
  public:
   CSMVisualizerRViz(omnimapper::OmniMapperBase* mapper);
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-  void setCSMPlugin(
+  void SetCSMPlugin(
       boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<LScanT> >&
           csm_plugin) {
     csm_plugin_ = csm_plugin;
   }
-  bool drawCSMMap(omnimapper_ros::VisualizeFullCloud::Request& req,
+  bool DrawCSMMap(omnimapper_ros::VisualizeFullCloud::Request& req,
                   omnimapper_ros::VisualizeFullCloud::Response& res);
 
  protected:

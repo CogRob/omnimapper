@@ -30,80 +30,80 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
 
  public:
   OmniMapperVisualizerRViz(omnimapper::OmniMapperBase *mapper);
-  void update(boost::shared_ptr<gtsam::Values> &vis_values,
+  void Update(boost::shared_ptr<gtsam::Values> &vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph> &vis_graph);
-  void spinOnce();
-  void spin();
-  void planarRegionCallback(
+  void SpinOnce();
+  void Spin();
+  void PlanarRegionCallback(
       std::vector<pcl::PlanarRegion<PointT>,
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
           regions,
       omnimapper::Time t);
-  void drawBBox(pcl::PointCloud<pcl::PointXYZRGB> &cloud,
+  void DrawBBox(pcl::PointCloud<pcl::PointXYZRGB> &cloud,
                 ros::Publisher &marker_pub_, int obj_idx);
-  void labelCloudCallback(const CloudConstPtr &cloud,
+  void LabelCloudCallback(const CloudConstPtr &cloud,
                           const LabelCloudConstPtr &labels);
-  void clusterCloudCallback(std::vector<CloudPtr> clusters, omnimapper::Time t,
+  void ClusterCloudCallback(std::vector<CloudPtr> clusters, omnimapper::Time t,
                             boost::optional<std::vector<pcl::PointIndices> >);
-  void setICPPlugin(
+  void SetICPPlugin(
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >
           &icp_plugin) {
     icp_plugin_ = icp_plugin;
   }
-  void setObjectPlugin(
+  void SetObjectPlugin(
       boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > &object_plugin) {
     object_plugin_ = object_plugin;
   }
-  bool drawObjectObservationCloud(
+  bool DrawObjectObservationCloud(
       omnimapper_ros::VisualizeFullCloud::Request &req,
       omnimapper_ros::VisualizeFullCloud::Response &res);
-  bool drawICPCloudsCallback(omnimapper_ros::VisualizeFullCloud::Request &req,
+  bool DrawICPCloudsCallback(omnimapper_ros::VisualizeFullCloud::Request &req,
                              omnimapper_ros::VisualizeFullCloud::Response &res);
-  bool publishModel(omnimapper_ros::PublishModel::Request &req,
+  bool PublishModel(omnimapper_ros::PublishModel::Request &req,
                     omnimapper_ros::PublishModel::Response &res);
-  void setDrawPoseArray(bool draw_pose_array) {
+  void SetDrawPoseArray(bool draw_pose_array) {
     draw_pose_array_ = draw_pose_array;
   }
-  void setDrawPoseGraph(bool draw_pose_graph) {
+  void SetDrawPoseGraph(bool draw_pose_graph) {
     draw_pose_graph_ = draw_pose_graph;
   }
-  void setOutputGraphviz(bool output_graphviz) {
+  void SetOutputGraphviz(bool output_graphviz) {
     output_graphviz_ = output_graphviz;
   }
-  void setDrawICPCloudsAlways(bool draw_always) {
+  void SetDrawICPCloudsAlways(bool draw_always) {
     draw_icp_clouds_always_ = draw_always;
     if (draw_always) draw_icp_clouds_ = true;
   }
 
   boost::shared_ptr<interactive_markers::InteractiveMarkerServer>
-  getInteractiveMarkerServerPtr() {
+  GetInteractiveMarkerServerPtr() {
     return (marker_server_);
   }
 
-  boost::shared_ptr<interactive_markers::MenuHandler> getMenuHandlerPtr() {
+  boost::shared_ptr<interactive_markers::MenuHandler> GetMenuHandlerPtr() {
     return (menu_handler_);
   }
 
   /** \brief Initializes the Interactive Menu */
-  void initMenu();
+  void InitMenu();
 
   /** \brief playPauseCb is used by interactive marker menu to control the
    * mapper's playback */
-  void playPauseCb(
+  void PlayPauseCb(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
-  void drawMapCloudCb(
+  void DrawMapCloudCb(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
-  void drawPoseMarginalsCb(
+  void DrawPoseMarginalsCb(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
-  void outputGraphvizCb(
+  void OutputGraphvizCb(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
 
   /** \brief objectCallback draws the estimated objects computed by
    * object_plugin */
-  void objectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map,
+  void ObjectCallback(std::map<gtsam::Symbol, Object<PointT> > object_map,
                       gtsam::Point3 direction, gtsam::Point3 center);
 
   // For drawing planes, and use in AR application
@@ -111,7 +111,7 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
   // Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > > regions,
   // omnimapper::Time t);
 
-  bool writeTrajectoryFile(omnimapper_ros::WriteTrajectoryFile::Request &req,
+  bool WriteTrajectoryFile(omnimapper_ros::WriteTrajectoryFile::Request &req,
                            omnimapper_ros::WriteTrajectoryFile::Response &res);
 
  protected:

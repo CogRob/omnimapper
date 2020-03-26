@@ -17,7 +17,7 @@ PlaneMeasurementPlugin<PointT>::PlaneMeasurementPlugin(
       updated_(false) {}
 
 template <typename PointT>
-void PlaneMeasurementPlugin<PointT>::regionsToMeasurements(
+void PlaneMeasurementPlugin<PointT>::RegionsToMeasurements(
     std::vector<pcl::PlanarRegion<PointT>,
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions,
     omnimapper::Time t,
@@ -82,7 +82,7 @@ void PlaneMeasurementPlugin<PointT>::regionsToMeasurements(
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO: make this faster
 template <typename PointT>
-bool PlaneMeasurementPlugin<PointT>::polygonsOverlap(Cloud& boundary1,
+bool PlaneMeasurementPlugin<PointT>::PolygonsOverlap(Cloud& boundary1,
                                                      Cloud& boundary2) {
   // TODO: Check if these are coplanar
 
@@ -122,10 +122,10 @@ bool PlaneMeasurementPlugin<PointT>::polygonsOverlap(Cloud& boundary1,
 // }
 
 template <typename PointT>
-void PlaneMeasurementPlugin<PointT>::spin() {}
+void PlaneMeasurementPlugin<PointT>::Spin() {}
 
 template <typename PointT>
-void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
+void PlaneMeasurementPlugin<PointT>::PlanarRegionCallback(
     std::vector<pcl::PlanarRegion<PointT>,
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
         regions,
@@ -155,18 +155,18 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
 
     // Convert the regions to gtsam::Planes
     std::vector<gtsam::Plane<PointT> > plane_measurements;
-    regionsToMeasurements(regions, t, plane_measurements);
+    RegionsToMeasurements(regions, t, plane_measurements);
 
     // Get the planes from the mapper
     gtsam::Values current_solution =
-        mapper_->getSolutionAndUncommitted();  // mapper_->getSolution ();
+        mapper_->GetSolutionAndUncommitted();  // mapper_->getSolution ();
     gtsam::Values::Filtered<gtsam::Plane<PointT> > plane_filtered =
         current_solution.filter<gtsam::Plane<PointT> >();
 
     // Get the pose symbol for this time
     gtsam::Symbol pose_sym;
-    mapper_->getPoseSymbolAtTime(t, pose_sym);
-    boost::optional<gtsam::Pose3> new_pose = mapper_->predictPose(pose_sym);
+    mapper_->GetPoseSymbolAtTime(t, pose_sym);
+    boost::optional<gtsam::Pose3> new_pose = mapper_->PredictPose(pose_sym);
     // TODO: if above didn't work
     if (!new_pose) {
       printf("No pose yet at this time!  Error!\n");
@@ -236,7 +236,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
           // pcl::io::savePCDFileBinaryCompressed (meas_name,
           // meas_hull_map_frame); pcl::io::savePCDFileBinaryCompressed
           // (lm_name, lm_hull); End debug
-          if (polygonsOverlap(meas_hull_map_frame, lm_hull)) {
+          if (PolygonsOverlap(meas_hull_map_frame, lm_hull)) {
             if ((error < lowest_error) && (!disable_data_association_)) {
               printf("new potential match to plane %zu\n", key_symbol.index());
               lowest_error = error;
@@ -256,7 +256,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
         printf(
             "Creating new "
             "plane!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-        mapper_->addNewValue(best_symbol, new_plane);
+        mapper_->AddNewValue(best_symbol, new_plane);
         ++max_plane_id_;
       }
 
@@ -279,7 +279,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
       omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor(
           new gtsam::PlaneFactor<PointT>(measurement_vector, measurement_noise,
                                          pose_sym, best_symbol));
-      mapper_->addFactor(plane_factor);
+      mapper_->AddFactor(plane_factor);
       printf("Adding factor!\n");
 
       // TEST
@@ -293,7 +293,7 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
         // printf ("Extend plane after: %lf %lf %lf %lf\n", extend_plane.a (),
         // extend_plane.b (), extend_plane.c (), extend_plane.d ());
         // mapper_->updateValue (best_symbol, extend_plane);
-        mapper_->updatePlane(best_symbol, *new_pose, meas_plane);
+        mapper_->UpdatePlane(best_symbol, *new_pose, meas_plane);
       }
       // END TEST
     }

@@ -54,14 +54,14 @@ class TSDFOutputPlugin : public omnimapper::OutputPlugin {
 
  public:
   TSDFOutputPlugin(omnimapper::OmniMapperBase* mapper);
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-  void setICPPlugin(
+  void SetICPPlugin(
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >&
           icp_plugin) {
     icp_plugin_ = icp_plugin;
   };
-  void generateTSDF(double grid_size, int resolution);
+  void GenerateTSDF(double grid_size, int resolution);
 
  protected:
   OmniMapperBase* mapper_;

@@ -11,17 +11,17 @@
 namespace omnimapper {
 /** Converts a ros Time to Boost posix time.  Just syntactic sugar to match our
  * other function. */
-boost::posix_time::ptime rostime2ptime(ros::Time r_time);
+boost::posix_time::ptime RosTimeToPtime(ros::Time r_time);
 
 /** Converts a ptime to a ros::Time.  This can be done by computing the total
  * nanoseconds since epoch. */
-ros::Time ptime2rostime(boost::posix_time::ptime p_time);
+ros::Time PtimeToRosTime(boost::posix_time::ptime p_time);
 
 /** \brief An omnimapper compatible time functor, which will return the current
  * ros time. */
 class GetROSTimeFunctor : public omnimapper::GetTimeFunctor {
  public:
-  omnimapper::Time operator()() { return (rostime2ptime(ros::Time::now())); }
+  omnimapper::Time operator()() { return (RosTimeToPtime(ros::Time::now())); }
 };
 
 }  // namespace omnimapper

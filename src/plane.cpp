@@ -179,7 +179,7 @@ Plane<PointT>::Plane(double a, double b, double c, double d,
 template <typename PointT>
 Plane<PointT>::Plane(const gtsam::Pose3& pose, Plane& plane_info,
                      const bool& concave) {
-  Eigen::Affine3f pose2map = pose3ToTransform(pose);
+  Eigen::Affine3f pose2map = Pose3ToTransform(pose);
   pcl::PointCloud<PointT> meas_hull = plane_info.hull();
   pcl::transformPointCloud(meas_hull, hull_, pose2map);
 
@@ -599,7 +599,7 @@ void Plane<PointT>::Retract(const Pose3& pose,
   pcl::PointCloud<PointT> meas_hull_in_map;
 
   // tf::Transform posemap = Pose3ToTransform(pose);
-  Eigen::Affine3f posemap = pose3ToTransform(pose);
+  Eigen::Affine3f posemap = Pose3ToTransform(pose);
   pcl::transformPointCloud(plane.hull_, meas_hull_in_map, posemap);
 
   pcl::PointCloud<PointT> meas_hull_on_map;
@@ -746,7 +746,7 @@ template <typename PointT>
 void Plane<PointT>::Extend(const Pose3& pose,
                            const gtsam::Plane<PointT>& plane) {
   // Move the measured boundary to the map frame
-  Eigen::Affine3f map_to_pose = pose3ToTransform(pose);
+  Eigen::Affine3f map_to_pose = Pose3ToTransform(pose);
   Eigen::Affine3f pose_to_map = map_to_pose.inverse();
 
   // pcl::PointCloud<PointT> meas_boundary_map;
@@ -762,7 +762,7 @@ void Plane<PointT>::Extend(const Pose3& pose,
 
   // Align the measured plane to the planar coefficients
   Eigen::Affine3d alignment_transform =
-      planarAlignmentTransform(lm_coeffs_map, meas_coeffs_map);
+      PlanarAlignmentTransform(lm_coeffs_map, meas_coeffs_map);
   // pcl::PointCloud<PointT> meas_hull_aligned_map;
   // pcl::transformPointCloud (meas_hull_map, meas_hull_aligned_map, transform);
 
@@ -797,7 +797,7 @@ void Plane<PointT>::Extend(const Pose3& pose,
   Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   Eigen::Vector4d lm_coeffs_rot_only(a_, b_, c_, 0.0);
   Eigen::Affine3d z_alignment_transform =
-      planarAlignmentTransform(z_axis, lm_coeffs_rot_only);
+      PlanarAlignmentTransform(z_axis, lm_coeffs_rot_only);
 
   Eigen::Affine3d transform_lm_to_xy = demean_transform * z_alignment_transform;
   Eigen::Affine3d transform_meas_to_xy =
@@ -846,7 +846,7 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   // TODO: should we do this in the local frame to avoid lever-arm effect (see
   // m-space paper)?
   Eigen::Affine3f map_to_pose =
-      pose3ToTransform(pose);  //(pose.matrix ().cast<float>());
+      Pose3ToTransform(pose);  //(pose.matrix ().cast<float>());
   Eigen::Affine3f pose_to_map = map_to_pose.inverse();
   // pcl::PointCloud<PointT> local_lm_hull = pcl::transformPointCloud (hull_,
   // local_lm_hull, pose); gtsam::Vector local_lm_coeffs = GetXo (pose);

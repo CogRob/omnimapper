@@ -54,12 +54,12 @@ omnimapper::OmniMapperVisualizerPCL<PointT>::OmniMapperVisualizerPCL(
   viewer_.addCoordinateSystem(1.0, 0);
   viewer_.initCameraParameters();
   viewer_.registerKeyboardCallback(
-      &omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback, *this, 0);
+      &omnimapper::OmniMapperVisualizerPCL<PointT>::KeyboardCallback, *this, 0);
   debug_ = true;
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerPCL<PointT>::update(
+void omnimapper::OmniMapperVisualizerPCL<PointT>::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   // Pull poses from the mapper
@@ -179,7 +179,7 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::update(
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback(
+void omnimapper::OmniMapperVisualizerPCL<PointT>::KeyboardCallback(
     const pcl::visualization::KeyboardEvent& event, void*) {
   if (event.keyUp()) {
     switch (event.getKeyCode()) {
@@ -195,7 +195,7 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback(
         icp_plugin_->pause(false);
         break;
       case 'o':
-        mapper_->printSolution();
+        mapper_->PrintSolution();
         exit(1);
         break;
     }
@@ -203,7 +203,7 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::keyboardCallback(
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerPCL<PointT>::spinOnce() {
+void omnimapper::OmniMapperVisualizerPCL<PointT>::SpinOnce() {
   // boost::lock_guard<boost::mutex> lock (vis_mutex_);
   if (vis_mutex_.try_lock()) {
     viewer_.spinOnce();
@@ -212,12 +212,12 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::spinOnce() {
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerPCL<PointT>::spin() {
-  boost::thread(&omnimapper::OmniMapperVisualizerPCL<PointT>::spinThread, this);
+void omnimapper::OmniMapperVisualizerPCL<PointT>::Spin() {
+  boost::thread(&omnimapper::OmniMapperVisualizerPCL<PointT>::SpinThread, this);
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerPCL<PointT>::spinThread() {
+void omnimapper::OmniMapperVisualizerPCL<PointT>::SpinThread() {
   while (!viewer_.wasStopped()) {
     viewer_.spinOnce(100);
 

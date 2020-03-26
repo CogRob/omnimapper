@@ -19,23 +19,23 @@ class BoundedPlanePlugin {
   /** \brief regionsToMeasurements converts a set of planar regions as extracted
    * by PCL's organized segmentation tools into a set of Planar landmark
    * measurements suitable for use with the OmniMapper. */
-  void regionsToMeasurements(
+  void RegionsToMeasurements(
       std::vector<pcl::PlanarRegion<PointT>,
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
           regions,
       omnimapper::Time t,
       std::vector<omnimapper::BoundedPlane3<PointT> >& plane_measurements);
 
-  void removeDuplicatePoints(pcl::PointCloud<PointT>& boundary_cloud);
+  void RemoveDuplicatePoints(pcl::PointCloud<PointT>& boundary_cloud);
 
-  bool polygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
+  bool PolygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
 
-  bool polygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
+  bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
                             Eigen::Vector4d& coeffs2, CloudPtr boundary2);
 
   /** \brief planarRegionCallback receives segmented data from the segmentation.
    */
-  void planarRegionCallback(
+  void PlanarRegionCallback(
       std::vector<pcl::PlanarRegion<PointT>,
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
           regions,
@@ -43,21 +43,21 @@ class BoundedPlanePlugin {
 
   /** \brief setAngularThreshold sets the angular threshold to be used for data
    * association. */
-  void setAngularThreshold(double angular_threshold) {
+  void SetAngularThreshold(double angular_threshold) {
     angular_threshold_ = angular_threshold;
   }
 
   /** \brief setRangeThreshold sets the range threshold to be used for data
    * association. */
-  void setRangeThreshold(double range_threshold) {
+  void SetRangeThreshold(double range_threshold) {
     range_threshold_ = range_threshold;
   }
 
-  void setAngularNoise(double angular_noise) { angular_noise_ = angular_noise; }
+  void SetAngularNoise(double angular_noise) { angular_noise_ = angular_noise; }
 
-  void setRangeNoise(double range_noise) { range_noise_ = range_noise; }
+  void SetRangeNoise(double range_noise) { range_noise_ = range_noise; }
 
-  void setSensorToBaseFunctor(
+  void SetSensorToBaseFunctor(
       omnimapper::GetTransformFunctorPtr get_transform) {
     get_sensor_to_base_ = get_transform;
   }

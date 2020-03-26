@@ -151,114 +151,114 @@ class OmniMapperBase {
 
   /** \brief Commits a pose in the pose chain to the SLAM problem.  Returns true
    * if updated, false otherwise. */
-  bool commitNextPoseNode();
+  bool CommitNextPoseNode();
 
   /** \brief Adds an initial pose x_0 to the mapper. TODO: user specificed
    * initial pose */
-  void initializePose(Time& t);
+  void InitializePose(Time& t);
 
   /** \brief Sets the initial pose, to be initialized at the timestamp of the
    * first recieved message.  Has no effect if called when already initialized.
    */
-  void setInitialPose(gtsam::Pose3& init_pose);
+  void SetInitialPose(gtsam::Pose3& init_pose);
 
   /** \brief Sets a time functor to use for getting the current time. */
-  void setTimeFunctor(omnimapper::GetTimeFunctorPtr time_functor);
+  void SetTimeFunctor(omnimapper::GetTimeFunctorPtr time_functor);
 
   /** \brief Given a timestamp, return a pose symbol.  If a pose symbol already
    * exists for the requested timestamp, this is returned, else a new symbol is
    * created. */
-  void getPoseSymbolAtTime(Time& t, gtsam::Symbol& sym);
+  void GetPoseSymbolAtTime(Time& t, gtsam::Symbol& sym);
 
   /** \brief Given a symbol, return the timestamp.  This is primarily used for
    * doing error analysis after mapping. */
-  void getTimeAtPoseSymbol(gtsam::Symbol& sym, Time& t);
+  void GetTimeAtPoseSymbol(gtsam::Symbol& sym, Time& t);
 
   /** \brief Returns the most recent solution */
-  gtsam::Values getSolution();
+  gtsam::Values GetSolution();
 
   /** \brief Returs the most recent graph */
-  gtsam::NonlinearFactorGraph getGraph();
+  gtsam::NonlinearFactorGraph GetGraph();
 
   /** \brief Returs the most recent graph augmented with any pending uncommitted
    * graph*/
-  gtsam::NonlinearFactorGraph getGraphAndUncommitted();
+  gtsam::NonlinearFactorGraph GetGraphAndUncommitted();
 
   /** \brief Returns the most recent solution augmented with any pending
    * uncommitted values */
-  gtsam::Values getSolutionAndUncommitted();
+  gtsam::Values GetSolutionAndUncommitted();
 
   /** \brief Returns the most recent optimized pose. */
-  gtsam::Pose3 getLatestPose();
+  gtsam::Pose3 GetLatestPose();
 
   /** \brief Returns the most recent optimized pose, and the timestamp. */
   void getLatestPose(gtsam::Pose3& pose, Time& time);
 
   /** \brief Optimizes the graph.  This will update the SLAM problem with the
    * newly added factors, and optimize. */
-  void optimize();
+  void Optimize();
 
   /** \brief The main mapper update cycle, including adding poses, adding
    * measurements, checking for loop closures. */
-  void spinOnce();
+  void SpinOnce();
 
   /** \brief Continuously update the mapper while it is running. Suitable for
    * use in its own thread. */
-  void spin();
+  void Spin();
 
   /** \brief Adds a pose plugin that will add a pose constraint when requested.
    */
-  void addPosePlugin(PosePluginPtr& plugin);
+  void AddPosePlugin(PosePluginPtr& plugin);
 
   /** \brief Adds an output plugin, which will be called each time the map is
    * updated. */
-  void addOutputPlugin(OutputPluginPtr& plugin);
+  void AddOutputPlugin(OutputPluginPtr& plugin);
 
   /** \brief Notify all output plugins that the state has changed. */
-  void updateOutputPlugins();
+  void UpdateOutputPlugins();
 
   /** \brief Returns the most recent pose symbol. */
-  inline gtsam::Symbol currentPoseSymbol() { return current_pose_symbol_; }
+  inline gtsam::Symbol CurrentPoseSymbol() { return current_pose_symbol_; }
 
   /** \brief Adds a factor to the factor graph. */
-  bool addFactor(gtsam::NonlinearFactor::shared_ptr& new_factor);
+  bool AddFactor(gtsam::NonlinearFactor::shared_ptr& new_factor);
 
   /** \brief Adds a factor to the factor graph bypassing the pose chain. */
-  bool addFactorDirect(gtsam::NonlinearFactor::shared_ptr& new_factor);
+  bool AddFactorDirect(gtsam::NonlinearFactor::shared_ptr& new_factor);
 
   /** \brief Adds an initial value to the values. */
-  bool addNewValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+  bool AddNewValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
 
   /** \brief Updates an existing value.  TODO: Fix this. */
-  void updateValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+  void UpdateValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
 
   /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test. */
-  void updatePlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+  void UpdatePlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
                    gtsam::Plane<PointT>& meas_plane);
 
   /** \brief Update a bounded plane -- TODO: remove this, should make updateable
    * value. */
-  void updateBoundedPlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+  void UpdateBoundedPlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
                           omnimapper::BoundedPlane3<PointT>& meas_plane);
 
   /** \brief Looks up a pose by symbol. */
-  boost::optional<gtsam::Pose3> getPose(gtsam::Symbol& pose_sym);
+  boost::optional<gtsam::Pose3> GetPose(gtsam::Symbol& pose_sym);
 
   /** \brief Predicts a pose that has not yet been committed / optimized. */
-  boost::optional<gtsam::Pose3> predictPose(gtsam::Symbol& pose_sym);
+  boost::optional<gtsam::Pose3> PredictPose(gtsam::Symbol& pose_sym);
 
   /** \brief Prints latest solution. */
-  void printSolution();
+  void PrintSolution();
 
   /** \brief Set whether or not to output verbose debugging information. */
-  void setDebug(bool debug) { debug_ = debug; }
+  void SetDebug(bool debug) { debug_ = debug; }
 
-  void setSuppressCommitWindow(bool suppress) {
+  void SetSuppressCommitWindow(bool suppress) {
     suppress_commit_window_ = suppress;
   }
 
   /** \brief Resets the mapper, clearing all existing state. */
-  void reset();
+  void Reset();
 
   //////////////////////////////////////////////////////////////////////////////
 

@@ -6,12 +6,12 @@
 
 template <typename PointT>
 ObjectDiscovery<PointT>::ObjectDiscovery()
-    : max_object_size(0),
-      max_current_size(0),
+    : max_object_size_(0),
+      max_current_size_(0),
       object_dir_("/home/siddharth/kinect/") {}
 
 template <typename PointT>
-float ObjectDiscovery<PointT>::computeJaccardIndex(Eigen::Vector4f min_pt_1,
+float ObjectDiscovery<PointT>::ComputeJaccardIndex(Eigen::Vector4f min_pt_1,
                                                    Eigen::Vector4f min_pt_2,
                                                    Eigen::Vector4f max_pt_1,
                                                    Eigen::Vector4f max_pt_2) {
@@ -45,7 +45,7 @@ float ObjectDiscovery<PointT>::computeJaccardIndex(Eigen::Vector4f min_pt_1,
 }
 
 template <typename PointT>
-void ObjectDiscovery<PointT>::loadRepresentations(std::string object_location) {
+void ObjectDiscovery<PointT>::LoadRepresentations(std::string object_location) {
   object_dir_ = object_location;
   std::cout << "Inside loadDesc" << std::endl;
   pcl::SIFTKeypoint<PointT, pcl::PointXYZI>* sift3D =
@@ -66,22 +66,22 @@ void ObjectDiscovery<PointT>::loadRepresentations(std::string object_location) {
       new pcl::PointCloud<pcl::SHOT1344>);
 
   /* initialize correspondence estimator */
-  correspondence_estimator.reset(new ObjectRecognition<pcl::SHOT1344>(
+  correspondence_estimator_.reset(new ObjectRecognition<pcl::SHOT1344>(
       keypoint_detector, feature_extractor));
 
   std::cout << "Descriptor Loaded " << std::endl;
 
   /* load object descriptors */
 
-  int max_segment = correspondence_estimator->loadDatabase(object_location);
+  int max_segment = correspondence_estimator_->loadDatabase(object_location);
 
-  max_object_size = max_segment + 1;
-  max_current_size = max_object_size;
+  max_object_size_ = max_segment + 1;
+  max_current_size_ = max_object_size_;
   std::cout << "Size of max_segment " << max_segment + 1 << std::endl;
 }
 
 template <typename PointT>
-int ObjectDiscovery<PointT>::findMin(int segment, std::vector<int> seg_vec) {
+int ObjectDiscovery<PointT>::FindMin(int segment, std::vector<int> seg_vec) {
   int min_obj = segment;
 
   for (std::size_t i = 0; i < seg_vec.size(); i++) {
@@ -92,21 +92,21 @@ int ObjectDiscovery<PointT>::findMin(int segment, std::vector<int> seg_vec) {
 }
 
 template <typename PointT>
-int ObjectDiscovery<PointT>::findLabel(int segment) {
+int ObjectDiscovery<PointT>::FindLabel(int segment) {
   int label = segment;
-  while (segment_arr[label] != label) {
-    if (segment_arr[label] == -1) {
+  while (segment_arr_[label] != label) {
+    if (segment_arr_[label] == -1) {
       // no label is assigned yet
-      segment_arr[label] = label;
+      segment_arr_[label] = label;
       break;
     }
-    label = segment_arr[label];
+    label = segment_arr_[label];
   }
   return label;
 }
 
 template <typename PointT>
-void ObjectDiscovery<PointT>::reconstructSurface(
+void ObjectDiscovery<PointT>::ReconstructSurface(
     typename pcl::PointCloud<PointT>::Ptr merged, int id) {
   std::cout << "surface reconstruction..." << std::flush;
 
@@ -351,7 +351,7 @@ void ObjectDiscovery<PointT>::generateObjectModel(gtsam::Object<PointT> object, 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename PointT>
-void ObjectDiscovery<PointT>::mergeClouds() {
+void ObjectDiscovery<PointT>::MergeClouds() {
   std::map<int, std::vector<int> >::iterator it;
 
   /* clear previous content */
@@ -376,38 +376,38 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     remove_all(it->path());
   }
 
-  std::cout << "Size of max object " << max_object_size - 1 << std::endl;
-  segment_arr.resize(max_object_size, -1);
+  std::cout << "Size of max object " << max_object_size_ - 1 << std::endl;
+  segment_arr_.resize(max_object_size_, -1);
 
   std::cout << "MATCH GRAPH: " << std::endl;
-  for (it = match_graph.begin(); it != match_graph.end(); it++) {
+  for (it = match_graph_.begin(); it != match_graph_.end(); it++) {
     int obj_id = it->first;
     std::cout << "object id " << obj_id << " ";
     std::vector<int> matching_objects = it->second;
 
-    int min_obj = findMin(obj_id, matching_objects);
-    int label = findLabel(obj_id);
+    int min_obj = FindMin(obj_id, matching_objects);
+    int label = FindLabel(obj_id);
     if (label > min_obj) label = min_obj;
     for (std::size_t i = 0; i < matching_objects.size(); i++) {
-      segment_arr[matching_objects[i]] = label;
+      segment_arr_[matching_objects[i]] = label;
       std::cout << matching_objects[i] << " ";
     }
-    segment_arr[obj_id] = label;
+    segment_arr_[obj_id] = label;
     std::cout << "Minimum: " << min_obj << " Label: " << label << std::endl;
     std::cout << std::endl;
   }
 
   std::map<int, std::vector<int> > object_map;
-  for (std::size_t i = 0; i < segment_arr.size(); i++) {
+  for (std::size_t i = 0; i < segment_arr_.size(); i++) {
     object_map.insert(std::pair<int, std::vector<int> >(i, std::vector<int>()));
-    if (segment_arr[i] == -1) continue;
-    std::cout << i << " " << segment_arr[i] << std::endl;
-    object_map.at(segment_arr[i]).push_back(i);
+    if (segment_arr_[i] == -1) continue;
+    std::cout << i << " " << segment_arr_[i] << std::endl;
+    object_map.at(segment_arr_[i]).push_back(i);
   }
   std::cout << std::endl << "---------------" << std::endl;
   std::cout << "OBJECT GRAPH: " << std::endl;
 
-  correspondence_estimator->segment_object.clear();
+  correspondence_estimator_->segment_object.clear();
   for (it = object_map.begin(); it != object_map.end(); it++) {
     int obj_id = it->first;
     std::vector<int> matching_objects = it->second;
@@ -419,22 +419,22 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     for (std::size_t i = 0; i < matching_objects.size(); i++) {
       std::cout << matching_objects[i] << " ";
       pcl::PointCloud<pcl::PointXYZRGBA>::Ptr temp_cloud =
-          map_cloud.at(matching_objects[i]);
+          map_cloud_.at(matching_objects[i]);
       merged_cloud += *temp_cloud;
 
       std::vector<gtsam::Pose3> pose_array =
-          correspondence_estimator->pose_map.at(matching_objects[i])
+          correspondence_estimator_->pose_map.at(matching_objects[i])
               .pose_vector;
       new_pose_array.insert(new_pose_array.end(), pose_array.begin(),
                             pose_array.end());
     }
 
-    if (correspondence_estimator->segment_object.find(obj_id) ==
-        correspondence_estimator->segment_object.end()) {
+    if (correspondence_estimator_->segment_object.find(obj_id) ==
+        correspondence_estimator_->segment_object.end()) {
       // segment not found in the database
       std::map<int, int> temp_object;
       temp_object[obj_id] = 1;
-      correspondence_estimator->segment_object[obj_id] = temp_object;
+      correspondence_estimator_->segment_object[obj_id] = temp_object;
     }
 
     // save merged clouds
@@ -447,13 +447,13 @@ void ObjectDiscovery<PointT>::mergeClouds() {
     pose_vec.pose_vector = new_pose_array;
     std::string pose_filename = object_dir_ + "/merged_pose_templates/object_" +
                                 boost::lexical_cast<std::string>(obj_id);
-    correspondence_estimator->savePoseArray(pose_filename, pose_vec);
-    correspondence_estimator->pose_map.at(obj_id) = pose_vec;
+    correspondence_estimator_->savePoseArray(pose_filename, pose_vec);
+    correspondence_estimator_->pose_map.at(obj_id) = pose_vec;
 
     std::string output_filename =
         object_dir_ + "/merged_object_templates/object_" +
         boost::lexical_cast<std::string>(obj_id) + "_0";
-    correspondence_estimator->computeAndStoreDescriptor(
+    correspondence_estimator_->computeAndStoreDescriptor(
         merged_cloud.makeShared(), output_filename);
 
     //
@@ -462,12 +462,12 @@ void ObjectDiscovery<PointT>::mergeClouds() {
 
   std::string merged_mapping_file = object_dir_ + "/merged_mapping.txt";
   std::string object_stats_file = object_dir_ + "/merged_stats.txt";
-  correspondence_estimator->saveMapping(merged_mapping_file);
-  correspondence_estimator->saveObjectStats(object_stats_file);
+  correspondence_estimator_->saveMapping(merged_mapping_file);
+  correspondence_estimator_->saveObjectStats(object_stats_file);
 
   std::cout << std::endl << "---------------" << std::endl;
   std::cout << "OVERLAP GRAPH" << std::endl;
-  for (it = graph.begin(); it != graph.end(); it++) {
+  for (it = graph_.begin(); it != graph_.end(); it++) {
     int obj_id = it->first;
     std::cout << "object id " << obj_id << " ";
     std::vector<int> matching_objects = it->second;
@@ -482,7 +482,7 @@ void ObjectDiscovery<PointT>::mergeClouds() {
 }
 
 template <typename PointT>
-void ObjectDiscovery<PointT>::createGraph() {
+void ObjectDiscovery<PointT>::CreateGraph() {
   std::map<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>::iterator it;
   std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> > min_max;
   std::map<int, std::pair<Eigen::Vector4f, Eigen::Vector4f> >::iterator
@@ -491,7 +491,7 @@ void ObjectDiscovery<PointT>::createGraph() {
       min_max_iterator_2;
 
   int max_size = -1;
-  for (it = map_cloud.begin(); it != map_cloud.end(); it++) {
+  for (it = map_cloud_.begin(); it != map_cloud_.end(); it++) {
     // compute bounding box and find other clouds having intersection
 
     int obj_id = it->first;
@@ -510,16 +510,16 @@ void ObjectDiscovery<PointT>::createGraph() {
   }
 
   max_size++;
-  max_object_size = max_size;
-  max_current_size = max_object_size;
+  max_object_size_ = max_size;
+  max_current_size_ = max_object_size_;
 
   for (min_max_iterator_1 = min_max.begin();
        min_max_iterator_1 != min_max.end(); min_max_iterator_1++) {
     int obj_id = min_max_iterator_1->first;
     std::cout << "object: " << obj_id << " ";
     std::vector<int> nearby_segments;
-    graph.insert(std::pair<int, std::vector<int> >(obj_id, nearby_segments));
-    match_graph.insert(
+    graph_.insert(std::pair<int, std::vector<int> >(obj_id, nearby_segments));
+    match_graph_.insert(
         std::pair<int, std::vector<int> >(obj_id, nearby_segments));
 
     for (min_max_iterator_2 = min_max.begin();
@@ -527,18 +527,18 @@ void ObjectDiscovery<PointT>::createGraph() {
       int obj_id_2 = min_max_iterator_2->first;
       if (obj_id_2 == obj_id) continue;
 
-      float jaccard_index = computeJaccardIndex(
+      float jaccard_index = ComputeJaccardIndex(
           min_max_iterator_1->second.first, min_max_iterator_2->second.first,
           min_max_iterator_1->second.second, min_max_iterator_2->second.second);
 
       if (jaccard_index != 0) {
-        graph.at(obj_id).push_back(obj_id_2);
+        graph_.at(obj_id).push_back(obj_id_2);
 
-        int result = correspondence_estimator->matchToFile(
-            map_cloud.at(obj_id), map_cloud.at(obj_id_2));
+        int result = correspondence_estimator_->matchToFile(
+            map_cloud_.at(obj_id), map_cloud_.at(obj_id_2));
 
         if (result >= 12) {
-          match_graph.at(obj_id).push_back(obj_id_2);
+          match_graph_.at(obj_id).push_back(obj_id_2);
         }
         std::cout << obj_id_2 << " ";
       }
@@ -548,7 +548,7 @@ void ObjectDiscovery<PointT>::createGraph() {
 }
 
 template <typename PointT>
-void ObjectDiscovery<PointT>::createFinalCloud(std::string dir) {
+void ObjectDiscovery<PointT>::CreateFinalCloud(std::string dir) {
   boost::filesystem::directory_iterator end_itr;
 
   for (boost::filesystem::directory_iterator itr(dir); itr != end_itr; ++itr) {
@@ -569,7 +569,7 @@ void ObjectDiscovery<PointT>::createFinalCloud(std::string dir) {
 
     int obj_id_val = boost::lexical_cast<int>(object_name[0]);
     //            std::cout << obj_id_val << " " << std::endl;
-    map_cloud.insert(std::pair<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>(
+    map_cloud_.insert(std::pair<int, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr>(
         obj_id_val, cloud));
   }
 }

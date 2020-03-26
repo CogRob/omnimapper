@@ -31,20 +31,20 @@ class CanonicalScanMatcherPlugin {
  public:
   CanonicalScanMatcherPlugin(omnimapper::OmniMapperBase* mapper);
   ~CanonicalScanMatcherPlugin();
-  void laserScanCallback(const LaserScanPtr& lscan);
-  void spin();
-  bool spinOnce();
-  bool getBaseToLaserTf(const std::string& frame_id);
-  bool addConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2,
+  void LaserScanCallback(const LaserScanPtr& lscan);
+  void Spin();
+  bool SpinOnce();
+  bool GetBaseToLaserTf(const std::string& frame_id);
+  bool AddConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2,
                      scan_tools::CanonicalScan& cscan, bool always_add = true);
-  bool tryLoopClosure(gtsam::Symbol sym);
-  bool ready();
-  void setTriggeredMode(bool triggered_mode) {
+  bool TryLoopClosure(gtsam::Symbol sym);
+  bool Ready();
+  void SetTriggeredMode(bool triggered_mode) {
     triggered_mode_ = triggered_mode;
   }
-  void trigger() { triggered_ = true; }
-  LaserScanPConstPtr getLaserScanPtr(gtsam::Symbol sym);
-  sensor_msgs::PointCloud2 getPC2(gtsam::Symbol sym);
+  void Trigger() { triggered_ = true; }
+  LaserScanPConstPtr GetLaserScanPtr(gtsam::Symbol sym);
+  sensor_msgs::PointCloud2 GetPC2(gtsam::Symbol sym);
 
  protected:
   ros::NodeHandle nh_;

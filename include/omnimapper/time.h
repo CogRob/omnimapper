@@ -6,10 +6,10 @@ namespace omnimapper {
 typedef boost::posix_time::ptime Time;
 
 /** \brief converts microseconds as a uint64_T into a boost::posix:ptime. */
-boost::posix_time::ptime stamp2ptime(uint64_t stamp);
+boost::posix_time::ptime StampToPtime(uint64_t stamp);
 
 /** \brief convers a ptime to microseconds since epoch. */
-uint64_t ptime2stamp(boost::posix_time::ptime time);
+uint64_t PtimeToStamp(boost::posix_time::ptime time);
 
 /** \brief Gets a timestamp.  Allows flexibility, such as using the ros::Time
  * system in place of the system clock

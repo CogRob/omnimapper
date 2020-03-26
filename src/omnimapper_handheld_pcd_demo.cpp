@@ -48,29 +48,29 @@ int main(int argc, char** argv) {
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;
-  omb.setDebug(false);
+  omb.SetDebug(false);
 
   // Create a no motion pose plugin, to add a weak prior of no movement
   // Also serves to keep the pose chain connected in the case that ICP fails
   omnimapper::NoMotionPosePlugin no_motion_plugin(&omb);
   boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr(&no_motion_plugin);
-  omb.addPosePlugin(no_motion_ptr);
+  omb.AddPosePlugin(no_motion_ptr);
 
   // Create an ICP pose measurement plugin
   // omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb,
   // fake_grabber); omnimapper::ICPPoseMeasurementPlugin<PointT>
   // icp_plugin(&omb, file_grabber);
   omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb);
-  icp_plugin.setMaxCorrespondenceDistance(0.15);
-  icp_plugin.setScoreThreshold(0.001);
-  icp_plugin.setShouldDownsample(false);
-  icp_plugin.setUseGICP(false);
+  icp_plugin.SetMaxCorrespondenceDistance(0.15);
+  icp_plugin.SetScoreThreshold(0.001);
+  icp_plugin.SetShouldDownsample(false);
+  icp_plugin.SetUseGICP(false);
   // icp_plugin.setAddMultipleLinks (true);
   // icp_plugin.setAddLoopClosures (true);
   boost::function<void(const CloudConstPtr&)> icp_cloud_cb =
-      boost::bind(&omnimapper::ICPPoseMeasurementPlugin<PointT>::cloudCallback,
+      boost::bind(&omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudCallback,
                   &icp_plugin, _1);
-  ofe.setOccludingEdgeCallback(icp_cloud_cb);
+  ofe.SetOccludingEdgeCallback(icp_cloud_cb);
 
   // Create a plane plugin
   omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin(&omb);
@@ -79,35 +79,35 @@ int main(int argc, char** argv) {
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
       omnimapper::Time)>
       plane_cb = boost::bind(
-          &omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback,
+          &omnimapper::PlaneMeasurementPlugin<PointT>::PlanarRegionCallback,
           &plane_plugin, _1, _2);
-  ofe.setPlanarRegionStampedCallback(plane_cb);
+  ofe.SetPlanarRegionStampedCallback(plane_cb);
 
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
-  vis_pcl.spinOnce();
+  vis_pcl.SpinOnce();
   boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_pcl);
-  omb.addOutputPlugin(vis_ptr);
+  omb.AddOutputPlugin(vis_ptr);
 
   // Set the ICP Plugin on the visualizer
   boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(
       &icp_plugin);
-  vis_pcl.setICPPlugin(icp_ptr);
+  vis_pcl.SetICPPlugin(icp_ptr);
 
   // Start the ICP thread
-  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin,
+  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::Spin,
                            &icp_plugin);
 
   // Start the Feature Extraction Thread
   boost::thread ofe_thread(
-      &omnimapper::OrganizedFeatureExtraction<PointT>::spin, &ofe);
+      &omnimapper::OrganizedFeatureExtraction<PointT>::Spin, &ofe);
 
   // Start the OmniMapper thread
-  boost::thread omb_thread(&omnimapper::OmniMapperBase::spin, &omb);
+  boost::thread omb_thread(&omnimapper::OmniMapperBase::Spin, &omb);
 
   // while (grabber.isRunning ())
   while (true) {
-    vis_pcl.spinOnce();
+    vis_pcl.SpinOnce();
   }
   // icp_thread.join ();
   ofe_thread.join();

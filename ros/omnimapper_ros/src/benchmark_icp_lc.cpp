@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
                 << std::endl;
       std::cout << "Output Timing filename: " << output_timing_filename
                 << std::endl;
-      omnimapper.runEvaluation(associated_filename, ground_truth_filename,
+      omnimapper.RunEvaluation(associated_filename, ground_truth_filename,
                                pcd_path, output_trajectory_filename,
                                output_timing_filename);
 

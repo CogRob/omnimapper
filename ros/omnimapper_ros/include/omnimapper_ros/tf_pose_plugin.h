@@ -41,26 +41,26 @@ class TFPosePlugin : public omnimapper::PosePlugin {
  public:
   TFPosePlugin(omnimapper::OmniMapperBase* mapper);
 
-  gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr addRelativePose(
+  gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr AddRelativePose(
       boost::posix_time::ptime t1, gtsam::Symbol sym1,
       boost::posix_time::ptime t2, gtsam::Symbol sym2);
-  bool ready();
-  void setOdomFrameName(std::string& odom_frame_name) {
+  bool Ready();
+  void SetOdomFrameName(std::string& odom_frame_name) {
     odom_frame_name_ = odom_frame_name;
   }
-  void setBaseFrameName(std::string& base_frame_name) {
+  void SetBaseFrameName(std::string& base_frame_name) {
     base_frame_name_ = base_frame_name;
   }
-  void setRotationNoise(double rotation_noise) {
+  void SetRotationNoise(double rotation_noise) {
     rotation_noise_ = rotation_noise;
     roll_noise_ = rotation_noise;
     pitch_noise_ = rotation_noise;
     yaw_noise_ = rotation_noise;
   }
-  void setRollNoise(double roll_noise) { roll_noise_ = roll_noise; }
-  void setPitchNoise(double pitch_noise) { pitch_noise_ = pitch_noise; }
-  void setYawNoise(double yaw_noise) { yaw_noise_ = yaw_noise; }
-  void setTranslationNoise(double translation_noise) {
+  void SetRollNoise(double roll_noise) { roll_noise_ = roll_noise; }
+  void SetPitchNoise(double pitch_noise) { pitch_noise_ = pitch_noise; }
+  void SetYawNoise(double yaw_noise) { yaw_noise_ = yaw_noise; }
+  void SetTranslationNoise(double translation_noise) {
     translation_noise_ = translation_noise;
   }
 };

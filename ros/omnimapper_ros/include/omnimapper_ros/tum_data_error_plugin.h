@@ -13,7 +13,7 @@ namespace omnimapper {
 class TUMDataErrorPlugin : public omnimapper::OutputPlugin {
  public:
   TUMDataErrorPlugin(omnimapper::OmniMapperBase* mapper);
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
 
  protected:

@@ -21,12 +21,12 @@ BOOST_GEOMETRY_REGISTER_RING(PointVector);
 
 namespace omnimapper {
 template <typename PointT>
-bool fusePlanarPolygonsXY(const pcl::PointCloud<PointT>& poly1,
+bool FusePlanarPolygonsXY(const pcl::PointCloud<PointT>& poly1,
                           const pcl::PointCloud<PointT>& poly2,
                           pcl::PointCloud<PointT>& poly_out);
 
 template <typename PointT>
-bool fusePlanarPolygonsConvexXY(const pcl::PointCloud<PointT>& poly1,
+bool FusePlanarPolygonsConvexXY(const pcl::PointCloud<PointT>& poly1,
                                 const pcl::PointCloud<PointT>& poly2,
                                 pcl::PointCloud<PointT>& poly_out);
 }  // namespace omnimapper

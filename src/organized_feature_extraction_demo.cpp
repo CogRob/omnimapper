@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
       label_callback = boost::bind(
           &OrganizedFeatureExtractionDemo<PointT>::clusterLabelsCallback, &demo,
           _1, _2);
-  ofe.setClusterLabelsCallback(label_callback);
+  ofe.SetClusterLabelsCallback(label_callback);
 
   while (true) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));

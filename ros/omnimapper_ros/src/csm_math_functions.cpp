@@ -84,7 +84,7 @@ gtsam::Pose2 TransformToPose2(const tf::Transform& t) {
 gtsam::Point3 btVectorToPoint3(const btVector3& vec) {
   return gtsam::Point3(vec.getX(), vec.getY(), vec.getZ());
 }
-gtsam::Pose3 btTransformToPose3(const tf::Transform& transform) {
+gtsam::Pose3 BtTransformToPose3(const tf::Transform& transform) {
   btVector3 col0 = transform.getBasis().getColumn(0);
   btVector3 col1 = transform.getBasis().getColumn(1);
   btVector3 col2 = transform.getBasis().getColumn(2);

@@ -46,13 +46,13 @@ void ObjectRecognition<FeatureType>::matchClouds(
   detectKeypoints(source_, source_keypoints_);
   detectKeypoints(target_, target_keypoints_);
 
-  extractDescriptors(source_, source_keypoints_, source_features_);
-  extractDescriptors(target_, target_keypoints_, target_features_);
+  ExtractDescriptors(source_, source_keypoints_, source_features_);
+  ExtractDescriptors(target_, target_keypoints_, target_features_);
 
-  findCorrespondences(source_features_, target_features_, source2target_);
-  findCorrespondences(target_features_, source_features_, target2source_);
+  FindCorrespondences(source_features_, target_features_, source2target_);
+  FindCorrespondences(target_features_, source_features_, target2source_);
 
-  filterCorrespondences();
+  FilterCorrespondences();
 
   // determineInitialTransformation ();
   // determineFinalTransformation ();
@@ -66,12 +66,12 @@ void ObjectRecognition<FeatureType>::matchToStoredTemplate(
 {
   source_ = source;
   detectKeypoints(source_, source_keypoints_);
-  extractDescriptors(source_, source_keypoints_, source_features_);
-  findCorrespondences(source_features_, target_feature.makeShared(),
+  ExtractDescriptors(source_, source_keypoints_, source_features_);
+  FindCorrespondences(source_features_, target_feature.makeShared(),
                       source2target_);
-  findCorrespondences(target_feature.makeShared(), source_features_,
+  FindCorrespondences(target_feature.makeShared(), source_features_,
                       target2source_);
-  filterCorrespondences();
+  FilterCorrespondences();
 
   // determineInitialTransformation ();
   // determineFinalTransformation ();
@@ -89,19 +89,19 @@ int ObjectRecognition<FeatureType>::matchToFile(
   if (source_keypoints_->size() == 0)
     return -1;  // -2 = cannot find keypoints in the source cloud
 
-  extractDescriptors(source_, source_keypoints_, source_features_);
+  ExtractDescriptors(source_, source_keypoints_, source_features_);
 
   target_ = target;
   detectKeypoints(target_, target_keypoints_);
-  extractDescriptors(target_, target_keypoints_, target_features_);
+  ExtractDescriptors(target_, target_keypoints_, target_features_);
 
-  findCorrespondences(source_features_, target_features_, source2target_);
-  findCorrespondences(target_features_, source_features_, target2source_);
+  FindCorrespondences(source_features_, target_features_, source2target_);
+  FindCorrespondences(target_features_, source_features_, target2source_);
   if (verbose_)
     std::cout << "found correspondences [source2target_] "
               << source2target_.size() << " [target2source_] "
               << target2source_.size() << std::endl;
-  filterCorrespondences();
+  FilterCorrespondences();
   if (verbose_)
     std::cout << "[After filtering]#Corr: " << correspondences_->size()
               << std::endl;
@@ -127,7 +127,7 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
     return std::make_pair(
         max_num_corr, -2);  // -2 = cannot find keypoints in the source cloud
 
-  extractDescriptors(source_, source_keypoints_, source_features_);
+  ExtractDescriptors(source_, source_keypoints_, source_features_);
 
   typename std::map<int, std::vector<pcl::PointCloud<FeatureType> > >::iterator
       feature_map_it;
@@ -220,15 +220,15 @@ std::pair<int, int> ObjectRecognition<FeatureType>::matchToFeatureFile(
 
         //	std::cout << "source feature size: " << source_features_->size()
         //<< " target_feature: " << target_feature.size() << std::endl;
-        findCorrespondences(source_features_, target_feature.makeShared(),
+        FindCorrespondences(source_features_, target_feature.makeShared(),
                             source2target_);
-        findCorrespondences(target_feature.makeShared(), source_features_,
+        FindCorrespondences(target_feature.makeShared(), source_features_,
                             target2source_);
         if (verbose_)
           std::cout << "found correspondences [source2target_] "
                     << source2target_.size() << " [target2source_] "
                     << target2source_.size() << std::endl;
-        filterCorrespondences();
+        FilterCorrespondences();
         if (verbose_)
           std::cout << "[After filtering]#Corr: " << correspondences_->size()
                     << std::endl;
@@ -262,7 +262,7 @@ pcl::PointCloud<FeatureType> ObjectRecognition<FeatureType>::computeDescriptor(
   if (source_keypoints_->size() == 0) return *feature_desc;
 
   /* extract descriptors */
-  extractDescriptors(source, source_keypoints_, feature_desc);
+  ExtractDescriptors(source, source_keypoints_, feature_desc);
   if (debug_)
     std::cout << "[computeDescriptor] size of features: "
               << feature_desc->size() << std::endl;
@@ -353,7 +353,7 @@ void ObjectRecognition<FeatureType>::detectKeypoints(
 }
 
 template <typename FeatureType>
-void ObjectRecognition<FeatureType>::extractDescriptors(
+void ObjectRecognition<FeatureType>::ExtractDescriptors(
     typename pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr input,
     typename pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints,
     typename pcl::PointCloud<FeatureType>::Ptr features) {
@@ -404,7 +404,7 @@ void ObjectRecognition<FeatureType>::extractDescriptors(
 }
 
 template <typename FeatureType>
-void ObjectRecognition<FeatureType>::findCorrespondences(
+void ObjectRecognition<FeatureType>::FindCorrespondences(
     typename pcl::PointCloud<FeatureType>::Ptr source,
     typename pcl::PointCloud<FeatureType>::Ptr target,
     std::vector<int>& correspondences) const {
@@ -429,7 +429,7 @@ void ObjectRecognition<FeatureType>::findCorrespondences(
 }
 
 template <typename FeatureType>
-void ObjectRecognition<FeatureType>::filterCorrespondences() {
+void ObjectRecognition<FeatureType>::FilterCorrespondences() {
   if (debug_) std::cout << "correspondence rejection..." << std::flush;
   std::vector<std::pair<unsigned, unsigned> > correspondences;
   for (unsigned cIdx = 0; cIdx < source2target_.size(); ++cIdx)
@@ -468,7 +468,7 @@ void ObjectRecognition<FeatureType>::filterCorrespondences() {
 }
 
 template <typename FeatureType>
-void ObjectRecognition<FeatureType>::determineInitialTransformation() {
+void ObjectRecognition<FeatureType>::DetermineInitialTransformation() {
   std::cout << "initial alignment..." << std::flush;
   pcl::registration::TransformationEstimation<pcl::PointXYZI,
                                               pcl::PointXYZI>::Ptr
@@ -486,7 +486,7 @@ void ObjectRecognition<FeatureType>::determineInitialTransformation() {
 }
 
 template <typename FeatureType>
-void ObjectRecognition<FeatureType>::determineFinalTransformation() {
+void ObjectRecognition<FeatureType>::DetermineFinalTransformation() {
   std::cout << "final registration..." << std::flush;
   pcl::Registration<pcl::PointXYZRGBA, pcl::PointXYZRGBA>::Ptr registration(
       new pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA>);

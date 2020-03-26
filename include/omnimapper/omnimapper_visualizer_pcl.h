@@ -59,17 +59,17 @@ class OmniMapperVisualizerPCL : public omnimapper::OutputPlugin {
 
  public:
   OmniMapperVisualizerPCL(omnimapper::OmniMapperBase* mapper);
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-  void spin();
-  void spinThread();
-  void spinOnce();
-  void setICPPlugin(
+  void Spin();
+  void SpinThread();
+  void SpinOnce();
+  void SetICPPlugin(
       boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >&
           icp_plugin) {
     icp_plugin_ = icp_plugin;
   }
-  void keyboardCallback(const pcl::visualization::KeyboardEvent& event, void*);
+  void KeyboardCallback(const pcl::visualization::KeyboardEvent& event, void*);
 
   // void spinAndUpdate ();
  protected:

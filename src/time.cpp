@@ -1,6 +1,6 @@
 #include <omnimapper/time.h>
 
-boost::posix_time::ptime omnimapper::stamp2ptime(uint64_t stamp) {
+boost::posix_time::ptime omnimapper::StampToPtime(uint64_t stamp) {
   //   uint64_t sec64 = 0;
   //   uint64_t nsec64 = stamp;
 
@@ -28,7 +28,7 @@ boost::posix_time::ptime omnimapper::stamp2ptime(uint64_t stamp) {
   return (time_t_epoch + boost::posix_time::microseconds(stamp));
 }
 
-uint64_t omnimapper::ptime2stamp(boost::posix_time::ptime time) {
+uint64_t omnimapper::PtimeToStamp(boost::posix_time::ptime time) {
   boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970, 1, 1));
   boost::posix_time::time_duration diff = time - time_t_epoch;
   uint64_t stamp = diff.total_microseconds();

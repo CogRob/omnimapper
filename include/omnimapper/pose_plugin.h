@@ -19,9 +19,9 @@ class PosePlugin {
   bool initialized_;
 
  public:
-  virtual gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr addRelativePose(
+  virtual gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr AddRelativePose(
       boost::posix_time::ptime t1, gtsam::Symbol sym1,
       boost::posix_time::ptime t2, gtsam::Symbol sym2) = 0;
-  virtual bool ready() = 0;
+  virtual bool Ready() = 0;
 };
 }  // namespace omnimapper

@@ -60,7 +60,7 @@ class OrganizedFeatureExtraction {
 
   // Most recent cloud from the sensor
   CloudConstPtr prev_sensor_cloud_;
-  boost::mutex sensor_cloud_mutex;
+  boost::mutex sensor_cloud_mutex_;
 
   // We process normals for frame n-1 concurrently with feature extraction for
   // cloud n
@@ -91,7 +91,7 @@ class OrganizedFeatureExtraction {
   std::vector<pcl::PointIndices> stage4_boundary_indices_;
   std::vector<CloudPtr> stage5_clusters_;
   std::vector<pcl::PointIndices> stage5_cluster_indices_;
-  boost::mutex cloud_mutex;
+  boost::mutex cloud_mutex_;
 
   // Most recently processed cloud
   CloudConstPtr vis_cloud_;
@@ -101,24 +101,24 @@ class OrganizedFeatureExtraction {
   std::vector<pcl::PlanarRegion<PointT>,
               Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
       vis_regions_;
-  boost::mutex vis_mutex;
-  boost::mutex state_mutex;
+  boost::mutex vis_mutex_;
+  boost::mutex state_mutex_;
   bool updated_data_;
   bool updated_cloud_;
   boost::condition_variable updated_cond_;
 
   // Normal Estimation
-  pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+  pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne_;
 
   // Plane Segmentation
-  pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps;
+  pcl::OrganizedMultiPlaneSegmentation<PointT, pcl::Normal, pcl::Label> mps_;
 
   // Objects
   typename pcl::EuclideanClusterComparator<PointT, pcl::Normal, pcl::Label>::Ptr
       euclidean_cluster_comparator_;
 
   // Edge Detection
-  pcl::OrganizedEdgeFromRGBNormals<PointT, pcl::Normal, pcl::Label> oed;
+  pcl::OrganizedEdgeFromRGBNormals<PointT, pcl::Normal, pcl::Label> oed_;
 
   // Planar Region Callback
   boost::function<void(
@@ -170,8 +170,8 @@ class OrganizedFeatureExtraction {
       cluster_cloud_indices_callbacks_;
 
   // Threads
-  boost::thread vis_thread;
-  boost::thread process_thread;
+  boost::thread vis_thread_;
+  boost::thread process_thread_;
 
   // Flags
   bool debug_;
@@ -184,39 +184,39 @@ class OrganizedFeatureExtraction {
  public:
   OrganizedFeatureExtraction(pcl::Grabber& grabber);
 
-  void cloudCallback(const CloudConstPtr& cloud);
-  void cloudCallbackProcess(const CloudConstPtr& cloud);
-  void processFrame();
-  void computeNormals();
-  void computePlanes();
-  void computeClusters();
-  void computeEdges();
-  bool ready();
-  void spin();
-  void setPlanarRegionCallback(
+  void CloudCallback(const CloudConstPtr& cloud);
+  void CloudCallbackProcess(const CloudConstPtr& cloud);
+  void ProcessFrame();
+  void ComputeNormals();
+  void ComputePlanes();
+  void ComputeClusters();
+  void ComputeEdges();
+  bool Ready();
+  void Spin();
+  void SetPlanarRegionCallback(
       boost::function<void(
           std::vector<pcl::PlanarRegion<PointT>,
                       Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>&
           fn);
-  void setPlanarRegionStampedCallback(
+  void SetPlanarRegionStampedCallback(
       boost::function<void(
           std::vector<pcl::PlanarRegion<PointT>,
                       Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
           Time)>& fn);
-  void setOccludingEdgeCallback(
+  void SetOccludingEdgeCallback(
       boost::function<void(const CloudConstPtr&)>& fn);
-  void setLabelsCallback(boost::function<void(const CloudConstPtr&,
+  void SetLabelsCallback(boost::function<void(const CloudConstPtr&,
                                               const LabelCloudConstPtr&)>& fn);
-  void setClusterLabelsCallback(
+  void SetClusterLabelsCallback(
       boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)>&
           fn);
-  void setRegionCloudCallback(
+  void SetRegionCloudCallback(
       boost::function<void(
           const CloudConstPtr&,
           std::vector<pcl::PlanarRegion<PointT>,
                       Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>&
           fn);
-  void setClusterCloudCallback(
+  void SetClusterCloudCallback(
       boost::function<void(std::vector<CloudPtr>, Time,
                            boost::optional<std::vector<pcl::PointIndices> >)>
           fn);

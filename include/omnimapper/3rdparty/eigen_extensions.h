@@ -4,13 +4,12 @@
 #include <Eigen/Eigen>
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Sparse>
-#define BOOST_FILESYSTEM_VERSION 2
 #include <stdint.h>
 
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>
-//#include <gzstream/gzstream.h>
+// #include <gzstream/gzstream.h>
 
 namespace eigen_extensions {
 

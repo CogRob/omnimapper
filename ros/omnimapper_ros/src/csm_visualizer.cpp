@@ -19,7 +19,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
   map_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("csm_map_cloud", 0);
 
   draw_csm_map_srv_ = nh_.advertiseService(
-      "draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap, this);
+      "draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::DrawCSMMap, this);
 
   // draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds",
   // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
@@ -27,7 +27,7 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
 }
 
 template <typename LScanT>
-void omnimapper::CSMVisualizerRViz<LScanT>::update(
+void omnimapper::CSMVisualizerRViz<LScanT>::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   {
@@ -147,7 +147,7 @@ void omnimapper::CSMVisualizerRViz<LScanT>::update(
 }
 
 template <typename LScanT>
-bool omnimapper::CSMVisualizerRViz<LScanT>::drawCSMMap(
+bool omnimapper::CSMVisualizerRViz<LScanT>::DrawCSMMap(
     omnimapper_ros::VisualizeFullCloud::Request& req,
     omnimapper_ros::VisualizeFullCloud::Response& res) {
   // gtsam::Values current_solution;

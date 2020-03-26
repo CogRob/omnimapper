@@ -68,7 +68,7 @@ gtsam::Point3 btVectorToPoint3(const tf::Vector3& vec);
  *\param transform    A TF transform
  *\return the Pose3 equivalent for GTSAM
  */
-gtsam::Pose3 btTransformToPose3(const tf::Transform& transform);
+gtsam::Pose3 BtTransformToPose3(const tf::Transform& transform);
 
 tf::Transform Pose3ToTransform(const gtsam::Pose3& ps);
 

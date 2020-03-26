@@ -16,7 +16,7 @@ omnimapper::OmniMapperBase::OmniMapperBase()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::initializePose(Time& t) {
+void omnimapper::OmniMapperBase::InitializePose(Time& t) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
 
   if (initialized_) {
@@ -68,18 +68,18 @@ void omnimapper::OmniMapperBase::initializePose(Time& t) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::setInitialPose(gtsam::Pose3& initial_pose) {
+void omnimapper::OmniMapperBase::SetInitialPose(gtsam::Pose3& initial_pose) {
   initial_pose_ = initial_pose;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::setTimeFunctor(
+void omnimapper::OmniMapperBase::SetTimeFunctor(
     omnimapper::GetTimeFunctorPtr time_functor) {
   get_time_ = time_functor;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool omnimapper::OmniMapperBase::commitNextPoseNode() {
+bool omnimapper::OmniMapperBase::CommitNextPoseNode() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
@@ -135,7 +135,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
     // TODO: make this a boost::optional, in case the plugin is disabled or
     // unable to give a pose
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr new_pose_factor =
-        pose_plugins_[i]->addRelativePose(latest_committed_node_->time,
+        pose_plugins_[i]->AddRelativePose(latest_committed_node_->time,
                                           latest_committed_node_->symbol,
                                           to_commit->time, to_commit->symbol);
     // addFactor (new_pose_factor);
@@ -234,7 +234,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool omnimapper::OmniMapperBase::addFactorDirect(
+bool omnimapper::OmniMapperBase::AddFactorDirect(
     gtsam::NonlinearFactor::shared_ptr& new_factor) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -243,7 +243,7 @@ bool omnimapper::OmniMapperBase::addFactorDirect(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool omnimapper::OmniMapperBase::addFactor(
+bool omnimapper::OmniMapperBase::AddFactor(
     gtsam::NonlinearFactor::shared_ptr& new_factor) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -303,14 +303,14 @@ bool omnimapper::OmniMapperBase::addFactor(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::getPoseSymbolAtTime(Time& t,
+void omnimapper::OmniMapperBase::GetPoseSymbolAtTime(Time& t,
                                                      gtsam::Symbol& sym) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   // If we haven't initialized yet, we do so on the first symbol request
   if (!initialized_) {
     if (debug_) printf("got symbol prior to initializing!\n");
-    initializePose(t);
+    InitializePose(t);
     if (debug_) printf("done initializing!\n");
   }
 
@@ -386,14 +386,14 @@ void omnimapper::OmniMapperBase::getPoseSymbolAtTime(Time& t,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::getTimeAtPoseSymbol(gtsam::Symbol& sym,
+void omnimapper::OmniMapperBase::GetTimeAtPoseSymbol(gtsam::Symbol& sym,
                                                      Time& t) {
   // boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
   t = symbol_lookup_[sym]->time;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-gtsam::NonlinearFactorGraph omnimapper::OmniMapperBase::getGraph() {
+gtsam::NonlinearFactorGraph omnimapper::OmniMapperBase::GetGraph() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   return (current_graph_);
@@ -401,7 +401,7 @@ gtsam::NonlinearFactorGraph omnimapper::OmniMapperBase::getGraph() {
 
 ////////////////////////////////////////////////////////////////////////////////
 gtsam::NonlinearFactorGraph
-omnimapper::OmniMapperBase::getGraphAndUncommitted() {
+omnimapper::OmniMapperBase::GetGraphAndUncommitted() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   gtsam::NonlinearFactorGraph graph = current_graph_;
@@ -410,14 +410,14 @@ omnimapper::OmniMapperBase::getGraphAndUncommitted() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-gtsam::Values omnimapper::OmniMapperBase::getSolution() {
+gtsam::Values omnimapper::OmniMapperBase::GetSolution() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   return (current_solution_);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-gtsam::Values omnimapper::OmniMapperBase::getSolutionAndUncommitted() {
+gtsam::Values omnimapper::OmniMapperBase::GetSolutionAndUncommitted() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   // Start with the  initial solution
@@ -430,7 +430,7 @@ gtsam::Values omnimapper::OmniMapperBase::getSolutionAndUncommitted() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::printSolution() {
+void omnimapper::OmniMapperBase::PrintSolution() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   current_solution_.print("Current OmniMapper Solution: \n");
@@ -438,7 +438,7 @@ void omnimapper::OmniMapperBase::printSolution() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::optimize() {
+void omnimapper::OmniMapperBase::Optimize() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   double opt_start = pcl::getTime();
@@ -470,13 +470,13 @@ void omnimapper::OmniMapperBase::optimize() {
 //}
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::addPosePlugin(
+void omnimapper::OmniMapperBase::AddPosePlugin(
     omnimapper::OmniMapperBase::PosePluginPtr& plugin) {
   pose_plugins_.push_back(plugin);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::addOutputPlugin(
+void omnimapper::OmniMapperBase::AddOutputPlugin(
     omnimapper::OmniMapperBase::OutputPluginPtr& plugin) {
   output_plugins_.push_back(plugin);
 }
@@ -490,7 +490,7 @@ void omnimapper::OmniMapperBase::addOutputPlugin(
 // }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool omnimapper::OmniMapperBase::addNewValue(gtsam::Symbol& new_symbol,
+bool omnimapper::OmniMapperBase::AddNewValue(gtsam::Symbol& new_symbol,
                                              gtsam::Value& new_value) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   std::cout << "Adding new symbol: " << new_symbol << std::endl;
@@ -499,7 +499,7 @@ bool omnimapper::OmniMapperBase::addNewValue(gtsam::Symbol& new_symbol,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void omnimapper::OmniMapperBase::updateValue(gtsam::Symbol& update_symbol,
+void omnimapper::OmniMapperBase::UpdateValue(gtsam::Symbol& update_symbol,
                                              gtsam::Value& update_value) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   std::cout << "Updating symbol: " << update_symbol << std::endl;
@@ -516,7 +516,7 @@ void omnimapper::OmniMapperBase::updateValue(gtsam::Symbol& update_symbol,
   return;
 }
 
-void omnimapper::OmniMapperBase::updatePlane(gtsam::Symbol& update_symbol,
+void omnimapper::OmniMapperBase::UpdatePlane(gtsam::Symbol& update_symbol,
                                              gtsam::Pose3& pose,
                                              gtsam::Plane<PointT>& meas_plane) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -540,7 +540,7 @@ void omnimapper::OmniMapperBase::updatePlane(gtsam::Symbol& update_symbol,
   return;
 }
 
-void omnimapper::OmniMapperBase::updateBoundedPlane(
+void omnimapper::OmniMapperBase::UpdateBoundedPlane(
     gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
     omnimapper::BoundedPlane3<PointT>& meas_plane) {
   // TODO: We should not have factor specific update functions, they should be
@@ -565,7 +565,7 @@ void omnimapper::OmniMapperBase::updateBoundedPlane(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::getPose(
+boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::GetPose(
     gtsam::Symbol& pose_sym) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -576,7 +576,7 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::getPose(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::predictPose(
+boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::PredictPose(
     gtsam::Symbol& pose_sym) {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
@@ -604,7 +604,7 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::predictPose(
         gtsam::Pose3 prev_pose =
             current_solution_.at<gtsam::Pose3>(latest_committed_node_->symbol);
         gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr predicted_pose_factor =
-            pose_plugins_[0]->addRelativePose(latest_committed_node_->time,
+            pose_plugins_[0]->AddRelativePose(latest_committed_node_->time,
                                               latest_committed_node_->symbol,
                                               itr->time, itr->symbol);
         gtsam::Pose3 incremental_prediction = predicted_pose_factor->measured();
@@ -625,14 +625,14 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::predictPose(
   return (boost::none);
 }
 
-void omnimapper::OmniMapperBase::spin() {
+void omnimapper::OmniMapperBase::Spin() {
   while (true) {
-    spinOnce();
+    SpinOnce();
     boost::this_thread::sleep(boost::posix_time::milliseconds(1));
   }
 }
 
-void omnimapper::OmniMapperBase::spinOnce() {
+void omnimapper::OmniMapperBase::SpinOnce() {
   // boost::mutex::scoped_lock (omnimapper_mutex);
   if (!initialized_) return;
   if (debug_) printf("OMB: spinning...\n");
@@ -641,17 +641,17 @@ void omnimapper::OmniMapperBase::spinOnce() {
   // latest_committed_node; next_node++; if
   // (boost::posix_time::microsec_clock::local_time() - latest_commit_time >
   // boost::posix_time::seconds (commit_window_))
-  bool updated = commitNextPoseNode();
+  bool updated = CommitNextPoseNode();
 
   if (new_factors_.size() > 0) {
-    optimize();
+    Optimize();
     updated = true;
   }
 
   if (updated) {
     // printf ("OMB: optimizing\n");
     // optimize ();
-    updateOutputPlugins();
+    UpdateOutputPlugins();
     // Print latest
     if (debug_) {
       gtsam::Pose3 new_pose_value =
@@ -667,7 +667,7 @@ void omnimapper::OmniMapperBase::spinOnce() {
   }
 }
 
-gtsam::Pose3 omnimapper::OmniMapperBase::getLatestPose() {
+gtsam::Pose3 omnimapper::OmniMapperBase::GetLatestPose() {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   if (latest_committed_node_ == chain_.begin()) {
     return (gtsam::Pose3::identity());
@@ -689,7 +689,7 @@ void omnimapper::OmniMapperBase::getLatestPose(gtsam::Pose3& pose, Time& time) {
   return;
 }
 
-void omnimapper::OmniMapperBase::updateOutputPlugins() {
+void omnimapper::OmniMapperBase::UpdateOutputPlugins() {
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   boost::shared_ptr<gtsam::Values> vis_values(
@@ -700,7 +700,7 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
   for (std::size_t i = 0; i < output_plugins_.size(); i++) {
     if (debug_)
       printf("Updating plugin %zu with %zu values\n", i, vis_values->size());
-    output_plugins_[i]->update(vis_values, vis_graph);
+    output_plugins_[i]->Update(vis_values, vis_graph);
   }
   double end = pcl::getTime();
   if (debug_)
@@ -708,7 +708,7 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
               << double(end - start) << std::endl;
 }
 
-void omnimapper::OmniMapperBase::reset() {
+void omnimapper::OmniMapperBase::Reset() {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
   // Clear state

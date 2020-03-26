@@ -15,7 +15,7 @@ BoundedPlanePlugin<PointT>::BoundedPlanePlugin(
 }
 
 template <typename PointT>
-bool BoundedPlanePlugin<PointT>::polygonsOverlap(CloudPtr boundary1,
+bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
                                                  CloudPtr boundary2) {
   // TODO: Make this use boost::geometry
   for (size_t i = 0; i < boundary1->points.size(); i++) {
@@ -32,7 +32,7 @@ bool BoundedPlanePlugin<PointT>::polygonsOverlap(CloudPtr boundary1,
 }
 
 template <typename PointT>
-bool BoundedPlanePlugin<PointT>::polygonsOverlapBoost(Eigen::Vector4d& coeffs1,
+bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(Eigen::Vector4d& coeffs1,
                                                       CloudPtr boundary1,
                                                       Eigen::Vector4d& coeffs2,
                                                       CloudPtr boundary2) {
@@ -40,11 +40,11 @@ bool BoundedPlanePlugin<PointT>::polygonsOverlapBoost(Eigen::Vector4d& coeffs1,
   Eigen::Vector4d minus_z_axis(0.0, 0.0, -1.0, 0.0);
 
   // Move to xy
-  Eigen::Affine3d p1_to_xy = planarAlignmentTransform(z_axis, coeffs1);
+  Eigen::Affine3d p1_to_xy = PlanarAlignmentTransform(z_axis, coeffs1);
   CloudPtr p1_xy(new Cloud());
   pcl::transformPointCloud(*boundary1, *p1_xy, p1_to_xy);
 
-  Eigen::Affine3d p2_to_xy = planarAlignmentTransform(z_axis, coeffs2);
+  Eigen::Affine3d p2_to_xy = PlanarAlignmentTransform(z_axis, coeffs2);
   CloudPtr p2_xy(new Cloud());
   pcl::transformPointCloud(*boundary2, *p2_xy, p2_to_xy);
 
@@ -54,7 +54,7 @@ bool BoundedPlanePlugin<PointT>::polygonsOverlapBoost(Eigen::Vector4d& coeffs1,
 }
 
 template <typename PointT>
-void BoundedPlanePlugin<PointT>::removeDuplicatePoints(
+void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
     pcl::PointCloud<PointT>& boundary_cloud) {
   for (size_t i = 1; i < boundary_cloud.points.size() - 1; i++) {
     for (size_t j = i + 1; j < boundary_cloud.points.size() - 1; j++) {
@@ -79,7 +79,7 @@ void BoundedPlanePlugin<PointT>::removeDuplicatePoints(
 }
 
 template <typename PointT>
-void BoundedPlanePlugin<PointT>::regionsToMeasurements(
+void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
     std::vector<pcl::PlanarRegion<PointT>,
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions,
     omnimapper::Time t,
@@ -105,7 +105,7 @@ void BoundedPlanePlugin<PointT>::regionsToMeasurements(
     pcl::PointCloud<PointT> empty_inliers;
 
     printf("border before: %zu\n", border.size());
-    removeDuplicatePoints(*border_cloud);
+    RemoveDuplicatePoints(*border_cloud);
     border = border_cloud->points;
     printf("border after: %zu\n", border.size());
 
@@ -168,7 +168,7 @@ void BoundedPlanePlugin<PointT>::regionsToMeasurements(
 }
 
 template <typename PointT>
-void BoundedPlanePlugin<PointT>::planarRegionCallback(
+void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     std::vector<pcl::PlanarRegion<PointT>,
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
         regions,
@@ -177,13 +177,13 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
 
   // Convert the regions to omnimapper::BoundedPlane3
   std::vector<omnimapper::BoundedPlane3<PointT> > plane_measurements;
-  regionsToMeasurements(regions, t, plane_measurements);
+  RegionsToMeasurements(regions, t, plane_measurements);
   printf("BoundedPlanePlugin: Have %zu measurements\n",
          plane_measurements.size());
 
   // Get the planes from the mapper
   gtsam::Values current_solution =
-      mapper_->getSolutionAndUncommitted();  // mapper_->getSolution ();
+      mapper_->GetSolutionAndUncommitted();  // mapper_->getSolution ();
   gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> > plane_filtered =
       current_solution.filter<omnimapper::BoundedPlane3<PointT> >();
   // gtsam::Values::Filtered<gtsam::OrientedPlane3> plane_filtered =
@@ -191,8 +191,8 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
 
   // Get the pose symbol for this time
   gtsam::Symbol pose_sym;
-  mapper_->getPoseSymbolAtTime(t, pose_sym);
-  boost::optional<gtsam::Pose3> new_pose = mapper_->predictPose(pose_sym);
+  mapper_->GetPoseSymbolAtTime(t, pose_sym);
+  boost::optional<gtsam::Pose3> new_pose = mapper_->PredictPose(pose_sym);
   printf("BoundedPlanePlugin: Processing planes for pose %s\n",
          boost::lexical_cast<std::string>(pose_sym.key()).c_str());
 
@@ -214,7 +214,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
     double meas_d = meas_plane.d();
     CloudPtr meas_boundary = meas_plane.boundary();
     CloudPtr meas_boundary_map(new Cloud());
-    Eigen::Affine3f pose2map = pose3ToTransform(*new_pose);
+    Eigen::Affine3f pose2map = Pose3ToTransform(*new_pose);
     pcl::transformPointCloud(*meas_boundary, *meas_boundary_map, pose2map);
 
     // TODO : remove debug
@@ -284,7 +284,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
         // TODO: this should not be in the map frame due to lever-arm
         CloudPtr match_map_boundary = plane.boundary();
         Eigen::Vector4d match_map_coeffs = plane.planeCoefficients();
-        if (polygonsOverlapBoost(match_map_coeffs, match_map_boundary,
+        if (PolygonsOverlapBoost(match_map_coeffs, match_map_boundary,
                                  meas_map_coeffs, meas_boundary_map)) {
           if ((error < lowest_error)) {
             lowest_error = error;
@@ -321,12 +321,12 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
              boost::lexical_cast<std::string>(best_symbol.key()).c_str(),
              map_p3_coeffs[0], map_p3_coeffs[1], map_p3_coeffs[2],
              map_p3_coeffs[3]);
-      mapper_->addNewValue(best_symbol, map_plane);
+      mapper_->AddNewValue(best_symbol, map_plane);
       ++max_plane_id_;
     } else {
       // lock plane & update
       printf("BoundedPlanePlugin: Extending boundary...\n");
-      mapper_->updateBoundedPlane(best_symbol, *new_pose, meas_plane);
+      mapper_->UpdateBoundedPlane(best_symbol, *new_pose, meas_plane);
       // omnimapper::BoundedPlane3<PointT> map_plane =
       // current_solution.at<omnimapper::BoundedPlane3<PointT> > (best_symbol);
       // map_plane.extendBoundary((*new_pose), meas_plane);
@@ -342,7 +342,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
         new omnimapper::BoundedPlaneFactor<PointT>(
             measurement_vector, meas_boundary, measurement_noise, pose_sym,
             best_symbol));
-    mapper_->addFactor(plane_factor);
+    mapper_->AddFactor(plane_factor);
     printf("BoundedPlanePlugin: Added factor!\n");
   }  // plane measurements
 }

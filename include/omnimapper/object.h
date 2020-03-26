@@ -27,24 +27,24 @@ class Object {
   // copy constructor
   Object(const Object& object);
 
-  gtsam::Symbol sym;
+  gtsam::Symbol sym_;
   // list of observations
   std::map<gtsam::Symbol, CloudPtr> clusters_;
   std::map<gtsam::Symbol, pcl::PointIndices> indices_;
-  std::map<gtsam::Symbol, int> factor_flag;
+  std::map<gtsam::Symbol, int> factor_flag_;
   CloudPtr optimal_cloud_;
   boost::mutex object_mutex_;
 
   // optional label
-  std::string name;
+  std::string name_;
 
   // flag for use as a landmark
-  bool landmark;
+  bool landmark_;
 
   // gtsam::Symbol
-  void addObservation(gtsam::Symbol sym, CloudPtr cluster,
+  void AddObservation(gtsam::Symbol sym, CloudPtr cluster,
                       boost::optional<pcl::PointIndices> indices);
-  Cloud optimalCloud();
+  Cloud OptimalCloud();
 };
 
 }  // namespace omnimapper

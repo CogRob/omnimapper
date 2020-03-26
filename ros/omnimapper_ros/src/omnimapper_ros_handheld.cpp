@@ -59,7 +59,7 @@ class OmniMapperHandheldNode {
         organized_feature_extraction_(fake_grabber_) {
     // Add the TF Pose Plugin
     boost::shared_ptr<omnimapper::PosePlugin> tf_plugin_ptr(&tf_plugin_);
-    omb_.addPosePlugin(tf_plugin_ptr);
+    omb_.AddPosePlugin(tf_plugin_ptr);
 
     // Set up an ICP Plugin
     icp_plugin_.setUseGICP(true);
@@ -100,11 +100,11 @@ class OmniMapperHandheldNode {
 
     // Install the visualizer
     boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_plugin_);
-    omb_.addOutputPlugin(vis_ptr);
+    omb_.AddOutputPlugin(vis_ptr);
 
     // OmniMapper thread
-    omb_.setDebug(true);
-    boost::thread omb_thread(&omnimapper::OmniMapperBase::spin, &omb_);
+    omb_.SetDebug(true);
+    boost::thread omb_thread(&omnimapper::OmniMapperBase::Spin, &omb_);
     boost::thread icp_thread(
         &omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
   }

@@ -52,7 +52,7 @@ omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin(
   // marker_server_->applyChanges ();
 }
 
-void omnimapper::ErrorEvaluationPlugin::initMenu() {
+void omnimapper::ErrorEvaluationPlugin::InitMenu() {
   // playback_menu_ = menu_handler_->insert ("Playback Control");
   // interactive_markers::MenuHandler::EntryHandle play_pause =
   // menu_handler_->insert (playback_menu_, "Play / Pause");
@@ -72,20 +72,20 @@ void omnimapper::ErrorEvaluationPlugin::initMenu() {
 //   printf ("Stopping playback!\n");
 // }
 
-void omnimapper::ErrorEvaluationPlugin::poseClickCallback(
+void omnimapper::ErrorEvaluationPlugin::PoseClickCallback(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
   // Parse the feedback
   std::cout << "Got click from : " << feedback->marker_name << std::endl;
 }
 
-void omnimapper::ErrorEvaluationPlugin::update(
+void omnimapper::ErrorEvaluationPlugin::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   if (debug_) printf("Updating Error evaluation plugin\n");
   gtsam::Values current_solution = *vis_values;
   gtsam::NonlinearFactorGraph current_graph = *vis_graph;
 
-  computeTrajectoryStatistics(vis_values, vis_graph);
+  ComputeTrajectoryStatistics(vis_values, vis_graph);
 
   /*
     visualization_msgs::MarkerArray marker_array;
@@ -232,9 +232,9 @@ void omnimapper::ErrorEvaluationPlugin::update(
     gtsam::Vector quat = rot.quaternion();
 
     omnimapper::Time t1;
-    mapper_->getTimeAtPoseSymbol(key_symbol, t1);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, t1);
 
-    gtsam::Pose3 gt_p1 = getPoseAtTime(t1);
+    gtsam::Pose3 gt_p1 = GetPoseAtTime(t1);
 
     // Compute ATE
     gtsam::Point3 gt_point = gt_p1.translation();
@@ -304,7 +304,7 @@ void omnimapper::ErrorEvaluationPlugin::update(
       // Dipslay marker name
       gt_menu->insert(
           std::string(key_symbol),
-          boost::bind(&omnimapper::ErrorEvaluationPlugin::poseClickCallback,
+          boost::bind(&omnimapper::ErrorEvaluationPlugin::PoseClickCallback,
                       this, _1));
       pose_menus_.insert(
           std::pair<gtsam::Symbol,
@@ -365,7 +365,7 @@ void omnimapper::ErrorEvaluationPlugin::update(
   // writeMapperTrajectoryFile (std::string (""), current_solution);
 }
 
-void omnimapper::ErrorEvaluationPlugin::computeTrajectoryStatistics(
+void omnimapper::ErrorEvaluationPlugin::ComputeTrajectoryStatistics(
     boost::shared_ptr<gtsam::Values>& values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph) {
   gtsam::Values current_solution = *values;
@@ -412,13 +412,13 @@ void omnimapper::ErrorEvaluationPlugin::computeTrajectoryStatistics(
 
         // Get the timestamps of these poses
         omnimapper::Time t1;
-        mapper_->getTimeAtPoseSymbol(sym1, t1);
+        mapper_->GetTimeAtPoseSymbol(sym1, t1);
         omnimapper::Time t2;
-        mapper_->getTimeAtPoseSymbol(sym2, t2);
+        mapper_->GetTimeAtPoseSymbol(sym2, t2);
 
         // Get the ground truth poses for the corresponding times
-        gtsam::Pose3 gt_p1 = getPoseAtTime(t1);
-        gtsam::Pose3 gt_p2 = getPoseAtTime(t2);
+        gtsam::Pose3 gt_p1 = GetPoseAtTime(t1);
+        gtsam::Pose3 gt_p2 = GetPoseAtTime(t2);
         gtsam::Pose3 gt_between = gt_p1.between(gt_p2);
 
         // Compute displacement errors
@@ -470,7 +470,7 @@ void omnimapper::ErrorEvaluationPlugin::computeTrajectoryStatistics(
   marker_server_->applyChanges();
 }
 
-void omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile(
+void omnimapper::ErrorEvaluationPlugin::WriteMapperTrajectoryFile(
     std::string trajectory_filename, gtsam::Values& current_solution) {
   std::cout << "Writing Mapper Trajectory to: " << trajectory_filename
             << std::endl;
@@ -517,7 +517,7 @@ void omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile(
   gtsam::Symbol key_symbol = gtsam::Symbol('x', sym_idx);
   while (!done) {
     omnimapper::Time key_time;
-    mapper_->getTimeAtPoseSymbol(key_symbol, key_time);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, key_time);
     gtsam::Pose3 sam_pose =
         current_solution.at<gtsam::Pose3>(key_symbol);  // key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation();
@@ -561,7 +561,7 @@ void omnimapper::ErrorEvaluationPlugin::writeMapperTrajectoryFile(
   trajectory_file.close();
 }
 
-void omnimapper::ErrorEvaluationPlugin::loadGroundTruthFile(
+void omnimapper::ErrorEvaluationPlugin::LoadGroundTruthFile(
     std::string ground_truth_filename) {
   // Load and parse ground truth file
   std::ifstream ground_truth_file(ground_truth_filename.c_str());
@@ -615,7 +615,7 @@ void omnimapper::ErrorEvaluationPlugin::loadGroundTruthFile(
       ground_truth_trajectory_.size());
 }
 
-void omnimapper::ErrorEvaluationPlugin::loadAssociatedFile(
+void omnimapper::ErrorEvaluationPlugin::LoadAssociatedFile(
     std::string associated_filename) {
   std::ifstream associated_file(associated_filename.c_str());
   while (!associated_file.eof()) {
@@ -651,11 +651,11 @@ void omnimapper::ErrorEvaluationPlugin::loadAssociatedFile(
       cloud_timestamps_.size());
 }
 
-uint64_t omnimapper::ErrorEvaluationPlugin::getStampFromIndex(int idx) {
-  return (omnimapper::ptime2stamp(cloud_timestamps_[idx]));
+uint64_t omnimapper::ErrorEvaluationPlugin::GetStampFromIndex(int idx) {
+  return (omnimapper::PtimeToStamp(cloud_timestamps_[idx]));
 }
 
-gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::getPoseAtTime(
+gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::GetPoseAtTime(
     omnimapper::Time time) {
   for (std::size_t i = 0; i < ground_truth_trajectory_.size() - 1; i++) {
     // If we've found a time interval that contains our requested time
@@ -682,14 +682,14 @@ gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::getPoseAtTime(
   assert(false);
 }
 
-gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::getInitialPose() {
+gtsam::Pose3 omnimapper::ErrorEvaluationPlugin::GetInitialPose() {
   // Lookup timestamp of 0th cloud
-  return (getPoseAtTime(cloud_timestamps_[0]));
+  return (GetPoseAtTime(cloud_timestamps_[0]));
 }
 
-void omnimapper::ErrorEvaluationPlugin::visualizeEachFrame(CloudPtr cloud) {
-  omnimapper::Time cloud_stamp = omnimapper::stamp2ptime(cloud->header.stamp);
-  gtsam::Pose3 gt_pose = getPoseAtTime(cloud_stamp);  // ground truth pose
+void omnimapper::ErrorEvaluationPlugin::VisualizeEachFrame(CloudPtr cloud) {
+  omnimapper::Time cloud_stamp = omnimapper::StampToPtime(cloud->header.stamp);
+  gtsam::Pose3 gt_pose = GetPoseAtTime(cloud_stamp);  // ground truth pose
   Eigen::Matrix4f map_tform = gt_pose.matrix().cast<float>();
   CloudPtr map_cloud(new Cloud());  // declare a map cloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_map_cloud(
@@ -779,7 +779,7 @@ void omnimapper::ErrorEvaluationPlugin::visualizeEachFrame(CloudPtr cloud) {
   marker_array_pub_.publish(marker_array);
 }
 
-void omnimapper::ErrorEvaluationPlugin::visualizeStats() {
+void omnimapper::ErrorEvaluationPlugin::VisualizeStats() {
   ros::Duration duration = ros::Time::now() - current_time_;
   current_time_ = ros::Time::now();
   double time_sec = duration.toSec();
@@ -789,7 +789,7 @@ void omnimapper::ErrorEvaluationPlugin::visualizeStats() {
   time_pub_.publish(time_duration);
 }
 
-void omnimapper::ErrorEvaluationPlugin::reset() {
+void omnimapper::ErrorEvaluationPlugin::Reset() {
   cloud_timestamps_.clear();
   ground_truth_trajectory_.clear();
   sequential_translation_errors_.clear();

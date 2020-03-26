@@ -11,12 +11,12 @@ TFPosePlugin::TFPosePlugin(omnimapper::OmniMapperBase* mapper)
       rotation_noise_(1.0),
       translation_noise_(1.0) {}
 
-gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::addRelativePose(
+gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
     boost::posix_time::ptime t1, gtsam::Symbol sym1,
     boost::posix_time::ptime t2, gtsam::Symbol sym2) {
   // Convert the timestamps
-  ros::Time rt1 = ptime2rostime(t1);
-  ros::Time rt2 = ptime2rostime(t2);
+  ros::Time rt1 = PtimeToRosTime(t1);
+  ros::Time rt2 = PtimeToRosTime(t2);
 
   // Get the poses
   tf::StampedTransform tf1;
@@ -45,8 +45,8 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::addRelativePose(
   }
 
   if (got_tf) {
-    gtsam::Pose3 pose1 = tf2pose3(tf1);
-    gtsam::Pose3 pose2 = tf2pose3(tf2);
+    gtsam::Pose3 pose1 = TfToPose3(tf1);
+    gtsam::Pose3 pose2 = TfToPose3(tf2);
     // gtsam::Pose3 relative_pose = pose1.between (pose2);
     relative_pose = pose1.between(pose2);
   }
@@ -75,6 +75,6 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::addRelativePose(
   return (between);
 }
 
-bool TFPosePlugin::ready() { return (true); }
+bool TFPosePlugin::Ready() { return (true); }
 
 }  // namespace omnimapper

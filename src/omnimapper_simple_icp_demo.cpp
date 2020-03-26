@@ -33,41 +33,41 @@ int main(int argc, char** argv) {
 
   // Create an OmniMapper instance
   omnimapper::OmniMapperBase omb;
-  omb.setDebug(true);
+  omb.SetDebug(true);
 
   // Start the OmniMapper thread
-  boost::thread omb_thread(&omnimapper::OmniMapperBase::spin, &omb);
+  boost::thread omb_thread(&omnimapper::OmniMapperBase::Spin, &omb);
 
   // Create an ICP pose measurement plugin
   // omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb, grabber);
   omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb);
-  icp_plugin.setUseGICP(true);
-  icp_plugin.setMaxCorrespondenceDistance(3.5);
-  icp_plugin.setScoreThreshold(1000.0);
+  icp_plugin.SetUseGICP(true);
+  icp_plugin.SetMaxCorrespondenceDistance(3.5);
+  icp_plugin.SetScoreThreshold(1000.0);
   boost::function<void(const CloudConstPtr&)> f =
-      boost::bind(&omnimapper::ICPPoseMeasurementPlugin<PointT>::cloudCallback,
+      boost::bind(&omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudCallback,
                   &icp_plugin, _1);
   boost::signals2::connection c = grabber.registerCallback(f);
   grabber.start();
 
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
-  vis_pcl.spinOnce();
+  vis_pcl.SpinOnce();
   boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_pcl);
-  omb.addOutputPlugin(vis_ptr);
+  omb.AddOutputPlugin(vis_ptr);
 
   // Set the ICP Plugin on the visualizer
   boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(
       &icp_plugin);
-  vis_pcl.setICPPlugin(icp_ptr);
+  vis_pcl.SetICPPlugin(icp_ptr);
 
   // Start the ICP thread
-  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::spin,
+  boost::thread icp_thread(&omnimapper::ICPPoseMeasurementPlugin<PointT>::Spin,
                            &icp_plugin);
 
   // while (grabber.isRunning ())
   while (true) {
-    vis_pcl.spinOnce();
+    vis_pcl.SpinOnce();
   }
   icp_thread.join();
   omb_thread.join();

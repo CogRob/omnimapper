@@ -13,30 +13,30 @@
 
 template <typename PointT>
 SegmentPropagation<PointT>::SegmentPropagation()
-    : restart_flag(false),
+    : restart_flag_(false),
       final_cloud_vec_(),
-      final_count(),
-      final_map_cloud(),
+      final_count_(),
+      final_map_cloud_(),
       verbose_(true),
       debug_(true),
-      max_size(0),
+      max_size_(0),
       prev_cloud_vec_(),
       prev_labels_(),
-      active_label_indices() {
+      active_label_indices_() {
   if (debug_) {
     std::cout << "Inside the temporal segmentation cluster " << std::endl;
     std::cout << "Size of prev_cloud_vec " << prev_cloud_vec_.size()
               << std::endl;
     std::cout << "Size of final_cloud_vec " << final_cloud_vec_.size()
               << std::endl;
-    std::cout << "Size of active label indices " << active_label_indices.size()
+    std::cout << "Size of active label indices " << active_label_indices_.size()
               << std::endl;
     std::cout << "Size of frame count " << std::endl;
   }
 }
 
 template <typename PointT>
-float SegmentPropagation<PointT>::computeJaccardIndex(
+float SegmentPropagation<PointT>::ComputeJaccardIndex(
     std::vector<float> curr_centroids, std::vector<float> prev_centroids,
     float idx, float nn_idx) {
   // compute intersection of boxes
@@ -70,7 +70,7 @@ float SegmentPropagation<PointT>::computeJaccardIndex(
 
 template <typename PointT>
 typename SegmentPropagation<PointT>::CloudPtrVector
-SegmentPropagation<PointT>::copyLabel(CloudPtrVector label,
+SegmentPropagation<PointT>::CopyLabel(CloudPtrVector label,
                                       CloudPtrVector final_label) {
   CloudPtrVector final_label_indices;
   back_label_.clear();
@@ -95,18 +95,18 @@ SegmentPropagation<PointT>::copyLabel(CloudPtrVector label,
 
 template <typename PointT>
 typename SegmentPropagation<PointT>::CloudPtrVector
-SegmentPropagation<PointT>::initializeLabel(CloudPtrVector label) {
-  std::cout << "Size of active label indices " << active_label_indices.size()
+SegmentPropagation<PointT>::InitializeLabel(CloudPtrVector label) {
+  std::cout << "Size of active label indices " << active_label_indices_.size()
             << std::endl;
 
-  if (active_label_indices.size() == 0) {
+  if (active_label_indices_.size() == 0) {
     for (std::size_t i = 0; i < label.size(); i++) {
-      active_label_indices[i] = 1;
+      active_label_indices_[i] = 1;
     }
     return label;
   }
   std::map<int, int>::reverse_iterator it;
-  it = active_label_indices.rbegin();
+  it = active_label_indices_.rbegin();
   int active_size = it->first;
   CloudPtrVector final_label_indices;
 
@@ -117,14 +117,14 @@ SegmentPropagation<PointT>::initializeLabel(CloudPtrVector label) {
 
   for (std::size_t i = 0; i < label.size(); i++) {
     final_label_indices.push_back(label[i]);
-    active_label_indices[i + active_size + 1] = 1;
+    active_label_indices_[i + active_size + 1] = 1;
   }
 
   return final_label_indices;
 }
 
 template <typename PointT>
-std::vector<float> SegmentPropagation<PointT>::computeCentroids(
+std::vector<float> SegmentPropagation<PointT>::ComputeCentroids(
     std::vector<pcl::PointIndices> label_indices, CloudConstPtr cloud_ptr) {
   std::vector<float> centroids;
 
@@ -256,7 +256,7 @@ std::vector<float> SegmentPropagation<PointT>::computeCentroids(
 }
 
 template <typename PointT>
-std::vector<int> SegmentPropagation<PointT>::linearMatch(
+std::vector<int> SegmentPropagation<PointT>::LinearMatch(
     std::vector<float> curr_centroids, std::vector<float> prev_centroids) {
   int num_edges = curr_centroids.size() /
                   NUM_PARAMS;  // number of edges in bipartite matching graph
@@ -278,7 +278,7 @@ std::vector<int> SegmentPropagation<PointT>::linearMatch(
       float diffB = curr_centroids[idx + 5] - prev_centroids[i + 5];
       float diff_num = fabs(curr_centroids[idx + 6] - prev_centroids[i + 6]);
       float jaccard_index =
-          computeJaccardIndex(curr_centroids, prev_centroids, idx, i);
+          ComputeJaccardIndex(curr_centroids, prev_centroids, idx, i);
 
       float diff_eq = sqrtf(diffX * diffX + diffY * diffY + diffZ * diffZ);
       // float diff_eq = -jaccard_index;
@@ -298,7 +298,7 @@ std::vector<int> SegmentPropagation<PointT>::linearMatch(
               << " diff num " << min << std::endl;
 
     // compute intersection of boxes
-    float jaccard_index = computeJaccardIndex(curr_centroids, prev_centroids,
+    float jaccard_index = ComputeJaccardIndex(curr_centroids, prev_centroids,
                                               idx, nn_index * NUM_PARAMS);
 
     std::cout << "jaccard_index: " << jaccard_index << std::endl;
@@ -315,7 +315,7 @@ std::vector<int> SegmentPropagation<PointT>::linearMatch(
 }
 
 template <typename PointT>
-std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
+std::vector<int> SegmentPropagation<PointT>::TwoWayMatch(
     std::vector<float> prev_centroids, std::vector<float> curr_centroids,
     std::vector<int> neighbor_vec,
     std::map<int, std::vector<int> > rev_neighbor_vec, int label_size) {
@@ -334,7 +334,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
 
       if (rev_neighbor_vec[nn_index].size() == 1) {
         final_neighbor_vec[idx] = nn_index;
-        active_label_indices[nn_index] = 1;
+        active_label_indices_[nn_index] = 1;
         if (debug_)
           std::cout << "(0)Neighbor of " << idx << " " << nn_index << std::endl;
         continue;
@@ -359,7 +359,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
                       prev_centroids[nn_index * NUM_PARAMS + 5];
 
         float jaccard_index =
-            computeJaccardIndex(curr_centroids, prev_centroids,
+            ComputeJaccardIndex(curr_centroids, prev_centroids,
                                 idy * NUM_PARAMS, nn_index * NUM_PARAMS);
 
         float diff_eq = sqrtf(diffX * diffX + diffY * diffY + diffZ * diffZ);
@@ -385,7 +385,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
                   << std::endl;
       final_neighbor_vec[nn_nn_index] = nn_index;
       neighbor_vec[nn_nn_index] = nn_index;
-      active_label_indices[nn_index] = 1;
+      active_label_indices_[nn_index] = 1;
 
       /* for everything else assign a new label */
       for (std::size_t j = 0; j < rev_neighbor_vec[nn_index].size(); j++) {
@@ -398,7 +398,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
             // label in the current frame
 
             if (rev_neighbor_vec.find(k) == rev_neighbor_vec.end() &&
-                active_label_indices.find(k) == active_label_indices.end()) {
+                active_label_indices_.find(k) == active_label_indices_.end()) {
               // found a label
               std::vector<int> temp_nn_index;
               temp_nn_index.push_back(idy);
@@ -407,9 +407,9 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
               neighbor_vec[idy] = k;
 
               // new object found
-              active_label_indices[k] = 1;
+              active_label_indices_[k] = 1;
 
-              if (k >= max_size) max_size = k + 1;
+              if (k >= max_size_) max_size_ = k + 1;
 
               if (debug_)
                 std::cout << "(2)Neighbor of " << idy << " " << k << " "
@@ -423,7 +423,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
                   std::cout << "0" << std::endl;
                 else
                   std::cout << "1" << std::endl;
-                if (active_label_indices.find(k) == active_label_indices.end())
+                if (active_label_indices_.find(k) == active_label_indices_.end())
                   std::cout << "0" << std::endl;
                 else
                   std::cout << "1" << std::endl;
@@ -443,7 +443,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
         // in the current frame
 
         if (rev_neighbor_vec.find(k) == rev_neighbor_vec.end() &&
-            active_label_indices.find(k) == active_label_indices.end()) {
+            active_label_indices_.find(k) == active_label_indices_.end()) {
           if (debug_) {
             std::cout << "Merging with " << k
                       << "even though jaccard index is zero" << std::endl;
@@ -452,7 +452,7 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
               std::cout << "0" << std::endl;
             else
               std::cout << "1" << std::endl;
-            if (active_label_indices.find(k) == active_label_indices.end())
+            if (active_label_indices_.find(k) == active_label_indices_.end())
               std::cout << "0" << std::endl;
             else
               std::cout << "1" << std::endl;
@@ -465,9 +465,9 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
           neighbor_vec[idx] = k;
 
           // new object found
-          active_label_indices[k] = 1;
+          active_label_indices_[k] = 1;
 
-          if (k >= max_size) max_size = k + 1;
+          if (k >= max_size_) max_size_ = k + 1;
 
           if (debug_)
             std::cout << "(-2)Neighbor of " << idx << " " << k << " "
@@ -497,11 +497,11 @@ std::vector<int> SegmentPropagation<PointT>::twoWayMatch(
 }
 
 template <typename PointT>
-std::vector<pcl::PointIndices> SegmentPropagation<PointT>::findFinalLabels(
+std::vector<pcl::PointIndices> SegmentPropagation<PointT>::FindFinalLabels(
     std::vector<int> neighbor_vec,
     std::vector<pcl::PointIndices> euclidean_label_indices) {
   std::vector<pcl::PointIndices> final_label_indices;
-  final_label_indices.resize(max_size);
+  final_label_indices.resize(max_size_);
   back_label_.clear();
   for (size_t idx = 0; idx < neighbor_vec.size(); idx++) {
     int nn_index = neighbor_vec[idx];
@@ -532,7 +532,7 @@ SegmentPropagation<PointT>::findFinalLabels(
   back_label_.clear();
 
   Cloud temp;
-  for (int i = 0; i < max_size; i++)
+  for (int i = 0; i < max_size_; i++)
     final_label_indices.push_back(temp.makeShared());
 
   for (size_t idx = 0; idx < neighbor_vec.size(); idx++) {
@@ -553,11 +553,11 @@ SegmentPropagation<PointT>::findFinalLabels(
 }
 
 template <typename PointT>
-std::vector<pcl::PointIndices> SegmentPropagation<PointT>::propogateLabels(
+std::vector<pcl::PointIndices> SegmentPropagation<PointT>::PropogateLabels(
     std::vector<pcl::PointIndices> prev_label_indices_,
     std::vector<pcl::PointIndices> curr_label_indices_,
     CloudConstPtr prev_cloud_ptr_, CloudConstPtr curr_cloud_ptr_) {
-  max_size = (prev_label_indices_.size() > curr_label_indices_.size())
+  max_size_ = (prev_label_indices_.size() > curr_label_indices_.size())
                  ? prev_label_indices_.size()
                  : curr_label_indices_.size();
 
@@ -575,7 +575,7 @@ std::vector<pcl::PointIndices> SegmentPropagation<PointT>::propogateLabels(
   if (verbose_) std::cout << "Current Centroids Computed..." << std::endl;
 
   // match the current centroids to previous centroids
-  std::vector<int> neighbor_vec = linearMatch(curr_centroids, prev_centroids);
+  std::vector<int> neighbor_vec = LinearMatch(curr_centroids, prev_centroids);
 
   // match the previous centroids to current centroids
   // std::vector<int> neighbor_vec_forward = linearMatch(prev_centroids,
@@ -599,14 +599,14 @@ std::vector<pcl::PointIndices> SegmentPropagation<PointT>::propogateLabels(
 
   // two way match
 
-  final_neighbors = twoWayMatch(prev_centroids, curr_centroids, neighbor_vec,
+  final_neighbors_ = TwoWayMatch(prev_centroids, curr_centroids, neighbor_vec,
                                 rev_neighbor_vec, curr_label_indices_.size());
 
   if (verbose_) std::cout << "Two way match completed..." << std::endl;
 
   // find final labels
   std::vector<pcl::PointIndices> final_label_indices;
-  final_label_indices = findFinalLabels(final_neighbors, curr_label_indices_);
+  final_label_indices = findFinalLabels(final_neighbors_, curr_label_indices_);
 
   if (debug_)
     for (size_t idx = 0; idx < neighbor_vec.size(); idx++) {
@@ -634,7 +634,7 @@ SegmentPropagation<PointT>::propagateLabels(
               << std::endl;
   fflush(stdout);
 
-  max_size = (prev_label_indices_.size() > curr_label_indices_.size())
+  max_size_ = (prev_label_indices_.size() > curr_label_indices_.size())
                  ? prev_label_indices_.size()
                  : curr_label_indices_.size();
   if (verbose_)
@@ -652,7 +652,7 @@ SegmentPropagation<PointT>::propagateLabels(
   if (verbose_) std::cout << "Current Centroids Computed..." << std::endl;
 
   // match the current centroids to previous centroids
-  std::vector<int> neighbor_vec = linearMatch(curr_centroids, prev_centroids);
+  std::vector<int> neighbor_vec = LinearMatch(curr_centroids, prev_centroids);
 
   // match the previous centroids to current centroids
   // std::vector<int> neighbor_vec_forward = linearMatch(prev_centroids,
@@ -676,7 +676,7 @@ SegmentPropagation<PointT>::propagateLabels(
 
   // two way match
   std::vector<int> final_neighbor_vec =
-      twoWayMatch(prev_centroids, curr_centroids, neighbor_vec,
+      TwoWayMatch(prev_centroids, curr_centroids, neighbor_vec,
                   rev_neighbor_vec, curr_label_indices_.size());
 
   if (verbose_) std::cout << "Two way match completed..." << std::endl;
@@ -708,8 +708,8 @@ SegmentPropagation<PointT>::propagateLabels(
   }
 
   // UNCOMMENT IT WHEN USING THE SEGMENTATION DEMO UI
-  final_neighbors.clear();
-  final_neighbors = final_neighbor_vec;
+  final_neighbors_.clear();
+  final_neighbors_ = final_neighbor_vec;
 
   return final_label_indices;
 }
@@ -732,16 +732,16 @@ SegmentPropagation<PointT>::propagateLabels(CloudPtrVector label,
     transformed_label.push_back(cluster.makeShared());
   }
 
-  if (prev_cloud_vec_.size() == 0 || restart_flag) {
-    if (restart_flag) {
+  if (prev_cloud_vec_.size() == 0 || restart_flag_) {
+    if (restart_flag_) {
       std::cout << "Restarting temporal propagation..." << std::endl;
-      restart_flag = 0;
+      restart_flag_ = 0;
     }
     std::cout << "[initializing] PrevCloudPtrVector is empty:  "
               << prev_cloud_vec_.size()
               << " CurrentCloudPtrVector size: " << label.size() << std::endl;
-    final_label = initializeLabel(transformed_label);
-    final_untransformed_label = initializeLabel(label);
+    final_label = InitializeLabel(transformed_label);
+    final_untransformed_label = InitializeLabel(label);
 
     prev_cloud_vec_ = final_label;
 
@@ -754,7 +754,7 @@ SegmentPropagation<PointT>::propagateLabels(CloudPtrVector label,
               << " CurrentCloudPtrVector size: " << label.size() << std::endl;
 
     final_label = propagateLabels(prev_cloud_vec_, transformed_label);
-    final_untransformed_label = findFinalLabels(final_neighbors, label);
+    final_untransformed_label = findFinalLabels(final_neighbors_, label);
     prev_cloud_vec_ = final_label;
 
     std::cout << "[labels propagated]" << std::endl;
@@ -768,7 +768,7 @@ SegmentPropagation<PointT>::propagateLabels(CloudPtrVector label,
 
 template <typename PointT>
 typename SegmentPropagation<PointT>::CloudPtrVector
-SegmentPropagation<PointT>::predictLabels(CloudPtrVector label,
+SegmentPropagation<PointT>::PredictLabels(CloudPtrVector label,
                                           gtsam::Pose3 pose_,
                                           gtsam::Symbol sym) {
   std::cout << "Predicting label " << std::endl;
@@ -785,16 +785,16 @@ SegmentPropagation<PointT>::predictLabels(CloudPtrVector label,
     transformed_label.push_back(cluster.makeShared());
   }
 
-  if (prev_cloud_vec_.size() == 0 || restart_flag) {
-    if (restart_flag) {
+  if (prev_cloud_vec_.size() == 0 || restart_flag_) {
+    if (restart_flag_) {
       std::cout << "Restarting temporal propagation..." << std::endl;
-      restart_flag = 0;
+      restart_flag_ = 0;
     }
     std::cout << "[initializing] Current map is empty:  "
               << prev_cloud_vec_.size()
               << " CurrentCloudPtrVector size: " << label.size() << std::endl;
-    final_label = initializeLabel(transformed_label);
-    final_untransformed_label = copyLabel(label, final_label);
+    final_label = InitializeLabel(transformed_label);
+    final_untransformed_label = CopyLabel(label, final_label);
 
     std::cout << "Size of final_label = " << final_label.size()
               << " Size of untransformed label "
@@ -805,14 +805,14 @@ SegmentPropagation<PointT>::predictLabels(CloudPtrVector label,
               << prev_cloud_vec_.size() << std::endl;
     //	prev_pose_ = pose_;
   } else {
-    std::cout << "[propagating labels] Map size :  " << final_map_cloud.size()
+    std::cout << "[propagating labels] Map size :  " << final_map_cloud_.size()
               << " CurrentCloudPtrVector size: " << label.size() << std::endl;
 
     // TODO: final_map_cloud is an unoptimized cloud estimated using the poses
     // till that time, experiment with propagation against the optimized cloud
 
-    final_label = propagateLabels(final_map_cloud, transformed_label);
-    final_untransformed_label = findFinalLabels(final_neighbors, label);
+    final_label = propagateLabels(final_map_cloud_, transformed_label);
+    final_untransformed_label = findFinalLabels(final_neighbors_, label);
     prev_cloud_vec_ = final_label;
 
     std::cout << "[labels propagated]" << std::endl;
@@ -828,26 +828,26 @@ SegmentPropagation<PointT>::predictLabels(CloudPtrVector label,
             << std::endl;
   observations_.insert(
       std::pair<gtsam::Symbol, CloudPtrVector>(sym, final_untransformed_label));
-  final_map_cloud = createFinalCloud(sym, pose_);
+  final_map_cloud_ = CreateFinalCloud(sym, pose_);
   end = pcl::getTime();
   std::cout << "Final cloud creation took: " << double(end - start)
             << std::endl;
 
-  std::cout << "Size of final map cloud " << final_map_cloud.size()
+  std::cout << "Size of final map cloud " << final_map_cloud_.size()
             << std::endl;
 
   return final_label;
 }
 template <typename PointT>
-void SegmentPropagation<PointT>::setActiveLabelIndices(int size) {
+void SegmentPropagation<PointT>::SetActiveLabelIndices(int size) {
   for (int i = 0; i < size; i++) {
-    active_label_indices[i] = 1;
+    active_label_indices_[i] = 1;
   }
 }
 
 template <typename PointT>
 typename SegmentPropagation<PointT>::CloudPtrVector
-SegmentPropagation<PointT>::createFinalCloud(gtsam::Symbol sym_latest,
+SegmentPropagation<PointT>::CreateFinalCloud(gtsam::Symbol sym_latest,
                                              gtsam::Pose3 cloud_pose) {
   /*
    * OPTIMAL_CLOUD: After segments from the current frame is added
@@ -894,7 +894,7 @@ SegmentPropagation<PointT>::createFinalCloud(gtsam::Symbol sym_latest,
 
 #else
   typename std::vector<CloudPtr> final_cloud_opt_;
-  final_cloud_opt_ = final_map_cloud;
+  final_cloud_opt_ = final_map_cloud_;
   gtsam::Symbol sym = sym_latest;
   std::vector<CloudPtr> cloud = observations_.at(sym);
   sym.print("[Create Final Cloud] Symbol");
@@ -913,10 +913,10 @@ SegmentPropagation<PointT>::createFinalCloud(gtsam::Symbol sym_latest,
     Cloud new_cloud = *final_cloud_opt_[j] + *map_cloud;
     final_cloud_opt_[j] = new_cloud.makeShared();
 
-    if (final_count.find(j) == final_count.end())
-      final_count[j] = 1;
+    if (final_count_.find(j) == final_count_.end())
+      final_count_[j] = 1;
     else
-      final_count[j]++;
+      final_count_[j]++;
   }
 
 #endif

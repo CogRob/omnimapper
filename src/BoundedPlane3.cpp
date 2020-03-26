@@ -37,7 +37,7 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
   Eigen::Vector4d old_coeffs = planeCoefficients();
   // Eigen::Affine3d transform = planarAlignmentTransform (old_coeffs,
   // new_coeffs);
-  Eigen::Affine3d transform = planarAlignmentTransform(new_coeffs, old_coeffs);
+  Eigen::Affine3d transform = PlanarAlignmentTransform(new_coeffs, old_coeffs);
 
   std::cout << "BoundedPlane3: transform translation: "
             << transform.translation() << std::endl;
@@ -104,7 +104,7 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::Transform(
   // pred_d);
 
   CloudPtr transformed_boundary(new Cloud());
-  Eigen::Affine3f transform = pose3ToTransform(xr);
+  Eigen::Affine3f transform = Pose3ToTransform(xr);
   // pcl::transformPointCloud (*(plane.boundary_), *transformed_boundary,
   // transform);
 
@@ -178,11 +178,11 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   bool check_input = false;
 
   //  Move map cloud to the pose
-  Eigen::Affine3d map_to_pose = pose3ToTransform(pose).cast<double>();
+  Eigen::Affine3d map_to_pose = Pose3ToTransform(pose).cast<double>();
   Eigen::Affine3d pose_to_map = map_to_pose.inverse();
   Eigen::Vector4d lm_coeffs = TransformCoefficients(*this, pose);
-  Eigen::Affine3d lm_to_xy = planarAlignmentTransform(z_axis, lm_coeffs);
-  Eigen::Affine3d xy_to_lm = planarAlignmentTransform(lm_coeffs, z_axis);
+  Eigen::Affine3d lm_to_xy = PlanarAlignmentTransform(z_axis, lm_coeffs);
+  Eigen::Affine3d xy_to_lm = PlanarAlignmentTransform(lm_coeffs, z_axis);
   Eigen::Affine3d lm_combined =
       lm_to_xy * pose_to_map;  // map_to_pose * lm_to_xy;
   Eigen::Affine3d lm_combined_inv = lm_combined.inverse();
@@ -195,7 +195,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   // Move the measurement to the xy plane
   Eigen::Vector4d meas_coeffs = plane.planeCoefficients();
   CloudPtr meas_boundary = plane.boundary();
-  Eigen::Affine3d meas_to_xy = planarAlignmentTransform(z_axis, meas_coeffs);
+  Eigen::Affine3d meas_to_xy = PlanarAlignmentTransform(z_axis, meas_coeffs);
   // Eigen::Affine3d meas_to_xy = planarAlignmentTransform(meas_coeffs, z_axis);
   CloudPtr meas_xy(new Cloud());
   printf("BoundedPlane3: transforming measurement to xy.\n");

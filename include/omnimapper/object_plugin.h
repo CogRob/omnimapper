@@ -45,89 +45,89 @@ class ObjectPlugin {
    *   hypothesis from those segments, aggregates the object hypothesis
    *   to form a single object cloud and stores the feature description
    */
-  void clusterCloudCallback(std::vector<CloudPtr> clusters, omnimapper::Time t,
+  void ClusterCloudCallback(std::vector<CloudPtr> clusters, omnimapper::Time t,
                             boost::optional<std::vector<pcl::PointIndices> >);
 
   /** \brief setObjectCallback sets the visualization call back
    *  to connect object plugin to the visualization module
    */
-  void setObjectCallback(
+  void SetObjectCallback(
       boost::function<void(std::map<gtsam::Symbol, Object<PointT> >,
                            gtsam::Point3, gtsam::Point3)>& fn);
 
   /** \brief getObservations is used by visualization module
    * to visualize filtered out object observations
    */
-  CloudPtrVector getObservations(gtsam::Symbol sym);
+  CloudPtrVector GetObservations(gtsam::Symbol sym);
 
   /** \brief setSensorToBaseFunctor provides the transformation from
    * rgbd frame to base frame.
    */
-  void setSensorToBaseFunctor(
+  void SetSensorToBaseFunctor(
       omnimapper::GetTransformFunctorPtr get_transform) {
     get_sensor_to_base_ = get_transform;
   }
 
   /** \brief The object descriptors stored in the database is loaded */
-  void loadDatabase();
+  void LoadDatabase();
 
   /** \brief recognizeObject matches the current object representation
    *   against the saved representations
    */
-  void recognizeObject(Object<PointT>& object);
+  void RecognizeObject(Object<PointT>& object);
 
   /** \brief loop to recognize objects that are pushed in the queue */
-  void objectRecognitionLoop();
+  void ObjectRecognitionLoop();
 
   /** \brief take an object out of the recognition queue */
-  gtsam::Symbol popFromQueue();
+  gtsam::Symbol PopFromQueue();
 
   /** \brief push an object in the recognition queue */
-  void pushIntoQueue(gtsam::Symbol sym);
+  void PushIntoQueue(gtsam::Symbol sym);
 
   /** \brief takes in all objects and undersegmented object parts and merge them
    * using connected component to form full objects */
-  void objectDiscoveryLoop();
+  void ObjectDiscoveryLoop();
 
-  float computeViewIntersection(gtsam::Point3 view_direction,
+  float ComputeViewIntersection(gtsam::Point3 view_direction,
                                 gtsam::Point3 view_center,
                                 Eigen::Vector4f obj_center);
 
-  float computeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA,
+  float ComputeIntersection(Eigen::Vector4f minA, Eigen::Vector4f maxA,
                             Eigen::Vector4f minB, Eigen::Vector4f maxB);
 
   /** \brief computeTSDF estimates the object TSDF */
-  void computeTSDF(Object<PointT> object, Eigen::Vector4f obj_centroid);
+  void ComputeTSDF(Object<PointT> object, Eigen::Vector4f obj_centroid);
 
   /** \brief reconstruct surface */
-  void reconstructSurface(CloudPtr cloud, int id);
+  void ReconstructSurface(CloudPtr cloud, int id);
 
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
 
   /** \brief Uses the optimal poses to reconstruct objects */
-  void computeOptimalObjectModel();
+  void ComputeOptimalObjectModel();
 
   /** \brief location where the pcd files and descriptors are saved */
-  void setAndLoadObjectDatabaseLocation(std::string object_database_location);
+  void SetAndLoadObjectDatabaseLocation(std::string object_database_location);
 
   /** \brief use objects for loop closures or not */
-  void useObjectLoopClosures(bool do_loop_closures) {
+  void UseObjectLoopClosures(bool do_loop_closures) {
     do_loop_closures_ = do_loop_closures;
   }
 
   /** \brief use objects as landmarks  or not */
-  void useObjectLandmarks(bool use_object_landmarks) {
+  void UseObjectLandmarks(bool use_object_landmarks) {
     use_object_landmarks_ = use_object_landmarks;
   }
 
   /** \brief do object model save or not */
-  void saveObjectModels(bool save_object_models) {
+  void SaveObjectModels(bool save_object_models) {
     save_object_models_ = save_object_models;
   }
 
   /** \brief set minimum cluster height */
-  void setMinimumClusterHeight(double min_cluster_height) {
+  void SetMinimumClusterHeight(double min_cluster_height) {
     min_cluster_height_ = min_cluster_height;
   }
 
@@ -138,8 +138,8 @@ class ObjectPlugin {
   CloudPtrVector empty_;
   std::map<gtsam::Symbol, std::vector<pcl::PointIndices> > observation_indices_;
 
-  int max_object_size, max_current_size;
-  cpu_tsdf::TSDFVolumeOctree::Ptr tsdf;
+  int max_object_size_, max_current_size_;
+  cpu_tsdf::TSDFVolumeOctree::Ptr tsdf_;
 
   bool vis_flag_;              // flag to check if visualization callback is set
   bool debug_, verbose_;       // flags to control the couts
@@ -160,13 +160,13 @@ class ObjectPlugin {
   boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > object_recognition_;
   boost::shared_ptr<ObjectDiscovery<pcl::PointXYZRGBA> > object_discovery_;
 
-  std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files;
-  std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files;
-  std::map<gtsam::Symbol, Object<PointT> > object_map;
-  std::map<gtsam::Symbol, gtsam::Symbol> omnimapper_graph;
+  std::vector<pcl::PointCloud<pcl::SHOT1344> > feature_files_;
+  std::vector<pcl::PointCloud<pcl::PointXYZI> > keypoint_files_;
+  std::map<gtsam::Symbol, Object<PointT> > object_map_;
+  std::map<gtsam::Symbol, gtsam::Symbol> omnimapper_graph_;
 
-  std::map<gtsam::Symbol, int> training_map;
-  std::queue<gtsam::Symbol> train_queue;
+  std::map<gtsam::Symbol, int> training_map_;
+  std::queue<gtsam::Symbol> train_queue_;
 
   /* mutexes */
   boost::mutex recog_mutex_;         // mutex for recognition queue

@@ -6,7 +6,7 @@ NoMotionPosePlugin::NoMotionPosePlugin(omnimapper::OmniMapperBase* mapper)
     : mapper_(mapper) {}
 
 gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr
-NoMotionPosePlugin::addRelativePose(boost::posix_time::ptime t1,
+NoMotionPosePlugin::AddRelativePose(boost::posix_time::ptime t1,
                                     gtsam::Symbol sym1,
                                     boost::posix_time::ptime t2,
                                     gtsam::Symbol sym2) {
@@ -31,6 +31,6 @@ NoMotionPosePlugin::addRelativePose(boost::posix_time::ptime t1,
   return (between);
 }
 
-bool NoMotionPosePlugin::ready() { return (true); }
+bool NoMotionPosePlugin::Ready() { return (true); }
 
 }  // namespace omnimapper

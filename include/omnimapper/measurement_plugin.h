@@ -12,6 +12,6 @@ class MeasurementPlugin {
  public:
   MeasurementPlugin();
   virtual ~MeasurementPlugin();
-  virtual bool addMeasurement();
+  virtual bool AddMeasurement();
 };
 }  // namespace omnimapper

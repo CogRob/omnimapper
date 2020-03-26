@@ -92,10 +92,10 @@ OrganizedFeatureExtractionTBB<PointT>::OrganizedFeatureExtractionTBB()
   mps_->setRefinementComparator(refine_compare);
 
   // Set up edge detection
-  oed.setDepthDisconThreshold(0.04f);
-  oed.setMaxSearchNeighbors(100);
-  oed.setEdgeType(oed.EDGELABEL_NAN_BOUNDARY | oed.EDGELABEL_OCCLUDING |
-                  oed.EDGELABEL_OCCLUDED);
+  oed_.setDepthDisconThreshold(0.04f);
+  oed_.setMaxSearchNeighbors(100);
+  oed_.setEdgeType(oed_.EDGELABEL_NAN_BOUNDARY | oed_.EDGELABEL_OCCLUDING |
+                  oed_.EDGELABEL_OCCLUDED);
   // oed.setEdgeType (oed.EDGELABEL_RGB_CANNY);
 
   // Set up output
@@ -111,7 +111,7 @@ OrganizedFeatureExtractionTBB<PointT>::OrganizedFeatureExtractionTBB()
 
 // Get latest cloud from the sensor
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::cloudCallback(
+void OrganizedFeatureExtractionTBB<PointT>::CloudCallback(
     const CloudConstPtr& cloud) {
   // Store cloud
   boost::mutex::scoped_lock(cloud_mutex);
@@ -158,50 +158,50 @@ void OrganizedFeatureExtractionTBB<PointT>::cloudCallback(
 // }
 
 template <typename PointT>
-bool OrganizedFeatureExtractionTBB<PointT>::ready() {
-  boost::mutex::scoped_lock lock(cloud_mutex);
+bool OrganizedFeatureExtractionTBB<PointT>::Ready() {
+  boost::mutex::scoped_lock lock(cloud_mutex_);
   return (ready_);
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::spin() {
-  spin_thread =
-      boost::thread(&OrganizedFeatureExtractionTBB<PointT>::spinThread, this);
+void OrganizedFeatureExtractionTBB<PointT>::Spin() {
+  spin_thread_ =
+      boost::thread(&OrganizedFeatureExtractionTBB<PointT>::SpinThread, this);
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::spinThread() {
+void OrganizedFeatureExtractionTBB<PointT>::SpinThread() {
   while (true) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(5));
-    spinOnce();
+    SpinOnce();
   }
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::spinOnce() {
+void OrganizedFeatureExtractionTBB<PointT>::SpinOnce() {
   FPS_CALC("spin");
 
   double frame_start = pcl::getTime();
   // Get latest cloud
   input_cloud_ = boost::none;
-  if (cloud_mutex.try_lock()) {
+  if (cloud_mutex_.try_lock()) {
     if (updated_cloud_) {
       input_cloud_ = prev_sensor_cloud_;
       updated_cloud_ = false;
       ready_ = false;
     }
-    cloud_mutex.unlock();
+    cloud_mutex_.unlock();
   }
 
   // Normal Estimation && MPS && Clustering
   tbb::task_group group;
-  group.run([&] { computeNormals(); });
-  group.run([&] { computePlanes(); });
+  group.run([&] { ComputeNormals(); });
+  group.run([&] { ComputePlanes(); });
   if ((cluster_cloud_callbacks_.size() > 0) ||
       (cluster_label_cloud_callbacks_.size() > 0))
-    group.run([&] { computeClusters(); });
-  if (occluding_edge_callback_) group.run([&] { computeEdges(); });
-  group.run([&] { publish(); });
+    group.run([&] { ComputeClusters(); });
+  if (occluding_edge_callback_) group.run([&] { ComputeEdges(); });
+  group.run([&] { Publish(); });
   group.wait();
 
   // Move clouds along pipeline
@@ -244,7 +244,7 @@ void OrganizedFeatureExtractionTBB<PointT>::spinOnce() {
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::publish() {
+void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   std::cout << "Publishing..." << std::endl;
   // Publish plane Labels
   if (plane_label_cloud_callback_) {
@@ -516,7 +516,7 @@ void OrganizedFeatureExtractionTBB<PointT>::publish() {
 
 // Compute the normals
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::computeNormals() {
+void OrganizedFeatureExtractionTBB<PointT>::ComputeNormals() {
   if (!input_cloud_) {
     ne_output_cloud_ = boost::none;
     ne_output_normals_ = boost::none;
@@ -539,7 +539,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computeNormals() {
 
 // Compute clusters
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::computeClusters() {
+void OrganizedFeatureExtractionTBB<PointT>::ComputeClusters() {
   if (!(clust_input_labels_ && clust_input_cloud_)) return;
   // Segment Objects
   std::vector<CloudPtr> output_clusters;
@@ -598,7 +598,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computeClusters() {
 
 // Compute planes
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::computePlanes() {
+void OrganizedFeatureExtractionTBB<PointT>::ComputePlanes() {
   // std::cout << "in compute planes" << std::endl;
 
   if ((!mps_input_cloud_) || (!mps_input_normals_)) {
@@ -660,7 +660,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computePlanes() {
 
 // Extract edges
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::computeEdges() {
+void OrganizedFeatureExtractionTBB<PointT>::ComputeEdges() {
   if (!input_cloud_) {
     std::cout << "edges returning early" << std::endl;
     oed_output_occluding_edge_cloud_ = boost::none;
@@ -670,9 +670,9 @@ void OrganizedFeatureExtractionTBB<PointT>::computeEdges() {
   double edge_start = pcl::getTime();
   pcl::PointCloud<pcl::Label> labels;
   std::vector<pcl::PointIndices> label_indices;
-  oed.setInputCloud(*input_cloud_);
+  oed_.setInputCloud(*input_cloud_);
 
-  oed.compute(labels, label_indices);
+  oed_.compute(labels, label_indices);
   double edge_end = pcl::getTime();
   std::cout << "edges took: " << double(edge_end - edge_start) << std::endl;
   // oed_output_occluding_edge_cloud_ = CloudPtr(new Cloud ());
@@ -682,7 +682,7 @@ void OrganizedFeatureExtractionTBB<PointT>::computeEdges() {
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setPlanarRegionCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetPlanarRegionCallback(
     boost::function<void(
         std::vector<pcl::PlanarRegion<PointT>,
                     Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&)>&
@@ -691,7 +691,7 @@ void OrganizedFeatureExtractionTBB<PointT>::setPlanarRegionCallback(
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setPlanarRegionStampedCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetPlanarRegionStampedCallback(
     boost::function<
         void(std::vector<pcl::PlanarRegion<PointT>,
                          Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
@@ -702,27 +702,27 @@ void OrganizedFeatureExtractionTBB<PointT>::setPlanarRegionStampedCallback(
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setOccludingEdgeCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetOccludingEdgeCallback(
     boost::function<void(const CloudConstPtr&)>& fn) {
   occluding_edge_callback_ = fn;
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setPlaneLabelsCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetPlaneLabelsCallback(
     boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)>&
         fn) {
   plane_label_cloud_callback_ = fn;
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setClusterLabelsCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetClusterLabelsCallback(
     boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)>&
         fn) {
   cluster_label_cloud_callbacks_.push_back(fn);
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setRegionCloudCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetRegionCloudCallback(
     boost::function<void(
         const CloudConstPtr&,
         std::vector<pcl::PlanarRegion<PointT>,
@@ -732,7 +732,7 @@ void OrganizedFeatureExtractionTBB<PointT>::setRegionCloudCallback(
 }
 
 template <typename PointT>
-void OrganizedFeatureExtractionTBB<PointT>::setClusterCloudCallback(
+void OrganizedFeatureExtractionTBB<PointT>::SetClusterCloudCallback(
     boost::function<void(std::vector<CloudPtr>, Time,
                          boost::optional<std::vector<pcl::PointIndices> >)>
         fn) {

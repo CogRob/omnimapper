@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
       sensor_msgs::PointCloud2Ptr cloud_msg(new sensor_msgs::PointCloud2());
       pcl::toROSMsg(*cloud, *cloud_msg);
       file_idx++;
-      omnimapper.cloudCallback(cloud_msg);
+      omnimapper.CloudCallback(cloud_msg);
     } else {
       // Not ready
     }

@@ -28,62 +28,62 @@ class ErrorEvaluationPlugin : public omnimapper::OutputPlugin {
   ErrorEvaluationPlugin(omnimapper::OmniMapperBase* mapper);
 
   // Update callback
-  void update(boost::shared_ptr<gtsam::Values>& vis_values,
+  void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
 
   // Loads and parses a ground truth file
-  void loadGroundTruthFile(std::string ground_truth_filename);
+  void LoadGroundTruthFile(std::string ground_truth_filename);
 
   // Loads and parses an associated.txt, for timestamps
-  void loadAssociatedFile(std::string associated_filename);
+  void LoadAssociatedFile(std::string associated_filename);
 
   // Returns the timestamp for the ith cloud from associated.txt.  This is
   // required because PCD files do not include time
-  uint64_t getStampFromIndex(int idx);
+  uint64_t GetStampFromIndex(int idx);
 
   // Returns the ground truth pose of the 0th cloud.  Used to start our map at
   // this pose, rather than the origin for vis
-  gtsam::Pose3 getInitialPose();
+  gtsam::Pose3 GetInitialPose();
 
   // Returns the ground truth pose at a given timestamp
-  gtsam::Pose3 getPoseAtTime(omnimapper::Time time);
+  gtsam::Pose3 GetPoseAtTime(omnimapper::Time time);
 
   // Writes mapper trajectory as a file, in the format used by the TUM RGBD
   // Benchmarking tools
-  void writeMapperTrajectoryFile(std::string trajectory_filename,
+  void WriteMapperTrajectoryFile(std::string trajectory_filename,
                                  gtsam::Values& current_solution);
 
   // Initializes the interactive markers menu
-  void initMenu();
+  void InitMenu();
 
   // Callback function for a pose that's been clicked on
-  void poseClickCallback(
+  void PoseClickCallback(
       const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   // Sets the interactive marker server (for example, to share one with the RViz
   // plugin
-  void setInteractiveMarkerServerPtr(
+  void SetInteractiveMarkerServerPtr(
       boost::shared_ptr<interactive_markers::InteractiveMarkerServer>&
           marker_server) {
     marker_server_ = marker_server;
   }
 
   // Sets the menu handler (for example, to share one with the RViz plugin
-  void setMenuHandlerPtr(
+  void SetMenuHandlerPtr(
       boost::shared_ptr<interactive_markers::MenuHandler>& menu_handler) {
     menu_handler_ = menu_handler;
   }
 
   // Visualize each point cloud frame
-  void visualizeEachFrame(CloudPtr cloud);
+  void VisualizeEachFrame(CloudPtr cloud);
 
-  void visualizeStats();
+  void VisualizeStats();
 
-  void computeTrajectoryStatistics(
+  void ComputeTrajectoryStatistics(
       boost::shared_ptr<gtsam::Values>& values,
       boost::shared_ptr<gtsam::NonlinearFactorGraph>& graph);
 
-  void reset();
+  void Reset();
 
  protected:
   ros::NodeHandle nh_;

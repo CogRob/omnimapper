@@ -209,7 +209,7 @@ void testPlanarTransform2() {
   std::cout << sam_rot.matrix() << std::endl;
   std::cout << sam_trans.vector() << std::endl;
 
-  Eigen::Affine3f true_transform = pose3ToTransform(sam_pose);
+  Eigen::Affine3f true_transform = Pose3ToTransform(sam_pose);
   std::cout << true_transform.rotation() << std::endl;
   std::cout << true_transform.translation() << std::endl;
 

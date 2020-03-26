@@ -1,10 +1,13 @@
 #pragma once
 
+// clang-format off
 #include <csm/csm_all.h>  // csm defines min and max, but Eigen complains
-#include <omnimapper_ros/csm_math_functions.h>
-#include <ros/ros.h>
 #undef min
 #undef max
+// clang-format on
+
+#include <omnimapper_ros/csm_math_functions.h>
+#include <ros/ros.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <sensor_msgs/LaserScan.h>

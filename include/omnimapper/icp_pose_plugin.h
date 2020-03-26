@@ -29,55 +29,55 @@ class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
   // grabber);
   ~ICPPoseMeasurementPlugin();
   // bool addInitialPose ();
-  void spin();
-  bool spinOnce();
-  bool registerClouds(CloudConstPtr& cloud1, CloudConstPtr& cloud2,
+  void Spin();
+  bool SpinOnce();
+  bool RegisterClouds(CloudConstPtr& cloud1, CloudConstPtr& cloud2,
                       CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform,
                       double& score);
-  bool addConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2,
+  bool AddConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2,
                      double icp_score_thresh);
-  bool tryLoopClosure(gtsam::Symbol sym);
-  void cloudCallback(const CloudConstPtr& cloud);
-  bool ready();
-  CloudConstPtr getCloudPtr(gtsam::Symbol sym);
-  CloudPtr getFullResCloudPtr(gtsam::Symbol sym);
-  Eigen::Affine3d getSensorToBaseAtSymbol(gtsam::Symbol sym);
-  void setMaxCorrespondenceDistance(float max_correspondence_distance) {
+  bool TryLoopClosure(gtsam::Symbol sym);
+  void CloudCallback(const CloudConstPtr& cloud);
+  bool Ready();
+  CloudConstPtr GetCloudPtr(gtsam::Symbol sym);
+  CloudPtr GetFullResCloudPtr(gtsam::Symbol sym);
+  Eigen::Affine3d GetSensorToBaseAtSymbol(gtsam::Symbol sym);
+  void SetMaxCorrespondenceDistance(float max_correspondence_distance) {
     icp_max_correspondence_distance_ = max_correspondence_distance;
   }
-  void setShouldDownsample(bool should_downsample) {
+  void SetShouldDownsample(bool should_downsample) {
     downsample_ = should_downsample;
   }
-  void setLeafSize(float leaf_size) { leaf_size_ = leaf_size; }
-  void setScoreThreshold(float score_threshold) {
+  void SetLeafSize(float leaf_size) { leaf_size_ = leaf_size; }
+  void SetScoreThreshold(float score_threshold) {
     score_threshold_ = score_threshold;
   }
-  void setUseGICP(bool use_gicp) { use_gicp_ = use_gicp; }
-  void setAddMultipleLinks(bool multi_link) {
+  void SetUseGICP(bool use_gicp) { use_gicp_ = use_gicp; }
+  void SetAddMultipleLinks(bool multi_link) {
     add_multiple_links_ = multi_link;
   }
-  void setAddLoopClosures(bool loop_close) { add_loop_closures_ = loop_close; }
-  void setAddIdentityOnFailure(bool add_identity_on_failure) {
+  void SetAddLoopClosures(bool loop_close) { add_loop_closures_ = loop_close; }
+  void SetAddIdentityOnFailure(bool add_identity_on_failure) {
     add_identity_on_failure_ = add_identity_on_failure;
   }
-  void pause(bool pause);
-  void setOverwriteTimestamps(bool overwrite_timestamps) {
+  void Pause(bool pause);
+  void SetOverwriteTimestamps(bool overwrite_timestamps) {
     overwrite_timestamps_ = overwrite_timestamps;
   }
-  void setTransNoise(double trans_noise) { trans_noise_ = trans_noise; }
-  void setRotNoise(double rot_noise) { rot_noise_ = rot_noise; }
-  void setLoopClosureDistanceThreshold(double dist_thresh) {
+  void SetTransNoise(double trans_noise) { trans_noise_ = trans_noise; }
+  void SetRotNoise(double rot_noise) { rot_noise_ = rot_noise; }
+  void SetLoopClosureDistanceThreshold(double dist_thresh) {
     loop_closure_distance_threshold_ = dist_thresh;
   }
-  void setSaveFullResClouds(bool save_full_res_clouds) {
+  void SetSaveFullResClouds(bool save_full_res_clouds) {
     save_full_res_clouds_ = save_full_res_clouds;
   }
-  void setSensorToBaseFunctor(
+  void SetSensorToBaseFunctor(
       omnimapper::GetTransformFunctorPtr get_transform) {
     get_sensor_to_base_ = get_transform;
   }
-  omnimapper::Time getLastProcessedTime();
-  void reset();
+  omnimapper::Time GetLastProcessedTime();
+  void Reset();
 
  protected:
   OmniMapperBase* mapper_;

@@ -21,9 +21,9 @@ class NoMotionPosePlugin : public omnimapper::PosePlugin {
  public:
   NoMotionPosePlugin(omnimapper::OmniMapperBase* mapper);
 
-  gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr addRelativePose(
+  gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr AddRelativePose(
       boost::posix_time::ptime t1, gtsam::Symbol sym1,
       boost::posix_time::ptime t2, gtsam::Symbol sym2);
-  bool ready();
+  bool Ready();
 };
 }  // namespace omnimapper

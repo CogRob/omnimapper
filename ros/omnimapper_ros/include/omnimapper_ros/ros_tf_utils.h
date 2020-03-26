@@ -6,7 +6,7 @@
 
 namespace omnimapper {
 /** Converts a tf to a gtsam::Pose3 */
-gtsam::Pose3 tf2pose3(tf::StampedTransform transform);
+gtsam::Pose3 TfToPose3(tf::StampedTransform transform);
 // {
 //   tf::Vector3 axis = transform.getRotation().getAxis();
 //   double len = sqrt(axis[0]*axis[0] +
@@ -22,6 +22,6 @@ gtsam::Pose3 tf2pose3(tf::StampedTransform transform);
 //                                     transform.getOrigin().z()));
 // }
 
-tf::Transform pose3totf(gtsam::Pose3& pose);
+tf::Transform Pose3ToTf(gtsam::Pose3& pose);
 
 }  // namespace omnimapper

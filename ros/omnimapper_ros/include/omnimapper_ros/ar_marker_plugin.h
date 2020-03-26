@@ -10,9 +10,9 @@ class ARMarkerPlugin {
  public:
   ARMarkerPlugin(omnimapper::OmniMapperBase* mapper);
 
-  void markerCallback(const ar_track_alvar_msgs::AlvarMarkers& msg);
+  void MarkerCallback(const ar_track_alvar_msgs::AlvarMarkers& msg);
 
-  void setSensorToBaseFunctor(
+  void SetSensorToBaseFunctor(
       omnimapper::GetTransformFunctorPtr get_transform) {
     get_sensor_to_base_ = get_transform;
   }

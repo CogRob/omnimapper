@@ -66,6 +66,5 @@ CLANG_ARGS="-Dqh_QHpointer -DvtkFiltersFlowPaths_AUTOINIT=\"1(vtkFiltersParallel
 
 open_sem $N
 for thing in "${SRC_FILES[@]}"; do
-  # run_with_lock "echo $thing; clang-rename-9 --force --input=$INPUT_FILE -p=$BUILD_PATH $SRC_PATH/$thing > $OUTPUT_PATH/$thing"
-  run_with_lock "echo $thing; clang-rename-9 --force --input=$INPUT_FILE $SRC_PATH/$thing -- $CLANG_ARGS > $OUTPUT_PATH/$thing"
+  run_with_lock "echo $thing; clang-rename-9 --force --extra-arg-before=-xc++ --input=$INPUT_FILE $SRC_PATH/$thing -- $CLANG_ARGS > $OUTPUT_PATH/$thing"
 done

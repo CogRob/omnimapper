@@ -24,7 +24,7 @@ class SegmentPropagation {
   typedef typename Cloud::ConstPtr CloudConstPtr;
   typedef typename std::vector<CloudPtr> CloudPtrVector;
 
-  std::vector<pcl::PointIndices> propogateLabels(
+  std::vector<pcl::PointIndices> PropogateLabels(
       std::vector<pcl::PointIndices> prev_label_indices_,
       std::vector<pcl::PointIndices> curr_label_indices,
       CloudConstPtr prev_cloud_ptr_, CloudConstPtr curr_cloud_ptr_);
@@ -90,16 +90,16 @@ class SegmentPropagation {
   CloudPtrVector propagateLabels(CloudPtrVector label) {
     CloudPtrVector final_label;
 
-    if (prev_cloud_vec_.size() == 0 || restart_flag) {
-      if (restart_flag) {
+    if (prev_cloud_vec_.size() == 0 || restart_flag_) {
+      if (restart_flag_) {
         std::cout << "Restarting temporal propagation..." << std::endl;
-        restart_flag = 0;
+        restart_flag_ = 0;
       }
       std::cout << "[initializing] PrevCloudPtrVector is empty:  "
                 << prev_cloud_vec_.size()
                 << " CurrentCloudPtrVector size: " << label.size();
       std::cout << std::endl;
-      final_label = initializeLabel(label);
+      final_label = InitializeLabel(label);
       prev_cloud_vec_ = final_label;
 
       std::cout << "[after initializing] Size of prev_cloud_vec_: "
@@ -123,66 +123,66 @@ class SegmentPropagation {
 
   CloudPtrVector propagateLabels(CloudPtrVector label, gtsam::Pose3 pose_,
                                  gtsam::Symbol sym);
-  CloudPtrVector predictLabels(CloudPtrVector label, gtsam::Pose3 pose_,
+  CloudPtrVector PredictLabels(CloudPtrVector label, gtsam::Pose3 pose_,
                                gtsam::Symbol sym);
 
-  std::vector<pcl::PointIndices> convertToPointIndices(
+  std::vector<pcl::PointIndices> ConvertToPointIndices(
       std::vector<pcl::PointIndices> current_label_indices,
       CloudPtrVector label) {
     std::vector<pcl::PointIndices> final_label_indices;
     final_label_indices =
-        findFinalLabels(final_neighbors, current_label_indices);
+        findFinalLabels(final_neighbors_, current_label_indices);
 
     return final_label_indices;
   }
 
-  std::vector<pcl::PointIndices> findFinalLabels(
+  std::vector<pcl::PointIndices> FindFinalLabels(
       std::vector<int> neighbor_vec,
       std::vector<pcl::PointIndices> euclidean_label_indices);
 
   CloudPtrVector findFinalLabels(std::vector<int> neighbor_vec,
                                  CloudPtrVector euclidean_label_indices);
 
-  std::vector<int> twoWayMatch(
+  std::vector<int> TwoWayMatch(
       std::vector<float> prev_centroids, std::vector<float> curr_centroids,
       std::vector<int> neigbhor_vec,
       std::map<int, std::vector<int> > rev_neighbor_vec, int label_size);
 
-  std::vector<int> linearMatch(std::vector<float> curr_centroids,
+  std::vector<int> LinearMatch(std::vector<float> curr_centroids,
                                std::vector<float> prev_centroids);
 
-  std::vector<float> computeCentroids(
+  std::vector<float> ComputeCentroids(
       std::vector<pcl::PointIndices> label_indices, CloudConstPtr cloud_ptr);
 
   std::vector<float> computeCentroids(CloudPtrVector label);
 
-  void setActiveLabelIndices(int size);
-  CloudPtrVector initializeLabel(CloudPtrVector label);
-  CloudPtrVector copyLabel(CloudPtrVector label, CloudPtrVector final_label);
+  void SetActiveLabelIndices(int size);
+  CloudPtrVector InitializeLabel(CloudPtrVector label);
+  CloudPtrVector CopyLabel(CloudPtrVector label, CloudPtrVector final_label);
 
-  float computeJaccardIndex(std::vector<float> curr_centroids,
+  float ComputeJaccardIndex(std::vector<float> curr_centroids,
                             std::vector<float> prev_centroids, float idx,
                             float nn_idx);
 
-  CloudPtrVector createFinalCloud(gtsam::Symbol sym, gtsam::Pose3 pose);
+  CloudPtrVector CreateFinalCloud(gtsam::Symbol sym, gtsam::Pose3 pose);
 
-  bool restart_flag;  // initialize new labels -- time gap between previous and
+  bool restart_flag_;  // initialize new labels -- time gap between previous and
                       // current frame is large
   CloudPtrVector final_cloud_vec_;
-  std::map<int, int> final_count;
+  std::map<int, int> final_count_;
   std::map<gtsam::Symbol, CloudPtrVector> observations_;
   std::map<int, int> back_label_;
-  CloudPtrVector final_map_cloud;
+  CloudPtrVector final_map_cloud_;
 
  protected:
   bool verbose_, debug_;
-  int max_size;
+  int max_size_;
   CloudConstPtr prev_cloud_;
   CloudPtrVector prev_cloud_vec_;
   gtsam::Pose3 prev_pose_;
   std::vector<pcl::PointIndices> prev_labels_;
-  std::map<int, int> active_label_indices;
-  std::vector<int> final_neighbors;
+  std::map<int, int> active_label_indices_;
+  std::vector<int> final_neighbors_;
 };
 
 /* SEGMENT_PROPAGATION_H_ */

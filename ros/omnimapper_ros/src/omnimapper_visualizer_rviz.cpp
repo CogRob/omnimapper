@@ -61,21 +61,21 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz(
 
   draw_icp_clouds_srv_ = nh_.advertiseService(
       "draw_icp_clouds",
-      &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
+      &omnimapper::OmniMapperVisualizerRViz<PointT>::DrawICPCloudsCallback,
       this);
 
   draw_object_observation_cloud_srv_ = nh_.advertiseService(
       "draw_object_observations",
-      &omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud,
+      &omnimapper::OmniMapperVisualizerRViz<PointT>::DrawObjectObservationCloud,
       this);
 
   publish_model_srv_ = nh_.advertiseService(
       "publish_model",
-      &omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel, this);
+      &omnimapper::OmniMapperVisualizerRViz<PointT>::PublishModel, this);
 
   write_trajectory_srv_ = nh_.advertiseService(
       "write_trajectory",
-      &omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile, this);
+      &omnimapper::OmniMapperVisualizerRViz<PointT>::WriteTrajectoryFile, this);
 
   pose_covariances_pub_ =
       nh_.advertise<visualization_msgs::MarkerArray>("/pose_covariances", 0);
@@ -83,11 +83,11 @@ omnimapper::OmniMapperVisualizerRViz<PointT>::OmniMapperVisualizerRViz(
   object_modeled_pub_ =
       nh_.advertise<sensor_msgs::PointCloud2>("modelled_objects", 0);
 
-  initMenu();
+  InitMenu();
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu() {
+void omnimapper::OmniMapperVisualizerRViz<PointT>::InitMenu() {
   // Create a control marker at the map origin for map level controls
   visualization_msgs::InteractiveMarker origin_int_marker;
   origin_int_marker.header.frame_id = "/world";
@@ -117,7 +117,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu() {
       menu_handler_->insert(
           playback_menu_, "Play / Pause",
           boost::bind(
-              &omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb, this,
+              &omnimapper::OmniMapperVisualizerRViz<PointT>::PlayPauseCb, this,
               _1));
 
   // Generate an output menu
@@ -126,18 +126,18 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu() {
       menu_handler_->insert(
           visualization_menu_, "Draw Map Cloud",
           boost::bind(
-              &omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb,
+              &omnimapper::OmniMapperVisualizerRViz<PointT>::DrawMapCloudCb,
               this, _1));
   interactive_markers::MenuHandler::EntryHandle marginals =
       menu_handler_->insert(visualization_menu_, "Draw Pose Marginals",
                             boost::bind(&omnimapper::OmniMapperVisualizerRViz<
-                                            PointT>::drawPoseMarginalsCb,
+                                            PointT>::DrawPoseMarginalsCb,
                                         this, _1));
   interactive_markers::MenuHandler::EntryHandle graphviz =
       menu_handler_->insert(
           visualization_menu_, "Output Graphviz",
           boost::bind(
-              &omnimapper::OmniMapperVisualizerRViz<PointT>::outputGraphvizCb,
+              &omnimapper::OmniMapperVisualizerRViz<PointT>::OutputGraphvizCb,
               this, _1));
 
   menu_handler_->apply(*marker_server_, "OmniMapper");
@@ -145,32 +145,32 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::initMenu() {
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::playPauseCb(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::PlayPauseCb(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
   printf("Toggling playback!");
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::drawMapCloudCb(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::DrawMapCloudCb(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
   printf("Drawing map cloud!\n");
   draw_icp_clouds_ = true;
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::drawPoseMarginalsCb(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::DrawPoseMarginalsCb(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
   draw_pose_marginals_ = true;
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::outputGraphvizCb(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::OutputGraphvizCb(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback) {
-  setOutputGraphviz(true);
+  SetOutputGraphviz(true);
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::drawBBox(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::DrawBBox(
     pcl::PointCloud<pcl::PointXYZRGB>& cloud, ros::Publisher& marker_pub_,
     int obj_idx) {
   // Get bbox points
@@ -258,7 +258,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::drawBBox(
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::update(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::Update(
     boost::shared_ptr<gtsam::Values>& vis_values,
     boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph) {
   boost::lock_guard<boost::mutex> lock(state_mutex_);
@@ -268,15 +268,15 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::update(
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::spin() {
+void omnimapper::OmniMapperVisualizerRViz<PointT>::Spin() {
   while (true) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    spinOnce();
+    SpinOnce();
   }
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
+void omnimapper::OmniMapperVisualizerRViz<PointT>::SpinOnce() {
   boost::shared_ptr<gtsam::Values> current_solution(new gtsam::Values());
   boost::shared_ptr<gtsam::NonlinearFactorGraph> current_graph(
       new gtsam::NonlinearFactorGraph());
@@ -416,7 +416,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
 
         // Optionally draw a bbox too
         if (draw_object_observation_bboxes_) {
-          drawBBox(cluster, marker_array_pub_, ++obj_id);
+          DrawBBox(cluster, marker_array_pub_, ++obj_id);
         }
 
         aggregate_object_observation_cloud += cluster;
@@ -855,7 +855,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::spinOnce() {
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::PlanarRegionCallback(
     std::vector<pcl::PlanarRegion<PointT>,
                 Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
         regions,
@@ -878,13 +878,13 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback(
     pcl::toROSMsg(aggregate_cloud, cloud_msg);
     // pcl_conversions::moveFromPCL (aggregate_cloud, cloud_msg);
     cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
-    cloud_msg.header.stamp = ptime2rostime(t);
+    cloud_msg.header.stamp = PtimeToRosTime(t);
     segmented_plane_pub_.publish(cloud_msg);
   }
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::LabelCloudCallback(
     const CloudConstPtr& cloud, const LabelCloudConstPtr& labels) {
   // Create a colored label cloud
   pcl::PointCloud<pcl::PointXYZRGB> labeled_cloud;
@@ -913,7 +913,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback(
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::ClusterCloudCallback(
     std::vector<CloudPtr> clusters, omnimapper::Time t,
     boost::optional<std::vector<pcl::PointIndices> > indices) {
   printf("Omnimappervisualizerrviz: Got %zu clusters\n", clusters.size());
@@ -958,12 +958,12 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback(
   pcl::toROSMsg(aggregate_cloud, cloud_msg);
   // moveFromPCL (aggregate_cloud, cloud_msg);
   cloud_msg.header.frame_id = "/camera_rgb_optical_frame";
-  cloud_msg.header.stamp = ptime2rostime(t);
+  cloud_msg.header.stamp = PtimeToRosTime(t);
   segmented_clusters_pub_.publish(cloud_msg);
 }
 
 template <typename PointT>
-void omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback(
+void omnimapper::OmniMapperVisualizerRViz<PointT>::ObjectCallback(
     std::map<gtsam::Symbol, Object<PointT> > object_map,
     gtsam::Point3 view_center, gtsam::Point3 view_direction) {
   typename std::map<gtsam::Symbol, Object<PointT> >::iterator it;
@@ -1113,7 +1113,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback(
 // labels)
 
 template <typename PointT>
-bool omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback(
+bool omnimapper::OmniMapperVisualizerRViz<PointT>::DrawICPCloudsCallback(
     omnimapper_ros::VisualizeFullCloud::Request& req,
     omnimapper_ros::VisualizeFullCloud::Response& res) {
   draw_icp_clouds_ = true;
@@ -1121,7 +1121,7 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback(
 }
 
 template <typename PointT>
-bool omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud(
+bool omnimapper::OmniMapperVisualizerRViz<PointT>::DrawObjectObservationCloud(
     omnimapper_ros::VisualizeFullCloud::Request& req,
     omnimapper_ros::VisualizeFullCloud::Response& res) {
   draw_object_observation_cloud_ = true;
@@ -1129,7 +1129,7 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::drawObjectObservationCloud(
 }
 
 template <typename PointT>
-bool omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel(
+bool omnimapper::OmniMapperVisualizerRViz<PointT>::PublishModel(
     omnimapper_ros::PublishModel::Request& req,
     omnimapper_ros::PublishModel::Response& res) {
   // Figure out where to spawn the model, by plane intersection
@@ -1173,8 +1173,8 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel(
   Eigen::Vector4d target_plane(target_planef[0], target_planef[1],
                                target_planef[2], target_planef[3]);
   Eigen::Vector4d to_align(0.0, 0.0, 1.0, 0.0);
-  Eigen::Affine3d align = planarAlignmentTransform(target_plane, to_align);
-  gtsam::Pose3 pose = transformToPose3(align.cast<float>());
+  Eigen::Affine3d align = PlanarAlignmentTransform(target_plane, to_align);
+  gtsam::Pose3 pose = TransformToPose3(align.cast<float>());
   gtsam::Quaternion quat = pose.rotation().toQuaternion();
 
   visualization_msgs::MarkerArray marker_array;
@@ -1242,11 +1242,11 @@ bool omnimapper::OmniMapperVisualizerRViz<PointT>::publishModel(
 }
 
 template <typename PointT>
-bool omnimapper::OmniMapperVisualizerRViz<PointT>::writeTrajectoryFile(
+bool omnimapper::OmniMapperVisualizerRViz<PointT>::WriteTrajectoryFile(
     omnimapper_ros::WriteTrajectoryFile::Request& req,
     omnimapper_ros::WriteTrajectoryFile::Response& res) {
   gtsam::Values current_solution =
-      mapper_->getSolution();  // mapper_->getSolution ();
+      mapper_->GetSolution();  // mapper_->getSolution ();
 
   std::ofstream optimized_poses;
   optimized_poses.open(req.filename.c_str());
