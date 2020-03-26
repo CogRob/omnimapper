@@ -17,6 +17,8 @@ SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fpermissive -w -O3 -std=c++
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message (MODULE_PATH= ${CMAKE_MODULE_PATH})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 ###########################################################################
 # Find PCL
 find_package(PCL 1.7 REQUIRED)
