@@ -26,7 +26,8 @@ class ObjectDiscovery {
  protected:
   int max_object_size_, max_current_size_;
 
-  boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> > correspondence_estimator_;
+  boost::shared_ptr<ObjectRecognition<pcl::SHOT1344> >
+      correspondence_estimator_;
   std::map<int, std::vector<int> > graph_;
   std::map<int, std::vector<int> > match_graph_;
   std::vector<int> segment_arr_;

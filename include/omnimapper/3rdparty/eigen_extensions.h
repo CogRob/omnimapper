@@ -3,9 +3,9 @@
 
 #include <Eigen/Eigen>
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
-#include <Eigen/Sparse>
 #include <stdint.h>
 
+#include <Eigen/Sparse>
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>

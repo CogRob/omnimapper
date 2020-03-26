@@ -89,7 +89,7 @@ OrganizedFeatureExtraction<PointT>::OrganizedFeatureExtraction(
   oed_.setDepthDisconThreshold(0.04f);
   oed_.setMaxSearchNeighbors(100);
   oed_.setEdgeType(oed_.EDGELABEL_NAN_BOUNDARY | oed_.EDGELABEL_OCCLUDING |
-                  oed_.EDGELABEL_OCCLUDED);
+                   oed_.EDGELABEL_OCCLUDED);
   // oed.setEdgeType (oed.EDGELABEL_RGB_CANNY);
 
   // Set up Grabber
@@ -500,8 +500,8 @@ void OrganizedFeatureExtraction<PointT>::ComputePlanes() {
   // mps.segment (stage3_regions_);
   // mps.segmentAndRefine (stage3_regions_);
   mps_.segmentAndRefine(stage3_regions_, stage3_model_coefficients_,
-                       stage3_inlier_indices_, stage3_labels_,
-                       stage3_label_indices_, stage3_boundary_indices_);
+                        stage3_inlier_indices_, stage3_labels_,
+                        stage3_label_indices_, stage3_boundary_indices_);
 
   double end = pcl::getTime();
   std::cout << "mps segment and refine took: " << double(end - start)

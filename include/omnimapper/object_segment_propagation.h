@@ -167,7 +167,7 @@ class SegmentPropagation {
   CloudPtrVector CreateFinalCloud(gtsam::Symbol sym, gtsam::Pose3 pose);
 
   bool restart_flag_;  // initialize new labels -- time gap between previous and
-                      // current frame is large
+                       // current frame is large
   CloudPtrVector final_cloud_vec_;
   std::map<int, int> final_count_;
   std::map<gtsam::Symbol, CloudPtrVector> observations_;

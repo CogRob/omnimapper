@@ -423,7 +423,8 @@ std::vector<int> SegmentPropagation<PointT>::TwoWayMatch(
                   std::cout << "0" << std::endl;
                 else
                   std::cout << "1" << std::endl;
-                if (active_label_indices_.find(k) == active_label_indices_.end())
+                if (active_label_indices_.find(k) ==
+                    active_label_indices_.end())
                   std::cout << "0" << std::endl;
                 else
                   std::cout << "1" << std::endl;
@@ -558,8 +559,8 @@ std::vector<pcl::PointIndices> SegmentPropagation<PointT>::PropogateLabels(
     std::vector<pcl::PointIndices> curr_label_indices_,
     CloudConstPtr prev_cloud_ptr_, CloudConstPtr curr_cloud_ptr_) {
   max_size_ = (prev_label_indices_.size() > curr_label_indices_.size())
-                 ? prev_label_indices_.size()
-                 : curr_label_indices_.size();
+                  ? prev_label_indices_.size()
+                  : curr_label_indices_.size();
 
   // std::cout << "Size of Prev label indices " << prev_label_indices_.size() <<
   // " Size of Current Label Indices: " << euclidean_label_indices.size() <<
@@ -600,7 +601,7 @@ std::vector<pcl::PointIndices> SegmentPropagation<PointT>::PropogateLabels(
   // two way match
 
   final_neighbors_ = TwoWayMatch(prev_centroids, curr_centroids, neighbor_vec,
-                                rev_neighbor_vec, curr_label_indices_.size());
+                                 rev_neighbor_vec, curr_label_indices_.size());
 
   if (verbose_) std::cout << "Two way match completed..." << std::endl;
 
@@ -635,8 +636,8 @@ SegmentPropagation<PointT>::propagateLabels(
   fflush(stdout);
 
   max_size_ = (prev_label_indices_.size() > curr_label_indices_.size())
-                 ? prev_label_indices_.size()
-                 : curr_label_indices_.size();
+                  ? prev_label_indices_.size()
+                  : curr_label_indices_.size();
   if (verbose_)
     std::cout << "Size of Prev label indices " << prev_label_indices_.size()
               << " Size of Current Label Indices: "

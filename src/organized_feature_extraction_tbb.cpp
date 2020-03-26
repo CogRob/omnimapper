@@ -95,7 +95,7 @@ OrganizedFeatureExtractionTBB<PointT>::OrganizedFeatureExtractionTBB()
   oed_.setDepthDisconThreshold(0.04f);
   oed_.setMaxSearchNeighbors(100);
   oed_.setEdgeType(oed_.EDGELABEL_NAN_BOUNDARY | oed_.EDGELABEL_OCCLUDING |
-                  oed_.EDGELABEL_OCCLUDED);
+                   oed_.EDGELABEL_OCCLUDED);
   // oed.setEdgeType (oed.EDGELABEL_RGB_CANNY);
 
   // Set up output
