@@ -6,7 +6,8 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/surface/mls.h>
 
-template <typename PointT> class ObjectDiscovery {
+template <typename PointT>
+class ObjectDiscovery {
  public:
   ObjectDiscovery();
   ~ObjectDiscovery(){};

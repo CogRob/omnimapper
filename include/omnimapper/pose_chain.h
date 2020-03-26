@@ -11,9 +11,7 @@ namespace omnimapper {
 
 /** \brief PoseChainNode represents an entry in the pose chain.  */
 struct PoseChainNode {
-
  public:
-
   typedef boost::posix_time::ptime Time;
   enum Status { UNCOMMITTED, COMMITTED };
 

@@ -49,7 +49,7 @@ struct PoseVector : std::vector<gtsam::Pose3> {
   void serialize(Archive& ar, const unsigned int version) {
     // (ar &
     //  boost::serialization::base_object<std::vector<gtsam::Pose3> >(*this));
-    ar & pose_vector;
+    ar& pose_vector;
   }
 };
 
