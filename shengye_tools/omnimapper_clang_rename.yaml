@@ -716,7 +716,7 @@
 - QualifiedName:  omnimapper::tf2pose3
   NewName:        TfToPose3
 - QualifiedName:  omnimapper::pose3totf
-  NewName:        Pose3Totf
+  NewName:        Pose3ToTf
 - QualifiedName:  omnimapper::rostime2ptime
   NewName:        RosTimeToPtime
 - QualifiedName:  omnimapper::ptime2rostime
