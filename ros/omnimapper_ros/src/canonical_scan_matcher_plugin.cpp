@@ -23,9 +23,9 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
 
   tf::Transform base_to_laser_ = base_to_laser_tf;
   tf::Transform laser_to_base_ = base_to_laser_.inverse();
-  tf::Transform pr_ch = Pose3ToTransform(odometry_relative_pose);
+  tf::Transform pr_ch = Pose3ToRosTransform(odometry_relative_pose);
   tf::Transform pr_ch_l = laser_to_base_ * pr_ch * base_to_laser_;
-  gtsam::Pose3 pr_ch_l_pose3 = TransformToPose3(pr_ch_l);
+  gtsam::Pose3 pr_ch_l_pose3 = RosTransformToPose3(pr_ch_l);
 
   // DEBUG
   pr_ch_l_pose3.print("pr_ch_l_pose3");
@@ -40,9 +40,10 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
   printf("Process scan complete!\n");
   outp_rel_pose_laser.print("CSM before:\n");
 
-  tf::Transform corr_ch_l = Pose3ToTransform(Pose2ToPose3(outp_rel_pose_laser));
+  tf::Transform corr_ch_l =
+      Pose3ToRosTransform(Pose2ToPose3(outp_rel_pose_laser));
   tf::Transform corr_ch = base_to_laser_ * corr_ch_l * laser_to_base_;
-  outp_rel_pose_laser = Pose3ToPose2(TransformToPose3(corr_ch));
+  outp_rel_pose_laser = Pose3ToPose2(RosTransformToPose3(corr_ch));
 
   outp_rel_pose_laser.print("CSM Output rel pose:\n");
   odometry_relative_pose.print("CSM Output odom pose:\n");

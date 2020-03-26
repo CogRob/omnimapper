@@ -40,7 +40,7 @@ class OmniMapperROSOpenNI {
 
     sensor_msgs::PointCloud2ConstPtr const_cloud_msg(cloud_msg);
     // Send to mapper
-    omnimapper_.cloudCallback(const_cloud_msg);
+    omnimapper_.CloudCallback(const_cloud_msg);
 
     // Publish cloud
     if (publish_cloud_) {

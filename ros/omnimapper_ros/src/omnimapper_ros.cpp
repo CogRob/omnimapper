@@ -103,73 +103,73 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   }
 
   // Set up an ICP Plugin
-  icp_plugin_.setUseGICP(true);
-  icp_plugin_.setOverwriteTimestamps(false);
-  icp_plugin_.setAddIdentityOnFailure(icp_add_identity_on_fail_);
-  icp_plugin_.setShouldDownsample(true);
-  icp_plugin_.setLeafSize(icp_leaf_size_);  // 0.02
-  icp_plugin_.setMaxCorrespondenceDistance(icp_max_correspondence_distance_);
-  icp_plugin_.setScoreThreshold(icp_score_thresh_);
-  icp_plugin_.setTransNoise(icp_trans_noise_);  // 10.1
-  icp_plugin_.setRotNoise(icp_rot_noise_);      // 10.1
-  icp_plugin_.setAddLoopClosures(icp_add_loop_closures_);
-  icp_plugin_.setTransNoise(icp_trans_noise_);  // 10.1
-  icp_plugin_.setRotNoise(icp_rot_noise_);      // 10.1
-  icp_plugin_.setLoopClosureDistanceThreshold(
+  icp_plugin_.SetUseGICP(true);
+  icp_plugin_.SetOverwriteTimestamps(false);
+  icp_plugin_.SetAddIdentityOnFailure(icp_add_identity_on_fail_);
+  icp_plugin_.SetShouldDownsample(true);
+  icp_plugin_.SetLeafSize(icp_leaf_size_);  // 0.02
+  icp_plugin_.SetMaxCorrespondenceDistance(icp_max_correspondence_distance_);
+  icp_plugin_.SetScoreThreshold(icp_score_thresh_);
+  icp_plugin_.SetTransNoise(icp_trans_noise_);  // 10.1
+  icp_plugin_.SetRotNoise(icp_rot_noise_);      // 10.1
+  icp_plugin_.SetAddLoopClosures(icp_add_loop_closures_);
+  icp_plugin_.SetTransNoise(icp_trans_noise_);  // 10.1
+  icp_plugin_.SetRotNoise(icp_rot_noise_);      // 10.1
+  icp_plugin_.SetLoopClosureDistanceThreshold(
       icp_loop_closure_distance_threshold_);
-  icp_plugin_.setSaveFullResClouds(true);
-  icp_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
+  icp_plugin_.SetSaveFullResClouds(true);
+  icp_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
 
   // Set up edge ICP plugin
-  edge_icp_plugin_.setUseGICP(false);
-  edge_icp_plugin_.setOverwriteTimestamps(false);
-  edge_icp_plugin_.setAddIdentityOnFailure(occ_edge_add_identity_on_fail_);
-  edge_icp_plugin_.setShouldDownsample(false);
-  edge_icp_plugin_.setMaxCorrespondenceDistance(
+  edge_icp_plugin_.SetUseGICP(false);
+  edge_icp_plugin_.SetOverwriteTimestamps(false);
+  edge_icp_plugin_.SetAddIdentityOnFailure(occ_edge_add_identity_on_fail_);
+  edge_icp_plugin_.SetShouldDownsample(false);
+  edge_icp_plugin_.SetMaxCorrespondenceDistance(
       occ_edge_max_correspondence_dist_);
-  edge_icp_plugin_.setScoreThreshold(occ_edge_score_thresh_);
-  edge_icp_plugin_.setTransNoise(occ_edge_trans_noise_);  // 10.1
-  edge_icp_plugin_.setRotNoise(occ_edge_rot_noise_);      // 10.1
-  edge_icp_plugin_.setAddLoopClosures(false);
-  edge_icp_plugin_.setLoopClosureDistanceThreshold(0.15);
-  edge_icp_plugin_.setSaveFullResClouds(false);
-  edge_icp_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
+  edge_icp_plugin_.SetScoreThreshold(occ_edge_score_thresh_);
+  edge_icp_plugin_.SetTransNoise(occ_edge_trans_noise_);  // 10.1
+  edge_icp_plugin_.SetRotNoise(occ_edge_rot_noise_);      // 10.1
+  edge_icp_plugin_.SetAddLoopClosures(false);
+  edge_icp_plugin_.SetLoopClosureDistanceThreshold(0.15);
+  edge_icp_plugin_.SetSaveFullResClouds(false);
+  edge_icp_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
 
   // Set up the Plane Plugin
-  plane_plugin_.setOverwriteTimestamps(false);
-  plane_plugin_.setDisableDataAssociation(false);
-  plane_plugin_.setRangeThreshold(plane_range_threshold_);
-  plane_plugin_.setAngularThreshold(plane_angular_threshold_);
-  // plane_plugin_.setAngularNoise (1.1);
-  plane_plugin_.setAngularNoise(plane_angular_noise_);  // 0.26
-  // plane_plugin_.setRangeNoise (2.2);
-  plane_plugin_.setRangeNoise(plane_range_noise_);  // 0.2
-  plane_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
+  plane_plugin_.SetOverwriteTimestamps(false);
+  plane_plugin_.SetDisableDataAssociation(false);
+  plane_plugin_.SetRangeThreshold(plane_range_threshold_);
+  plane_plugin_.SetAngularThreshold(plane_angular_threshold_);
+  // plane_plugin_.SetAngularNoise (1.1);
+  plane_plugin_.SetAngularNoise(plane_angular_noise_);  // 0.26
+  // plane_plugin_.SetRangeNoise (2.2);
+  plane_plugin_.SetRangeNoise(plane_range_noise_);  // 0.2
+  plane_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
 
   // Set up the Bounded Plane Plugin
-  bounded_plane_plugin_.setRangeThreshold(plane_range_threshold_);
-  bounded_plane_plugin_.setAngularThreshold(plane_angular_threshold_);
-  bounded_plane_plugin_.setAngularNoise(plane_angular_noise_);
-  bounded_plane_plugin_.setRangeNoise(plane_range_noise_);
-  bounded_plane_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
+  bounded_plane_plugin_.SetRangeThreshold(plane_range_threshold_);
+  bounded_plane_plugin_.SetAngularThreshold(plane_angular_threshold_);
+  bounded_plane_plugin_.SetAngularNoise(plane_angular_noise_);
+  bounded_plane_plugin_.SetRangeNoise(plane_range_noise_);
+  bounded_plane_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
 
   // Set up the object Plugin
   if (use_objects_) {
-    object_plugin_.setSensorToBaseFunctor(rgbd_to_base_ptr);
-    object_plugin_.setAndLoadObjectDatabaseLocation(object_database_location_);
-    object_plugin_.useObjectLoopClosures(object_loop_closures_);
-    object_plugin_.useObjectLandmarks(object_landmarks_);
-    object_plugin_.saveObjectModels(save_object_models_);
-    object_plugin_.setMinimumClusterHeight(
+    object_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
+    object_plugin_.SetAndLoadObjectDatabaseLocation(object_database_location_);
+    object_plugin_.UseObjectLoopClosures(object_loop_closures_);
+    object_plugin_.UseObjectLandmarks(object_landmarks_);
+    object_plugin_.SaveObjectModels(save_object_models_);
+    object_plugin_.SetMinimumClusterHeight(
         object_min_height_);  // min height of the object above floor
   }
 
   // Set up the feature extraction
   if (use_occ_edge_icp_) {
     boost::function<void(const CloudConstPtr&)> edge_icp_cloud_cb = boost::bind(
-        &omnimapper::ICPPoseMeasurementPlugin<PointT>::cloudCallback,
+        &omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudCallback,
         &edge_icp_plugin_, _1);
-    organized_feature_extraction_.setOccludingEdgeCallback(edge_icp_cloud_cb);
+    organized_feature_extraction_.SetOccludingEdgeCallback(edge_icp_cloud_cb);
   }
 
   if (use_planes_) {
@@ -178,17 +178,17 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
                     Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
         omnimapper::Time)>
         plane_cb = boost::bind(
-            &omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback,
+            &omnimapper::PlaneMeasurementPlugin<PointT>::PlanarRegionCallback,
             &plane_plugin_, _1, _2);
-    organized_feature_extraction_.setPlanarRegionStampedCallback(plane_cb);
+    organized_feature_extraction_.SetPlanarRegionStampedCallback(plane_cb);
     boost::function<void(
         std::vector<pcl::PlanarRegion<PointT>,
                     Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
         omnimapper::Time)>
         plane_vis_cb = boost::bind(
-            &omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback,
+            &omnimapper::OmniMapperVisualizerRViz<PointT>::PlanarRegionCallback,
             &vis_plugin_, _1, _2);
-    organized_feature_extraction_.setPlanarRegionStampedCallback(plane_vis_cb);
+    organized_feature_extraction_.SetPlanarRegionStampedCallback(plane_vis_cb);
   }
 
   if (use_bounded_planes_) {
@@ -198,9 +198,9 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
                     Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
         omnimapper::Time)>
         plane_cb = boost::bind(
-            &omnimapper::BoundedPlanePlugin<PointT>::planarRegionCallback,
+            &omnimapper::BoundedPlanePlugin<PointT>::PlanarRegionCallback,
             &bounded_plane_plugin_, _1, _2);
-    organized_feature_extraction_.setPlanarRegionStampedCallback(plane_cb);
+    organized_feature_extraction_.SetPlanarRegionStampedCallback(plane_cb);
   }
 
   // Optionally use planes in the visualizer
@@ -210,18 +210,18 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
                     Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
         omnimapper::Time)>
         plane_vis_cb = boost::bind(
-            &omnimapper::OmniMapperVisualizerRViz<PointT>::planarRegionCallback,
+            &omnimapper::OmniMapperVisualizerRViz<PointT>::PlanarRegionCallback,
             &vis_plugin_, _1, _2);
-    organized_feature_extraction_.setPlanarRegionStampedCallback(plane_vis_cb);
+    organized_feature_extraction_.SetPlanarRegionStampedCallback(plane_vis_cb);
   }
 
   // Optionally draw label cloud
   if (draw_label_cloud_) {
     boost::function<void(const CloudConstPtr&, const LabelCloudConstPtr&)>
         label_vis_callback = boost::bind(
-            &omnimapper::OmniMapperVisualizerRViz<PointT>::labelCloudCallback,
+            &omnimapper::OmniMapperVisualizerRViz<PointT>::LabelCloudCallback,
             &vis_plugin_, _1, _2);
-    organized_feature_extraction_.setClusterLabelsCallback(label_vis_callback);
+    organized_feature_extraction_.SetClusterLabelsCallback(label_vis_callback);
   }
 
   // Optionally draw clusters
@@ -229,9 +229,9 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     boost::function<void(std::vector<CloudPtr>, omnimapper::Time t,
                          boost::optional<std::vector<pcl::PointIndices> >)>
         cluster_vis_callback = boost::bind(
-            &omnimapper::OmniMapperVisualizerRViz<PointT>::clusterCloudCallback,
+            &omnimapper::OmniMapperVisualizerRViz<PointT>::ClusterCloudCallback,
             &vis_plugin_, _1, _2, _3);
-    organized_feature_extraction_.setClusterCloudCallback(cluster_vis_callback);
+    organized_feature_extraction_.SetClusterCloudCallback(cluster_vis_callback);
 
     // gtsam::Symbol, boost::optional<gtsam::Pose3>, std::vector<CloudPtr>,
     // omnimapper::Time t
@@ -243,18 +243,18 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
         std::vector<CloudPtr>, omnimapper::Time t,
         boost::optional<std::vector<pcl::PointIndices> >)>
         object_cluster_callback =
-            boost::bind(&omnimapper::ObjectPlugin<PointT>::clusterCloudCallback,
+            boost::bind(&omnimapper::ObjectPlugin<PointT>::ClusterCloudCallback,
                         &object_plugin_, _1, _2, _3);
-    organized_feature_extraction_.setClusterCloudCallback(
+    organized_feature_extraction_.SetClusterCloudCallback(
         object_cluster_callback);
 
     boost::function<void(
         std::map<gtsam::Symbol, omnimapper::Object<PointT> > object_map,
         gtsam::Point3, gtsam::Point3)>
         object_vis_callback = boost::bind(
-            &omnimapper::OmniMapperVisualizerRViz<PointT>::objectCallback,
+            &omnimapper::OmniMapperVisualizerRViz<PointT>::ObjectCallback,
             &vis_plugin_, _1, _2, _3);
-    object_plugin_.setObjectCallback(object_vis_callback);
+    object_plugin_.SetObjectCallback(object_vis_callback);
     // 	object_plugin_.test();
   }
 
@@ -281,11 +281,11 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   // Set the ICP Plugin on the visualizer
   boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(
       &icp_plugin_);
-  vis_plugin_.setICPPlugin(icp_ptr);
+  vis_plugin_.SetICPPlugin(icp_ptr);
 
   // Set up the Object Plugin with the visualizer
   boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > obj_ptr(&object_plugin_);
-  vis_plugin_.setObjectPlugin(obj_ptr);
+  vis_plugin_.SetObjectPlugin(obj_ptr);
 
   // Subscribe to Point Clouds
   pointcloud_sub_ =
@@ -295,16 +295,16 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
 
   // Install the visualizer
   if (use_rviz_plugin_) {
-    vis_plugin_.setDrawPoseArray(draw_pose_array_);
-    vis_plugin_.setDrawPoseGraph(draw_pose_graph_);
-    vis_plugin_.setDrawICPCloudsAlways(draw_icp_clouds_always_);
+    vis_plugin_.SetDrawPoseArray(draw_pose_array_);
+    vis_plugin_.SetDrawPoseGraph(draw_pose_graph_);
+    vis_plugin_.SetDrawICPCloudsAlways(draw_icp_clouds_always_);
     boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_plugin_);
     omb_.AddOutputPlugin(vis_ptr);
   }
 
   // Set up the TSDF Plugin
   if (use_tsdf_plugin_) {
-    tsdf_plugin_.setICPPlugin(icp_ptr);
+    tsdf_plugin_.SetICPPlugin(icp_ptr);
     boost::shared_ptr<omnimapper::OutputPlugin> tsdf_ptr(&tsdf_plugin_);
     omb_.AddOutputPlugin(tsdf_ptr);
   }
@@ -324,19 +324,19 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   boost::thread omb_thread(&omnimapper::OmniMapperBase::Spin, &omb_);
   if (use_icp_)
     boost::thread icp_thread(
-        &omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &icp_plugin_);
+        &omnimapper::ICPPoseMeasurementPlugin<PointT>::Spin, &icp_plugin_);
   if (use_occ_edge_icp_)
     boost::thread edge_icp_thread(
-        &omnimapper::ICPPoseMeasurementPlugin<PointT>::spin, &edge_icp_plugin_);
+        &omnimapper::ICPPoseMeasurementPlugin<PointT>::Spin, &edge_icp_plugin_);
   if (use_rviz_plugin_)
     boost::thread rviz_plugin_thread(
-        &omnimapper::OmniMapperVisualizerRViz<PointT>::spin, &vis_plugin_);
+        &omnimapper::OmniMapperVisualizerRViz<PointT>::Spin, &vis_plugin_);
 
   // if (use_planes_)
   //   boost::thread plane_thread
   //   (&omnimapper::PlaneMeasurementPlugin<PointT>::spin, &plane_plugin_);
 
-  if (use_organized_feature_extraction_) organized_feature_extraction_.spin();
+  if (use_organized_feature_extraction_) organized_feature_extraction_.Spin();
 
   // If evaluation mode, start a timer to check on things, and load the files
   if (evaluation_mode_ || use_error_eval_plugin_) {
@@ -346,9 +346,9 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     // Set up Visualization and Interactive Markers
     printf("Getting interactive ptrs\n");
     boost::shared_ptr<interactive_markers::InteractiveMarkerServer> ims_ptr =
-        vis_plugin_.getInteractiveMarkerServerPtr();
+        vis_plugin_.GetInteractiveMarkerServerPtr();
     boost::shared_ptr<interactive_markers::MenuHandler> mh_ptr =
-        vis_plugin_.getMenuHandlerPtr();
+        vis_plugin_.GetMenuHandlerPtr();
     printf("setting ptrs\n");
     eval_plugin_.SetInteractiveMarkerServerPtr(ims_ptr);
     eval_plugin_.SetMenuHandlerPtr(mh_ptr);
@@ -371,8 +371,8 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     // vis_plugin_.getInteractiveMarkerServerPtr ();
     // boost::shared_ptr<interactive_markers::MenuHandler> mh_ptr =
     // vis_plugin_.getMenuHandlerPtr (); printf ("setting ptrs\n");
-    // eval_plugin_.setInteractiveMarkerServerPtr (ims_ptr);
-    // eval_plugin_.setMenuHandlerPtr (mh_ptr);
+    // eval_plugin_.SetInteractiveMarkerServerPtr (ims_ptr);
+    // eval_plugin_.SetMenuHandlerPtr (mh_ptr);
     // eval_plugin_.initMenu ();
     // printf ("done with that\n");
 
@@ -406,7 +406,7 @@ void OmniMapperROS<PointT>::RunEvaluation(
     std::string& output_timing_filename) {
   // Clear old state
   omb_.Reset();
-  icp_plugin_.reset();
+  icp_plugin_.Reset();
   eval_plugin_.Reset();
   LoadROSParams();
   ResetEvaluation();
@@ -450,11 +450,11 @@ void OmniMapperROS<PointT>::RunEvaluation(
     bool ready = true;
 
     // Check if plugins are still processing previous frames
-    if (use_icp_ && !icp_plugin_.ready()) ready = false;
+    if (use_icp_ && !icp_plugin_.Ready()) ready = false;
 
-    if (use_occ_edge_icp_ && !edge_icp_plugin_.ready()) ready = false;
+    if (use_occ_edge_icp_ && !edge_icp_plugin_.Ready()) ready = false;
 
-    if (!organized_feature_extraction_.ready()) ready = false;
+    if (!organized_feature_extraction_.Ready()) ready = false;
 
     // printf ("ready: %d idx: %d\n", ready, evaluation_file_idx_);
     if (ready && (evaluation_file_idx_ ==
@@ -490,7 +490,7 @@ void OmniMapperROS<PointT>::RunEvaluation(
 
       // Write TSDF
       if (evaluation_mode_write_tsdf_) {
-        tsdf_plugin_.generateTSDF(10.0, 1024);
+        tsdf_plugin_.GenerateTSDF(10.0, 1024);
       }
 
       done = true;
@@ -688,12 +688,12 @@ void OmniMapperROS<PointT>::CloudCallback(
                 << omnimapper::StampToPtime(cloud->header.stamp) << std::endl;
     }
 
-    icp_plugin_.cloudCallback(cloud);
+    icp_plugin_.CloudCallback(cloud);
   }
 
   if (use_organized_feature_extraction_) {
     double start_ofe = pcl::getTime();
-    organized_feature_extraction_.cloudCallback(cloud);
+    organized_feature_extraction_.CloudCallback(cloud);
     double end_ofe = pcl::getTime();
     if (debug_)
       std::cout << "cloudCallback: ofe_cb took " << double(end_ofe - start_ofe)
@@ -754,7 +754,7 @@ bool OmniMapperROS<PointT>::GenerateMapTSDFCallback(
     omnimapper_ros::OutputMapTSDF::Request& req,
     omnimapper_ros::OutputMapTSDF::Response& res) {
   printf("TSDF Service call, calling tsdf plugin\n");
-  tsdf_plugin_.generateTSDF(req.grid_size, req.resolution);
+  tsdf_plugin_.GenerateTSDF(req.grid_size, req.resolution);
   return (true);
 }
 
@@ -766,14 +766,14 @@ void OmniMapperROS<PointT>::EvalTimerCallback(const ros::TimerEvent& e) {
 
   // Check if everything is done processing
   bool ready = true;
-  if (use_icp_ && !icp_plugin_.ready()) ready = false;
+  if (use_icp_ && !icp_plugin_.Ready()) ready = false;
 
-  if (use_occ_edge_icp_ && !edge_icp_plugin_.ready()) ready = false;
+  if (use_occ_edge_icp_ && !edge_icp_plugin_.Ready()) ready = false;
 
   if (evaluation_mode_paused_) ready = false;
 
   if (use_organized_feature_extraction_ &&
-      !organized_feature_extraction_.ready())
+      !organized_feature_extraction_.Ready())
     ready = false;
 
   if (ready &&
@@ -830,7 +830,7 @@ void OmniMapperROS<PointT>::EvalTimerCallback(const ros::TimerEvent& e) {
     }
 
     if (evaluation_mode_write_tsdf_) {
-      tsdf_plugin_.generateTSDF(10.0, 1024);
+      tsdf_plugin_.GenerateTSDF(10.0, 1024);
     }
 
     exit(0);
@@ -896,21 +896,21 @@ void OmniMapperROS<PointT>::ResetEvaluation() {
   evaluation_pcd_files_.clear();
 
   // ICP Plugin
-  icp_plugin_.setUseGICP(true);
-  icp_plugin_.setOverwriteTimestamps(false);
-  icp_plugin_.setAddIdentityOnFailure(icp_add_identity_on_fail_);
-  icp_plugin_.setShouldDownsample(true);
-  icp_plugin_.setLeafSize(icp_leaf_size_);  // 0.02
-  icp_plugin_.setMaxCorrespondenceDistance(icp_max_correspondence_distance_);
-  icp_plugin_.setScoreThreshold(icp_score_thresh_);
-  icp_plugin_.setTransNoise(icp_trans_noise_);  // 10.1
-  icp_plugin_.setRotNoise(icp_rot_noise_);      // 10.1
-  icp_plugin_.setAddLoopClosures(icp_add_loop_closures_);
-  icp_plugin_.setTransNoise(icp_trans_noise_);  // 10.1
-  icp_plugin_.setRotNoise(icp_rot_noise_);      // 10.1
-  icp_plugin_.setLoopClosureDistanceThreshold(
+  icp_plugin_.SetUseGICP(true);
+  icp_plugin_.SetOverwriteTimestamps(false);
+  icp_plugin_.SetAddIdentityOnFailure(icp_add_identity_on_fail_);
+  icp_plugin_.SetShouldDownsample(true);
+  icp_plugin_.SetLeafSize(icp_leaf_size_);  // 0.02
+  icp_plugin_.SetMaxCorrespondenceDistance(icp_max_correspondence_distance_);
+  icp_plugin_.SetScoreThreshold(icp_score_thresh_);
+  icp_plugin_.SetTransNoise(icp_trans_noise_);  // 10.1
+  icp_plugin_.SetRotNoise(icp_rot_noise_);      // 10.1
+  icp_plugin_.SetAddLoopClosures(icp_add_loop_closures_);
+  icp_plugin_.SetTransNoise(icp_trans_noise_);  // 10.1
+  icp_plugin_.SetRotNoise(icp_rot_noise_);      // 10.1
+  icp_plugin_.SetLoopClosureDistanceThreshold(
       icp_loop_closure_distance_threshold_);
-  icp_plugin_.setSaveFullResClouds(true);
+  icp_plugin_.SetSaveFullResClouds(true);
 }
 
 // void

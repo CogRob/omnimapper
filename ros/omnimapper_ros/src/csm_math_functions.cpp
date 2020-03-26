@@ -48,7 +48,7 @@ gtsam::Pose3 GetRelativePose(const tf::StampedTransform& last_pose,
   return odo;
 }
 
-tf::Transform Pose3ToTransform(const gtsam::Pose3& ps) {
+tf::Transform Pose3ToRosTransform(const gtsam::Pose3& ps) {
   tf::Transform t;
   t.setOrigin(btVector3(ps.x(), ps.y(), ps.z()));
   tf::Quaternion q;
@@ -57,7 +57,7 @@ tf::Transform Pose3ToTransform(const gtsam::Pose3& ps) {
   t.setRotation(q);
   return t;
 }
-gtsam::Pose3 TransformToPose3(const tf::Transform& t) {
+gtsam::Pose3 RosTransformToPose3(const tf::Transform& t) {
   double roll, pitch, yaw;
   btMatrix3x3 m(t.getRotation());
   m.getRPY(roll, pitch, yaw);

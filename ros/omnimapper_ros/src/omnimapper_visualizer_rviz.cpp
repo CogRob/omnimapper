@@ -375,7 +375,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::SpinOnce() {
     // Optionally Draw clouds too
     if (draw_icp_clouds_) {
       // CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr (key_symbol);
-      CloudConstPtr frame_cloud = icp_plugin_->getFullResCloudPtr(key_symbol);
+      CloudConstPtr frame_cloud = icp_plugin_->GetFullResCloudPtr(key_symbol);
       char frame_name[1024];
       CloudPtr map_cloud(new Cloud());
       // pose.print ("SAM Pose: ");
@@ -396,7 +396,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::SpinOnce() {
     if (draw_object_observation_cloud_) {
       // Get the observations from this location
       std::vector<CloudPtr> obs_clouds =
-          object_plugin_->getObservations(key_symbol);
+          object_plugin_->GetObservations(key_symbol);
 
       pcl::PointCloud<pcl::PointXYZRGB> cluster;
 
@@ -908,7 +908,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::LabelCloudCallback(
   pcl::toROSMsg(labeled_cloud, cloud_msg);
   // pcl_conversions::moveFromPCL (labeled_cloud, cloud_msg);
   cloud_msg.header.frame_id = cloud->header.frame_id;
-  cloud_msg.header.stamp = ptime2rostime(stamp2ptime(cloud->header.stamp));
+  cloud_msg.header.stamp = PtimeToRosTime(StampToPtime(cloud->header.stamp));
   segmented_label_cloud_pub_.publish(cloud_msg);
 }
 
@@ -986,7 +986,7 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::ObjectCallback(
     gtsam::Symbol sym = obj_iterator->second;
     Object<PointT>& object = object_map.at(sym);
 
-    Cloud optimal_cloud = object.optimalCloud();
+    Cloud optimal_cloud = object.OptimalCloud();
     pcl::copyPointCloud(optimal_cloud, truncated_map_cloud);
     aggregate_cloud = aggregate_cloud + truncated_map_cloud;
 

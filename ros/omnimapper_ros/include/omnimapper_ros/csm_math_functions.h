@@ -70,9 +70,9 @@ gtsam::Point3 btVectorToPoint3(const tf::Vector3& vec);
  */
 gtsam::Pose3 BtTransformToPose3(const tf::Transform& transform);
 
-tf::Transform Pose3ToTransform(const gtsam::Pose3& ps);
+tf::Transform Pose3ToRosTransform(const gtsam::Pose3& ps);
 
-gtsam::Pose3 TransformToPose3(const tf::Transform& t);
+gtsam::Pose3 RosTransformToPose3(const tf::Transform& t);
 
 gtsam::Pose2 Pose3ToPose2(const gtsam::Pose3& p3);
 gtsam::Pose3 Pose2ToPose3(const gtsam::Pose2& p2);

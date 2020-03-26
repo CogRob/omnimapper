@@ -74,7 +74,7 @@ void omnimapper::CSMVisualizerRViz<LScanT>::Update(
 
     if (draw_map_) {
       // Draw the scans too
-      sensor_msgs::PointCloud2 cloud_msg = csm_plugin_->getPC2(key_symbol);
+      sensor_msgs::PointCloud2 cloud_msg = csm_plugin_->GetPC2(key_symbol);
       if (cloud_msg.width > 0) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
             new pcl::PointCloud<pcl::PointXYZ>);
