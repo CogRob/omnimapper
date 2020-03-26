@@ -742,3 +742,8 @@
 
 - QualifiedName:  omnimapper::TUMDataErrorPlugin::update
   NewName:        Update
+
+- QualifiedName:  omnimapper::fusePlanarPolygonsConvexXY
+  NewName:        FusePlanarPolygonsConvexXY
+- QualifiedName:  omnimapper::fusePlanarPolygonsXY
+  NewName:        FusePlanarPolygonsXY
