@@ -47,7 +47,7 @@ void ObjectPlugin<PointT>::SetAndLoadObjectDatabaseLocation(
     std::cout << "[ObjectPlugin] Loaded representations " << std::endl;
 
   segment_propagation_.reset(new SegmentPropagation<PointT>());
-  segment_propagation_->setActiveLabelIndices(
+  segment_propagation_->SetActiveLabelIndices(
       max_object_size_);  // initialize segment propagation
   if (debug_)
     std::cout << "[ObjectPlugin] Active label indices set" << std::endl;
@@ -204,7 +204,7 @@ void ObjectPlugin<PointT>::ComputeTSDF(Object<PointT> object,
                                        Eigen::Vector4f obj_centroid) {
   if (verbose_) printf("[ObjectPlugin] starting generateTSDF\n");
 
-  gtsam::Symbol object_symbol = object.sym;
+  gtsam::Symbol object_symbol = object.sym_;
   int id = object_symbol.index();
 
   // Make a TSDF
@@ -427,7 +427,7 @@ void ObjectPlugin<PointT>::ComputeOptimalObjectModel() {
 
 template <typename PointT>
 void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
-  int id = object.sym.index();                                   // object id
+  int id = object.sym_.index();                                  // object id
   std::map<gtsam::Symbol, CloudPtr> cluster = object.clusters_;  // cloud ptr
 
   if (debug_)
@@ -438,7 +438,7 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
   typename std::map<gtsam::Symbol, CloudPtr>::iterator it;
 
   Cloud transformed_cloud_opt_;
-  gtsam::Symbol obj_symbol = object.sym;
+  gtsam::Symbol obj_symbol = object.sym_;
   gtsam::SharedDiagonal measurement_noise;
   measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
       (gtsam::Vector(3) << 0.05, 0.05, 0.05));
@@ -485,10 +485,10 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
   gtsam::Matrix3 covariance_mat = gtsam::zeros(3, 3);
 
   /* check if object already exists in the map otherwise add it */
-  if (!mapper_->GetSolution().exists(obj_symbol) && !object.landmark) {
+  if (!mapper_->GetSolution().exists(obj_symbol) && !object.landmark_) {
     if (verbose_) obj_symbol.print("[ObjectPlugin] Added object");
     mapper_->AddNewValue(obj_symbol, object_centroid_pt);
-    object.landmark = true;
+    object.landmark_ = true;
   }
 
   /* add individual constraints between robot poses and object */
@@ -565,8 +565,8 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
           tform_measurement_centroid[2]);  // centroid in the robot base frame
       // measurement_pt = measurement_pt + icp_trans;
       // check if the factor is already added
-      if (object.factor_flag.at(sym) == -1) {
-        object.factor_flag.at(sym) = 1;
+      if (object.factor_flag_.at(sym) == -1) {
+        object.factor_flag_.at(sym) = 1;
       } else {
         continue;
       }
@@ -674,7 +674,7 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
           matched_centroid[0], matched_centroid[1], matched_centroid[2]);
 
       gtsam::Point3 zero_pt(0, 0, 0);
-      gtsam::Symbol object_symbol = object.sym;
+      gtsam::Symbol object_symbol = object.sym_;
       gtsam::SharedDiagonal measurement_noise;
       measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
           (gtsam::Vector(3) << 5.5, 5.5, 5.5));
@@ -700,7 +700,7 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
       if (do_loop_closures_) {
         /* load the matching object */
         gtsam::Symbol match_symbol = gtsam::Symbol('o', obj.first);
-        Cloud matched_cloud = object_map_.at(match_symbol).optimalCloud();
+        Cloud matched_cloud = object_map_.at(match_symbol).OptimalCloud();
 
         /* compute the centroid */
         Eigen::Vector4f matched_centroid;
@@ -709,7 +709,7 @@ void ObjectPlugin<PointT>::RecognizeObject(Object<PointT>& object) {
             matched_centroid[0], matched_centroid[1], matched_centroid[2]);
         gtsam::Point3 zero_pt(0, 0, 0);
 
-        gtsam::Symbol object_symbol = object.sym;
+        gtsam::Symbol object_symbol = object.sym_;
         gtsam::SharedDiagonal measurement_noise;
         measurement_noise = gtsam::noiseModel::Diagonal::Sigmas(
             (gtsam::Vector(3) << 0.5, 0.5, 0.5));
@@ -1108,9 +1108,9 @@ void ObjectPlugin<PointT>::ClusterCloudCallback(
      * existing set of objects
      */
     double seg_start = pcl::getTime();
-    CloudPtrVector final_label = segment_propagation_->predictLabels(
+    CloudPtrVector final_label = segment_propagation_->PredictLabels(
         filtered_observations, *cloud_pose, pose_symbol);
-    CloudPtrVector matched_cloud = segment_propagation_->final_map_cloud;
+    CloudPtrVector matched_cloud = segment_propagation_->final_map_cloud_;
     CloudPtrVector final_cloud =
         segment_propagation_->observations_.at(pose_symbol);
 
@@ -1130,10 +1130,10 @@ void ObjectPlugin<PointT>::ClusterCloudCallback(
 
         // fill in the object
         int old_label = segment_propagation_->back_label_.at(obj_cnt);
-        new_object.sym = best_symbol;
-        new_object.addObservation(pose_symbol, final_cloud[obj_cnt],
+        new_object.sym_ = best_symbol;
+        new_object.AddObservation(pose_symbol, final_cloud[obj_cnt],
                                   filtered_observation_indices[old_label]);
-        new_object.factor_flag.insert(
+        new_object.factor_flag_.insert(
             std::pair<gtsam::Symbol, int>(pose_symbol, -1));
 
         map_building_mutex_.lock();  // lock the object map
@@ -1144,10 +1144,11 @@ void ObjectPlugin<PointT>::ClusterCloudCallback(
         int old_label = segment_propagation_->back_label_.at(obj_cnt);
 
         object_map_.at(best_symbol)
-            .addObservation(pose_symbol, final_cloud[obj_cnt],
+            .AddObservation(pose_symbol, final_cloud[obj_cnt],
                             filtered_observation_indices[old_label]);
         object_map_.at(best_symbol)
-            .factor_flag.insert(std::pair<gtsam::Symbol, int>(pose_symbol, -1));
+            .factor_flag_.insert(
+                std::pair<gtsam::Symbol, int>(pose_symbol, -1));
       }
     }
     double seg_end = pcl::getTime();
@@ -1186,7 +1187,7 @@ void ObjectPlugin<PointT>::ClusterCloudCallback(
     view_center.print("[ObjectPlugin] view_center");
     view_direction.print("[ObjectPlugin] view_direction");
   }
-  CloudPtrVector unoptimized_cloud = segment_propagation_->final_map_cloud;
+  CloudPtrVector unoptimized_cloud = segment_propagation_->final_map_cloud_;
   for (std::size_t obj_cnt = 0; obj_cnt < unoptimized_cloud.size(); obj_cnt++) {
     if (debug_)
       std::cout << "[ObjectPlugin] Size of object " << obj_cnt << " is "

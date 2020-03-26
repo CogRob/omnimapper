@@ -105,12 +105,12 @@ void omnimapper::TSDFOutputPlugin<PointT>::GenerateTSDF(double grid_size,
     gtsam::Symbol key_symbol(key_value.key);
     gtsam::Pose3 sam_pose = key_value.value;
 
-    CloudConstPtr frame_cloud = icp_plugin_->getFullResCloudPtr(key_symbol);
-    // CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr (key_symbol);
+    CloudConstPtr frame_cloud = icp_plugin_->GetFullResCloudPtr(key_symbol);
+    // CloudConstPtr frame_cloud = icp_plugin_->GetCloudPtr (key_symbol);
     printf("TSDFPlugin: Cloud has %zu points\n", frame_cloud->points.size());
     if (frame_cloud->points.size() == 0) {
       // check the other
-      CloudConstPtr test_cloud = icp_plugin_->getCloudPtr(key_symbol);
+      CloudConstPtr test_cloud = icp_plugin_->GetCloudPtr(key_symbol);
       printf("TSDFPlugin: Test Cloud has %zu, full cloud has %zu\n",
              test_cloud->points.size(), frame_cloud->points.size());
     }
@@ -129,7 +129,7 @@ void omnimapper::TSDFOutputPlugin<PointT>::GenerateTSDF(double grid_size,
     // Eigen::Vector3d (sam_pose.x (), sam_pose.y (), sam_pose.z ()));
 
     Eigen::Affine3d sensor_to_base =
-        icp_plugin_->getSensorToBaseAtSymbol(key_symbol);
+        icp_plugin_->GetSensorToBaseAtSymbol(key_symbol);
     Eigen::Affine3d base_to_sensor;
     base_to_sensor = sensor_to_base.inverse();
 

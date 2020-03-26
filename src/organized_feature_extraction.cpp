@@ -293,7 +293,7 @@ void OrganizedFeatureExtraction<PointT>::ProcessFrame() {
 
       if (cluster_cloud_callbacks_.size() > 0) {
         if (stage5_clusters_.size() > 0) {
-          Time timestamp = stamp2ptime(stage4_cloud_->header.stamp);
+          Time timestamp = StampToPtime(stage4_cloud_->header.stamp);
           for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
             cluster_cloud_callbacks_[i](stage5_clusters_, timestamp,
                                         stage5_cluster_indices_);
@@ -318,7 +318,7 @@ void OrganizedFeatureExtraction<PointT>::ProcessFrame() {
         std::cout << "Starting planar region stamped callback" << std::endl;
         std::cout << "stage3 regions has: " << stage3_regions_.size()
                   << std::endl;
-        Time timestamp = stamp2ptime(stage2_cloud_->header.stamp);
+        Time timestamp = StampToPtime(stage2_cloud_->header.stamp);
         if (stage2_cloud_->points.size() > 200) {
           for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size();
                i++)
@@ -586,7 +586,7 @@ void OrganizedFeatureExtraction<PointT>::Spin() {
         }
 
         if (planar_region_stamped_callback_) {
-          Time timestamp = stamp2ptime(cloud->header.stamp);
+          Time timestamp = StampToPtime(cloud->header.stamp);
           if (cloud->points.size() > 200)
             planar_region_stamped_callback_(regions, timestamp);
         }

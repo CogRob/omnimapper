@@ -256,7 +256,7 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   // Publish plane regions
   if (planar_region_stamped_callbacks_.size() > 0) {
     if (pub_mps_regions_) {
-      Time timestamp = stamp2ptime((*clust_input_cloud_)->header.stamp);
+      Time timestamp = StampToPtime((*clust_input_cloud_)->header.stamp);
       for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size(); i++)
         planar_region_stamped_callbacks_[i](*pub_mps_regions_, timestamp);
     }
@@ -275,7 +275,7 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   if (cluster_cloud_callbacks_.size() > 0) {
     std::cout << "Have cluster cloud callbacks!" << std::endl;
     if (pub_cluster_cloud_) {
-      Time timestamp = stamp2ptime((*pub_cluster_cloud_)->header.stamp);
+      Time timestamp = StampToPtime((*pub_cluster_cloud_)->header.stamp);
       for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
         std::cout << "Publishing cluster clouds!\n" << std::endl;
         cluster_cloud_callbacks_[i](*pub_clusters_, timestamp,

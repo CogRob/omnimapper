@@ -8,12 +8,13 @@ Object<PointT>::Object()
 
 template <typename PointT>
 Object<PointT>::Object(const Object<PointT>& object)
-    : sym_(object.sym),
+    : sym_(object.sym_),
       clusters_(object.clusters_),
       indices_(object.indices_),
-      factor_flag_(object.factor_flag),
+      factor_flag_(object.factor_flag_),
       optimal_cloud_(object.optimal_cloud_),
-      landmark_(object.landmark) {}
+      landmark_(object.landmark_) {}
+
 template <typename PointT>
 void Object<PointT>::AddObservation(
     gtsam::Symbol sym, CloudPtr cluster,

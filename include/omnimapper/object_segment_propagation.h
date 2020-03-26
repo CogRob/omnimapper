@@ -24,17 +24,17 @@ class SegmentPropagation {
   typedef typename Cloud::ConstPtr CloudConstPtr;
   typedef typename std::vector<CloudPtr> CloudPtrVector;
 
-  std::vector<pcl::PointIndices> PropogateLabels(
+  std::vector<pcl::PointIndices> PropagateLabels(
       std::vector<pcl::PointIndices> prev_label_indices_,
       std::vector<pcl::PointIndices> curr_label_indices,
       CloudConstPtr prev_cloud_ptr_, CloudConstPtr curr_cloud_ptr_);
 
-  std::vector<pcl::PointIndices> propogateLabels(
+  std::vector<pcl::PointIndices> PropagateLabels(
       std::vector<pcl::PointIndices> curr_label_indices,
       CloudConstPtr curr_cloud_ptr_) {
     std::vector<pcl::PointIndices> final_labels;
     if (prev_labels_.size() > 0) {
-      final_labels = propogateLabels(prev_labels_, curr_label_indices,
+      final_labels = PropagateLabels(prev_labels_, curr_label_indices,
                                      prev_cloud_, curr_cloud_ptr_);
       prev_labels_ = final_labels;
       prev_cloud_ = curr_cloud_ptr_;
@@ -51,7 +51,7 @@ class SegmentPropagation {
     return final_labels;
   }
 
-  pcl::PointCloud<pcl::Label> propogateLabels(
+  pcl::PointCloud<pcl::Label> PropagateLabels(
       pcl::PointCloud<pcl::Label> labels, CloudConstPtr curr_cloud_ptr_) {
     pcl::Label invalid_pt;
     invalid_pt.label = std::numeric_limits<unsigned>::max();
@@ -63,7 +63,7 @@ class SegmentPropagation {
       if (labels.points[i].label > labels.points.size()) continue;
       label_indices_[labels.points[i].label].indices.push_back(i);
     }
-    final_label_indices_ = propogateLabels(label_indices_, curr_cloud_ptr_);
+    final_label_indices_ = PropagateLabels(label_indices_, curr_cloud_ptr_);
 
     pcl::PointCloud<pcl::Label> final_labels;
 
@@ -84,10 +84,10 @@ class SegmentPropagation {
     return final_labels;
   }
 
-  CloudPtrVector propagateLabels(CloudPtrVector prev_label_indices_,
+  CloudPtrVector PropagateLabels(CloudPtrVector prev_label_indices_,
                                  CloudPtrVector curr_label_indices_);
 
-  CloudPtrVector propagateLabels(CloudPtrVector label) {
+  CloudPtrVector PropagateLabels(CloudPtrVector label) {
     CloudPtrVector final_label;
 
     if (prev_cloud_vec_.size() == 0 || restart_flag_) {
@@ -114,14 +114,14 @@ class SegmentPropagation {
       std::cout << std::endl;
       ;
 
-      final_label = propagateLabels(prev_cloud_vec_, label);
+      final_label = PropagateLabels(prev_cloud_vec_, label);
       prev_cloud_vec_ = final_label;
     }
 
     return final_label;
   }
 
-  CloudPtrVector propagateLabels(CloudPtrVector label, gtsam::Pose3 pose_,
+  CloudPtrVector PropagateLabels(CloudPtrVector label, gtsam::Pose3 pose_,
                                  gtsam::Symbol sym);
   CloudPtrVector PredictLabels(CloudPtrVector label, gtsam::Pose3 pose_,
                                gtsam::Symbol sym);
@@ -131,7 +131,7 @@ class SegmentPropagation {
       CloudPtrVector label) {
     std::vector<pcl::PointIndices> final_label_indices;
     final_label_indices =
-        findFinalLabels(final_neighbors_, current_label_indices);
+        FindFinalLabels(final_neighbors_, current_label_indices);
 
     return final_label_indices;
   }
@@ -140,7 +140,7 @@ class SegmentPropagation {
       std::vector<int> neighbor_vec,
       std::vector<pcl::PointIndices> euclidean_label_indices);
 
-  CloudPtrVector findFinalLabels(std::vector<int> neighbor_vec,
+  CloudPtrVector FindFinalLabels(std::vector<int> neighbor_vec,
                                  CloudPtrVector euclidean_label_indices);
 
   std::vector<int> TwoWayMatch(
@@ -154,7 +154,7 @@ class SegmentPropagation {
   std::vector<float> ComputeCentroids(
       std::vector<pcl::PointIndices> label_indices, CloudConstPtr cloud_ptr);
 
-  std::vector<float> computeCentroids(CloudPtrVector label);
+  std::vector<float> ComputeCentroids(CloudPtrVector label);
 
   void SetActiveLabelIndices(int size);
   CloudPtrVector InitializeLabel(CloudPtrVector label);

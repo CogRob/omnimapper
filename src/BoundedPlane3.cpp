@@ -284,7 +284,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
 
   // Fuse
   CloudPtr merged_xy(new Cloud());
-  bool worked = omnimapper::fusePlanarPolygonsConvexXY<PointT>(
+  bool worked = omnimapper::FusePlanarPolygonsConvexXY<PointT>(
       *meas_xy, *map_xy, *merged_xy);
   if (!worked) {
     printf("BoundedPlane3: Error inside extend!\n");

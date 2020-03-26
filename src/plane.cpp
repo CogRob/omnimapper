@@ -809,9 +809,9 @@ void Plane<PointT>::Extend(const Pose3& pose,
 
   // Polygon Union
   pcl::PointCloud<PointT> fused_xy;
-  // bool worked = pcl::fusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
+  // bool worked = pcl::FusePlanarPolygonsXY (lm_xy, meas_xy, fused_xy);
   bool worked =
-      omnimapper::fusePlanarPolygonsXY<PointT>(lm_xy, meas_xy, fused_xy);
+      omnimapper::FusePlanarPolygonsXY<PointT>(lm_xy, meas_xy, fused_xy);
 
   if (!worked) {
     printf("Error in plane::Extend! Merge failed!\n");
@@ -1089,9 +1089,9 @@ void Plane<PointT>::Extend2(const Pose3& pose,
   }
 
   pcl::PointCloud<PointT> origin_xy_fused_hull;
-  // bool worked = pcl::fusePlanarPolygonsXY (origin_xy_lm_hull,
+  // bool worked = pcl::FusePlanarPolygonsXY (origin_xy_lm_hull,
   // origin_xy_meas_hull, origin_xy_fused_hull);
-  bool worked = omnimapper::fusePlanarPolygonsXY<PointT>(
+  bool worked = omnimapper::FusePlanarPolygonsXY<PointT>(
       origin_xy_lm_hull, origin_xy_meas_hull, origin_xy_fused_hull);
   printf("Fuse Result: orig: %zu meas: %zu fused: %zu\n",
          origin_xy_lm_hull.points.size(), origin_xy_meas_hull.points.size(),

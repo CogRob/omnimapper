@@ -91,7 +91,7 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::Update(
     // Draw the clouds
     if (draw_icp_clouds_) {
       printf("About to request frame cloud\n");
-      CloudConstPtr frame_cloud = icp_plugin_->getCloudPtr(key_symbol);
+      CloudConstPtr frame_cloud = icp_plugin_->GetCloudPtr(key_symbol);
       printf("Frame cloud has %zu\n", frame_cloud->points.size());
       char frame_name[1024];
       CloudPtr map_cloud(new Cloud());
@@ -189,10 +189,10 @@ void omnimapper::OmniMapperVisualizerPCL<PointT>::KeyboardCallback(
         draw_icp_clouds_ = true;
         break;
       case 'p':
-        icp_plugin_->pause(true);
+        icp_plugin_->Pause(true);
         break;
       case ' ':
-        icp_plugin_->pause(false);
+        icp_plugin_->Pause(false);
         break;
       case 'o':
         mapper_->PrintSolution();
