@@ -6,6 +6,7 @@
 #include <omnimapper/OrientedPlane3.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+
 #include <boost/thread/mutex.hpp>
 
 namespace omnimapper {

@@ -1,6 +1,7 @@
 #include <omnimapper_ros/error_evaluation_plugin.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
+
 #include <boost/algorithm/string.hpp>
 
 omnimapper::ErrorEvaluationPlugin::ErrorEvaluationPlugin(

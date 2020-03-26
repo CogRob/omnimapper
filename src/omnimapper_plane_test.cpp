@@ -9,9 +9,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/planar_region.h>
-#include <boost/filesystem.hpp>
-
 #include <pcl/visualization/pcl_visualizer.h>
+
+#include <boost/filesystem.hpp>
 
 typedef pcl::PointXYZRGBA PointT;
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cpu_tsdf/marching_cubes_tsdf_octree.h>
+#include <cpu_tsdf/tsdf_volume_octree.h>
 #include <omnimapper/get_transform_functor.h>
 #include <omnimapper/landmark_factor.h>
 #include <omnimapper/object.h>
@@ -8,17 +10,12 @@
 #include <omnimapper/object_segment_propagation.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/organized_feature_extraction.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-#include <cpu_tsdf/marching_cubes_tsdf_octree.h>
-#include <cpu_tsdf/tsdf_volume_octree.h>
-
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
-
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/registration/gicp.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>

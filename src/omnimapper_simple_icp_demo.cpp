@@ -6,6 +6,7 @@
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+
 #include <boost/filesystem.hpp>
 
 typedef pcl::PointXYZ PointT;

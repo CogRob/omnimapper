@@ -1,11 +1,10 @@
 #pragma once
 
-#include <omnimapper/object_recognition.h>
-#include <pcl/surface/mls.h>
-
 #include <gtsam/geometry/Pose3.h>
+#include <omnimapper/object_recognition.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
+#include <pcl/surface/mls.h>
 
 template <typename PointT>
 class ObjectDiscovery {

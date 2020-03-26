@@ -4,6 +4,7 @@
 #include <omnimapper/object_recognition.h>
 #include <pcl/common/concatenate.h>
 #include <pcl/common/io.h>
+
 #include <map>
 #include <string>
 #define USE_UNIFORM_SAMPLING 1

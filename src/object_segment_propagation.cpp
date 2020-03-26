@@ -4,6 +4,7 @@
 #include <omnimapper/object_segment_propagation.h>
 #include <pcl/common/concatenate.h>
 #include <pcl/common/io.h>
+
 #include <cfloat>
 #include <iostream>
 

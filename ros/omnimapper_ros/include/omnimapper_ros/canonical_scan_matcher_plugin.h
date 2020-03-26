@@ -3,18 +3,16 @@
 #include <laser_geometry/laser_geometry.h>
 #include <ros/ros.h>
 //#include <ros/sensor_msgs/laserscan.h>
-#include <laser_geometry/laser_geometry.h>
-#include <sensor_msgs/LaserScan.h>
-#include <tf/transform_listener.h>
-#include <visualization_msgs/MarkerArray.h>
-
-#include <omnimapper/omnimapper_base.h>
-#include <omnimapper_ros/canonical_scan.h>
-
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <laser_geometry/laser_geometry.h>
+#include <omnimapper/omnimapper_base.h>
+#include <omnimapper_ros/canonical_scan.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/LaserScan.h>
+#include <tf/transform_listener.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace omnimapper {
 /** \brief Canonical Scan Matcher Plugin

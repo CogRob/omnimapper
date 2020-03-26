@@ -4,14 +4,12 @@
 #include <omnimapper/plane_plugin.h>
 #include <omnimapper_ros/omnimapper_visualizer_rviz.h>
 #include <omnimapper_ros/tf_pose_plugin.h>
-
 #include <pcl/common/time.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <pcl/io/pcd_grabber.h>
 #include <boost/filesystem.hpp>
 
 typedef pcl::PointXYZRGBA PointT;

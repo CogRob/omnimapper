@@ -1,3 +1,4 @@
+#include <omnimapper/time.h>
 #include <pcl/common/time.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/organized_edge_detection.h>
@@ -7,19 +8,16 @@
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
-#include <fstream>
-#include <iostream>
-
-#include <omnimapper/time.h>
 #include <pcl/segmentation/plane_refinement_comparator.h>
-
-#include <boost/tuple/tuple.hpp>
-
 #include <tbb/pipeline.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/task.h>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/tbb_thread.h>
+
+#include <boost/tuple/tuple.hpp>
+#include <fstream>
+#include <iostream>
 
 //#include <boost/atomic.hpp>
 

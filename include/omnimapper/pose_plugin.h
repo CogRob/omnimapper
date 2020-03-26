@@ -3,6 +3,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace omnimapper {

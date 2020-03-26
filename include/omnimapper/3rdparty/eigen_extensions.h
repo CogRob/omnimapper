@@ -6,6 +6,7 @@
 #include <Eigen/Sparse>
 #define BOOST_FILESYSTEM_VERSION 2
 #include <stdint.h>
+
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>

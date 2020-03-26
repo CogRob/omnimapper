@@ -1,15 +1,14 @@
 #pragma once
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
-
 #include <omnimapper/omnimapper_base.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
 #include <boost/thread/locks.hpp>
 
 namespace omnimapper {

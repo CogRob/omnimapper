@@ -1,17 +1,15 @@
+#include <geometry_msgs/Point.h>
+#include <gtsam/geometry/Pose3.h>
+#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/menu_handler.h>
 #include <omnimapper/omnimapper_base.h>
+#include <omnimapper_ros/ros_time_utils.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <std_msgs/Duration.h>
 #include <std_msgs/Float32.h>
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/MarkerArray.h>
-
-#include <geometry_msgs/Point.h>
-#include <interactive_markers/interactive_marker_server.h>
-#include <interactive_markers/menu_handler.h>
-#include <omnimapper_ros/ros_time_utils.h>
-
-#include <gtsam/geometry/Pose3.h>
-#include <pcl_conversions/pcl_conversions.h>
 
 namespace omnimapper {
 

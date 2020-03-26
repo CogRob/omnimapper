@@ -5,6 +5,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/geometry/polygon_operations.h>
 #include <pcl/io/pcd_io.h>
+
 #include <omnimapper/impl/geometry.hpp>
 
 /* ************************************************************************* */

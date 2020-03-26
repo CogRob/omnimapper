@@ -39,7 +39,6 @@
 #include <cpu_tsdf/marching_cubes_tsdf_octree.h>
 #include <cpu_tsdf/tsdf_volume_octree.h>
 #include <omnimapper/tsdf_output_plugin.h>
-
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/io/pcd_io.h>

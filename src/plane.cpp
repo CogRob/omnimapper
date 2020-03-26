@@ -15,6 +15,7 @@
 #include <pcl/geometry/polygon_operations.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/planar_polygon_fusion.h>
+
 #include <omnimapper/impl/geometry.hpp>
 #include <pcl/geometry/impl/polygon_operations.hpp>
 

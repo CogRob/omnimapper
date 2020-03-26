@@ -1,7 +1,6 @@
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/time.h>
-
 #include <pcl/common/centroid.h>
 #include <pcl/common/time.h>
 #include <pcl/filters/voxel_grid.h>

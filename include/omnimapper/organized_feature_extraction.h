@@ -12,6 +12,7 @@
 #include <pcl/segmentation/euclidean_cluster_comparator.h>
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
+
 #include <fstream>
 #include <iostream>
 

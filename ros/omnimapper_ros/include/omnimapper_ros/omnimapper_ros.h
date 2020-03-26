@@ -1,3 +1,5 @@
+#include <gperftools/profiler.h>
+#include <omnimapper/3rdparty/distortion_model_standalone.h>
 #include <omnimapper/bounded_plane_plugin.h>
 #include <omnimapper/icp_pose_plugin.h>
 #include <omnimapper/no_motion_pose_plugin.h>
@@ -8,6 +10,7 @@
 #include <omnimapper/time.h>
 #include <omnimapper/tsdf_output_plugin.h>
 #include <omnimapper_ros/OutputMapTSDF.h>
+#include <omnimapper_ros/ar_marker_plugin.h>
 #include <omnimapper_ros/canonical_scan_matcher_plugin.h>
 #include <omnimapper_ros/csm_visualizer.h>
 #include <omnimapper_ros/error_evaluation_plugin.h>
@@ -16,24 +19,16 @@
 #include <omnimapper_ros/ros_tf_utils.h>
 #include <omnimapper_ros/tf_pose_plugin.h>
 #include <omnimapper_ros/tum_data_error_plugin.h>
-
-#include <omnimapper_ros/ar_marker_plugin.h>
-
-#include <omnimapper/3rdparty/distortion_model_standalone.h>
-
 #include <pcl/common/time.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-#include <pcl/io/pcd_grabber.h>
-#include <boost/filesystem.hpp>
-
-#include <gperftools/profiler.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+
+#include <boost/filesystem.hpp>
 
 template <typename PointT>
 class OmniMapperROS {

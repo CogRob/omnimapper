@@ -3,6 +3,7 @@
 
 #include <omnimapper/3rdparty/eigen_extensions.h>
 #include <pcl/point_cloud.h>
+
 #include <Eigen/Eigen>
 
 /** Distortion Model code courtesy of Stephen Miller.

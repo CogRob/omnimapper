@@ -2,10 +2,12 @@
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/transforms.h>
+
 #include <sstream>
 #include <string>
 #include <vector>
 //#include <pcl/visualization/pcl_visualizer.h>
+#include <gtsam/geometry/Pose3.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/common/transforms.h>
 #include <pcl/features/3dsc.h>
@@ -29,13 +31,12 @@
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/grid_projection.h>
 #include <pcl/surface/marching_cubes_hoppe.h>
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
 
-#include <gtsam/geometry/Pose3.h>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
 
 #define USE_KDTREE 1
 struct PoseVector : std::vector<gtsam::Pose3> {

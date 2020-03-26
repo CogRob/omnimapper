@@ -39,10 +39,7 @@
 #pragma once
 
 // STLs
-#include <list>
-#include <map>
-#include <vector>
-
+#include <glog/logging.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -57,7 +54,6 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
-
 #include <omnimapper/BoundedPlane3.h>
 #include <omnimapper/measurement_plugin.h>
 #include <omnimapper/output_plugin.h>
@@ -69,6 +65,9 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/thread.hpp>
+#include <list>
+#include <map>
+#include <vector>
 
 typedef pcl::PointXYZRGBA PointT;
 
@@ -83,6 +82,7 @@ namespace omnimapper {
  *
  * \author Alex Trevor, John Rogers
  */
+
 class OmniMapperBase {
  public:
   // Helpful typedefs
@@ -92,53 +92,51 @@ class OmniMapperBase {
 
  protected:
   // An ISAM2 instance
-  gtsam::ISAM2 isam2;
+  gtsam::ISAM2 isam2_;
   // New factors to be added next optimization
-  gtsam::NonlinearFactorGraph new_factors;
+  gtsam::NonlinearFactorGraph new_factors_;
   // The initialization point for the new nodes
-  gtsam::Values new_values;
+  gtsam::Values new_values_;
   // The most recent solution after optimization
-  gtsam::Values current_solution;
+  gtsam::Values current_solution_;
   // The most recent graph
-  gtsam::NonlinearFactorGraph current_graph;
+  gtsam::NonlinearFactorGraph current_graph_;
   // The symbol corresponding to the most recently added pose
-  gtsam::Symbol current_pose_symbol;
+  gtsam::Symbol current_pose_symbol_;
   // The length of time in seconds to wait prior to committing new poses
-  double commit_window;
+  double commit_window_;
   // Timestamp of the previous commit
-  Time latest_commit_time;
+  Time latest_commit_time_;
   // flag for suppressing commit window
   bool suppress_commit_window_;
   // The pose to be initialized at
   gtsam::Pose3 initial_pose_;
 
   // The pose chain itself
-  std::list<omnimapper::PoseChainNode> chain;
+  std::list<omnimapper::PoseChainNode> chain_;
   // A pointer to the latest_committed_node
-  std::list<omnimapper::PoseChainNode>::iterator latest_committed_node;
+  std::list<omnimapper::PoseChainNode>::iterator latest_committed_node_;
   // Largest used pose index (note that this is not necessarily the latest pose
   // temporally)
-  int largest_pose_index;
+  int largest_pose_index_;
   // For fast lookups, we keep a map of timestamps to nodes
-  std::map<Time, std::list<omnimapper::PoseChainNode>::iterator> time_lookup;
+  std::map<Time, std::list<omnimapper::PoseChainNode>::iterator> time_lookup_;
   // For fast lookups, we keep a map of symbols to nodes too
   std::map<gtsam::Symbol, std::list<omnimapper::PoseChainNode>::iterator>
-      symbol_lookup;
+      symbol_lookup_;
   // A source of time
   GetTimeFunctorPtr get_time_;
 
   // Mutex to protect the state
   boost::mutex omnimapper_mutex_;
 
-  std::vector<omnimapper::MeasurementPlugin> measurement_plugins;
+  std::vector<omnimapper::MeasurementPlugin> measurement_plugins_;
   // A list of pose plugins.  The first plugin in the list will add the pose to
   // the graph and specify the initialization point, while the rest will only
   // add factors.
-  std::vector<PosePluginPtr> pose_plugins;
+  std::vector<PosePluginPtr> pose_plugins_;
   // A list of output plugins, for visualization, map publication, etc.
-  std::vector<OutputPluginPtr> output_plugins;
-  // Should add pose boost function pointer
-  // boost::function<bool()> shouldAddPoseFn;
+  std::vector<OutputPluginPtr> output_plugins_;
 
   // Debug mode
   bool debug_;
@@ -219,28 +217,8 @@ class OmniMapperBase {
   /** \brief Notify all output plugins that the state has changed. */
   void updateOutputPlugins();
 
-  /** \brief SLAM systems assume measurements to be independent, so not every
-   * available measurement should be used. Typically, a certain amount of
-   * movement should have occured since the previous measurement.  shouldAddPose
-   * determines when to add a new set of measurements, via movement amount (from
-   * odometery, etc) or time, depending on the application.
-   */
-  // virtual bool
-  // shouldAddPose ();
-
-  /** \brief A function pointer can be specified to determine when the system
-   * should add a new pose. This function should return true iff a new pose
-   * should be added.  Can be the ready() function of a plugin.
-   */
-  // void
-  // setShouldAddPoseFn (boost::function<bool()> fn);
-
   /** \brief Returns the most recent pose symbol. */
-  // gtsam::Symbol
-  // currentPoseSymbol ()
-  //{
-  //  return current_pose_symbol;
-  //}
+  inline gtsam::Symbol currentPoseSymbol() { return current_pose_symbol_; }
 
   /** \brief Adds a factor to the factor graph. */
   bool addFactor(gtsam::NonlinearFactor::shared_ptr& new_factor);
@@ -282,11 +260,28 @@ class OmniMapperBase {
   /** \brief Resets the mapper, clearing all existing state. */
   void reset();
 
-  // void
-  // lock();
+  //////////////////////////////////////////////////////////////////////////////
 
-  // void
-  // unlock();
+  // The following members were commented out in the original code.
+
+  // Should add pose boost function pointer.
+  // protected: boost::function<bool()> shouldAddPoseFn;
+
+  /** \brief SLAM systems assume measurements to be independent, so not every
+   * available measurement should be used. Typically, a certain amount of
+   * movement should have occured since the previous measurement.  shouldAddPose
+   * determines when to add a new set of measurements, via movement amount (from
+   * odometery, etc) or time, depending on the application.
+   */
+  // public: virtual bool shouldAddPose();
+
+  /** \brief A function pointer can be specified to determine when the system
+   * should add a new pose. This function should return true iff a new pose
+   * should be added.  Can be the ready() function of a plugin.
+   */
+  // public: setShouldAddPoseFn(boost::function<bool()> fn);
+
+  //////////////////////////////////////////////////////////////////////////////
 };
 
 }  // namespace omnimapper

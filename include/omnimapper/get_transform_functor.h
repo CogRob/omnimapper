@@ -1,6 +1,7 @@
 #pragma once
 
 #include <omnimapper/time.h>
+
 #include <Eigen/Geometry>
 
 namespace omnimapper {

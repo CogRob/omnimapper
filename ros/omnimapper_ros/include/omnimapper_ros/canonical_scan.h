@@ -1,9 +1,8 @@
 #pragma once
 
+#include <csm/csm_all.h>  // csm defines min and max, but Eigen complains
 #include <omnimapper_ros/csm_math_functions.h>
 #include <ros/ros.h>
-
-#include <csm/csm_all.h>  // csm defines min and max, but Eigen complains
 #undef min
 #undef max
 #include <gtsam/geometry/Pose2.h>
