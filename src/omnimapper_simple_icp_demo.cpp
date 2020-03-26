@@ -9,7 +9,7 @@
 
 #include <boost/filesystem.hpp>
 
-typedef pcl::PointXYZ PointT;
+typedef pcl::PointXYZRGBA PointT;
 typedef typename pcl::PointCloud<PointT> Cloud;
 typedef typename Cloud::Ptr CloudPtr;
 typedef typename Cloud::ConstPtr CloudConstPtr;

@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
   omnimapper::PlaneMeasurementPlugin<PointT> plane_plugin(&omb);
   boost::function<void(
       std::vector<pcl::PlanarRegion<PointT>,
-                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&,
-      omnimapper::Time&)>
+                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >,
+      omnimapper::Time)>
       plane_cb = boost::bind(
           &omnimapper::PlaneMeasurementPlugin<PointT>::planarRegionCallback,
           &plane_plugin, _1, _2);

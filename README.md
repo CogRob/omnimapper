@@ -10,7 +10,6 @@ clang-format -i -style=google **/*.cpp **/*.h **/*.hpp
 export COGROB_OMNIMAPPER_REPO=/home/shengye/CogRob/omnimapper
 clang-rename-9 -i --force -extra-arg-before=-xc++ \
   --input=$COGROB_OMNIMAPPER_REPO/shengye_tools/omnimapper_base_clang_rename.yaml \
-  $COGROB_OMNIMAPPER_REPO/**/*.h \
   $COGROB_OMNIMAPPER_REPO/**/*.cpp \
   -- \
   -I$COGROB_OMNIMAPPER_REPO/include \
@@ -20,6 +19,14 @@ clang-rename-9 -i --force -extra-arg-before=-xc++ \
   -I/usr/local/include/gtsam/3rdparty/Eigen \
   -I/usr/include/ni \
   -I/opt/ros/melodic/include \
-  -I/usr/include/vtk-6.3
+  -I/usr/include/vtk-6.3 \
+  -I/home/shengye/catkin_ws/devel/include
 ```
 
+## clang-rename
+```
+export COGROB_OMNIMAPPER_REPO=/home/shengye/CogRob/omnimapper
+clang-rename-9 -i --force -extra-arg-before=-xc++ \
+  --input=$COGROB_OMNIMAPPER_REPO/shengye_tools/omnimapper_base_clang_rename.yaml \
+  -p=$COGROB_OMNIMAPPER_REPO/build $COGROB_OMNIMAPPER_REPO/src/*.cpp
+```

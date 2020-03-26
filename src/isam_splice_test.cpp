@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   gtsam::PriorFactor<gtsam::Pose3> pose_prior(
       init_sym, init_pose,
       gtsam::noiseModel::Diagonal::Sigmas(
-          (gtsam::Vector_(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
+          (gtsam::Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001)));
   new_values.insert(init_sym, init_pose);
   new_graph.add(pose_prior);
 
