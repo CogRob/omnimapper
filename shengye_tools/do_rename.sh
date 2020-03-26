@@ -64,5 +64,5 @@ BUILD_PATH=/home/shengye/CogRob/omnimapper/build
 SRC_PATH=/home/shengye/CogRob/omnimapper/src
 OUTPUT_PATH=/home/shengye/CogRob/omnimapper/src_new
 for thing in "${SRC_FILES[@]}"; do
-  run_with_lock "clang-rename-9 --force --input=$INPUT_FILE -p=$BUILD_PATH $SRC_PATH/$thing > $OUTPUT_PATH/$THING"
+  run_with_lock "clang-rename-9 --force --input=$INPUT_FILE -p=$BUILD_PATH $SRC_PATH/$thing > $OUTPUT_PATH/$thing"
 done
