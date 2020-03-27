@@ -9,6 +9,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
 #include <pcl/io/io.h>
@@ -22,7 +23,6 @@
 //#include <gtpointcloud/pointcloud_helpers.h>
 //#include <omnimapper/math_functions.h>
 //#include <mspacegtsam/MathUtils.h>
-#include <omnimapper/DerivedValue.h>
 #include <omnimapper/transform_tools.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/project_inliers.h>
@@ -51,7 +51,7 @@ namespace gtsam {
  * works Functional, so no set functions: once created, a point is constant.
  */
 template <typename PointT>
-class Plane : public gtsam::DerivedValue<Plane<PointT> > {
+class Plane {
  private:
   // double theta_, phi_,rho_;
   double a_, b_, c_, d_;
@@ -93,10 +93,10 @@ class Plane : public gtsam::DerivedValue<Plane<PointT> > {
   PointT MakePoint(float x, float y, float z);
 
   /** print with optional string */
-  virtual void print(const std::string& s = "") const;
+  void print(const std::string& s = "") const;
 
   /** equals with an tolerance, prints out message if unequal*/
-  virtual bool equals(const Plane& q, double tol = 1e-9) const;
+  bool equals(const Plane& q, double tol = 1e-9) const;
 
   double a() const { return a_; }
   double b() const { return b_; }
@@ -130,11 +130,13 @@ class Plane : public gtsam::DerivedValue<Plane<PointT> > {
                         boost::optional<Matrix&> dhbydxr,
                         boost::optional<Matrix&> xhbydxf) const;
 
+  constexpr static size_t dimension = 4;
+
   /** return DOF, dimensionality of tangent space */
-  virtual size_t dim() const { return 4; }
+  size_t dim() const { return Plane<PointT>::dimension; }
 
   /** return vectorized form (column-wise) */
-  virtual Vector vector() const {
+  Vector vector() const {
     Vector v(4);
     v(0) = a_;
     v(1) = b_;
@@ -174,37 +176,6 @@ class Plane : public gtsam::DerivedValue<Plane<PointT> > {
 // inline void print(const Plane<PointT>& obj, const std::string& str = "") {
 //   obj.print(str);
 // }
-}  // namespace gtsam
-
-namespace gtsam {
-// Define Key to be Testable by specializing gtsam::traits
-// template<typename T> struct traits;
-template <typename Type>
-struct traits<gtsam::Plane<Type> > {
-  static void Print(const Plane<Type>& key, const std::string& str = "") {
-    key.print(str);
-  }
-
-  static bool Equals(const Plane<Type>& key1, const Plane<Type>& key2,
-                     double tol = 1e-9) {
-    return key1.equals(key2, tol);
-  }
-
-  static int GetDimension(const Plane<Type>& key) { return key.dim(); }
-
-  typedef OptionalJacobian<3, 3> ChartJacobian;
-  typedef gtsam::Vector TangentVector;
-  static TangentVector Local(const Plane<Type>& origin,
-                             const Plane<Type>& other,
-                             ChartJacobian Horigin = boost::none,
-                             ChartJacobian Hother = boost::none) {
-    return origin.localCoordinates(other);
-  }
-
-  static Plane<Type> Retract(const Plane<Type>& g, const TangentVector& v,
-                             ChartJacobian H1 = boost::none,
-                             ChartJacobian H2 = boost::none) {
-    return g.retract(v);
-  }
-};
+template <typename PointT>
+struct traits<Plane<PointT> > : internal::Manifold<Plane<PointT> > {};
 }  // namespace gtsam

@@ -3,10 +3,8 @@
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
-#include <omnimapper/DerivedValue.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-
 #include <boost/thread/mutex.hpp>
 
 namespace omnimapper {
@@ -14,7 +12,7 @@ namespace omnimapper {
  * A planar landmark bounded by a polygonal point cloud.
  */
 template <typename PointT>
-class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
+class BoundedPlane3 {
   typedef typename pcl::PointCloud<PointT> Cloud;
   typedef typename Cloud::Ptr CloudPtr;
   typedef typename Cloud::ConstPtr CloudConstPtr;
@@ -84,11 +82,12 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   /// Computes the error between two poses
   gtsam::Vector error(const BoundedPlane3<PointT>& plane) const;
 
+  constexpr static size_t dimension = 3;
   /// Dimensionality of tangent space = 3 DOF
-  inline static size_t Dim() { return 3; }
+  inline static size_t Dim() { return BoundedPlane3<PointT>::dimension; }
 
   /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return 3; }
+  inline size_t dim() const { return BoundedPlane3<PointT>::dimension; }
 
   /// Returns the plane coefficients (a, b, c, d)
   gtsam::Vector planeCoefficients() const;
@@ -125,3 +124,7 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
 };
 
 }  // namespace omnimapper
+
+template <typename PointT>
+struct gtsam::traits<omnimapper::BoundedPlane3<PointT> >
+    : gtsam::internal::Manifold<omnimapper::BoundedPlane3<PointT> > {};

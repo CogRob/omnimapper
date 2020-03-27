@@ -256,7 +256,8 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
         printf(
             "Creating new "
             "plane!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-        mapper_->addNewValue(best_symbol, new_plane);
+        gtsam::GenericValue<gtsam::Plane<PointT>> new_plane_val(new_plane);
+        mapper_->addNewValue(best_symbol, new_plane_val);
         ++max_plane_id_;
       }
 

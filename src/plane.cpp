@@ -22,8 +22,6 @@
 
 using namespace std;
 
-template class gtsam::Plane<pcl::PointXYZRGBA>;
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -1294,3 +1292,4 @@ void Plane<PointT>::Extend2(const Pose3& pose,
 }  // namespace gtsam
 
 // template class gtsam::Plane<pcl::PointXYZ>;
+template class gtsam::Plane<pcl::PointXYZRGBA>;

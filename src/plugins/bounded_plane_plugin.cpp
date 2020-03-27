@@ -324,7 +324,9 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
              boost::lexical_cast<std::string>(best_symbol.key()).c_str(),
              map_p3_coeffs[0], map_p3_coeffs[1], map_p3_coeffs[2],
              map_p3_coeffs[3]);
-      mapper_->addNewValue(best_symbol, map_plane);
+      gtsam::GenericValue<omnimapper::BoundedPlane3<PointT>> map_plane_val(
+          map_plane);
+      mapper_->addNewValue(best_symbol, map_plane_val);
       ++max_plane_id_;
     } else {
       // lock plane & update
