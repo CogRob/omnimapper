@@ -20,26 +20,26 @@ class BoundedPlanePlugin {
    * by PCL's organized segmentation tools into a set of Planar landmark
    * measurements suitable for use with the OmniMapper. */
   void RegionsToMeasurements(
-      std::vector<pcl::PlanarRegion<PointT>,
+      const std::vector<pcl::PlanarRegion<PointT>,
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
           regions,
-      omnimapper::Time t,
-      std::vector<omnimapper::BoundedPlane3<PointT> >& plane_measurements);
+      const omnimapper::Time& t,
+      std::vector<omnimapper::BoundedPlane3<PointT> >* plane_measurements);
 
-  void RemoveDuplicatePoints(pcl::PointCloud<PointT>& boundary_cloud);
+  static void RemoveDuplicatePoints(pcl::PointCloud<PointT>* boundary_cloud);
 
-  bool PolygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
+  static bool PolygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
 
-  bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
-                            Eigen::Vector4d& coeffs2, CloudPtr boundary2);
+  static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
+      Eigen::Vector4d& coeffs2, CloudPtr boundary2);
 
   /** \brief planarRegionCallback receives segmented data from the segmentation.
    */
   void PlanarRegionCallback(
-      std::vector<pcl::PlanarRegion<PointT>,
-                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
+      const std::vector<pcl::PlanarRegion<PointT>,
+                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
           regions,
-      omnimapper::Time t);
+      const omnimapper::Time& t);
 
   /** \brief setAngularThreshold sets the angular threshold to be used for data
    * association. */
