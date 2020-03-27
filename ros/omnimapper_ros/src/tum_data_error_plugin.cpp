@@ -84,7 +84,7 @@ void omnimapper::TUMDataErrorPlugin::Update(
     boost::posix_time::ptime pose_ptime;
     tf::StampedTransform true_pose;
     printf("TUM Error plugin: Looking up time!\n");
-    mapper_->GetTimeAtPoseSymbol(key_symbol, *pose_ptime);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, &pose_ptime);
     printf("TUM Error plugin: got the time!\n");
     ros::Time pose_time = PtimeToRosTime(pose_ptime);
     tf_listener_.waitForTransform("/world", "/openni_rgb_optical_frame",

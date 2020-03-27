@@ -846,7 +846,7 @@ template <typename PointT>
 void OmniMapperROS<PointT>::PublishMapToOdom() {
   gtsam::Pose3 current_pose;
   boost::posix_time::ptime current_time;
-  omb_.getLatestPose(current_pose, current_time);
+  omb_.GetLatestPose(&current_pose, &current_time);
   ros::Time current_time_ros = omnimapper::PtimeToRosTime(current_time);
   tf::Transform current_pose_ros = omnimapper::Pose3ToTf(current_pose);
 
@@ -883,7 +883,7 @@ template <typename PointT>
 void OmniMapperROS<PointT>::PublishCurrentPose() {
   gtsam::Pose3 current_pose;
   boost::posix_time::ptime current_time;
-  omb_.getLatestPose(current_pose, current_time);
+  omb_.GetLatestPose(&current_pose, &current_time);
   ros::Time current_time_ros = omnimapper::PtimeToRosTime(current_time);
   tf::Transform current_pose_ros = omnimapper::Pose3ToTf(current_pose);
 
