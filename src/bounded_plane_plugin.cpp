@@ -191,7 +191,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
 
   // Get the pose symbol for this time
   gtsam::Symbol pose_sym;
-  mapper_->GetPoseSymbolAtTime(t, pose_sym);
+  mapper_->GetPoseSymbolAtTime(t, &pose_sym);
   boost::optional<gtsam::Pose3> new_pose = mapper_->PredictPose(pose_sym);
   printf("BoundedPlanePlugin: Processing planes for pose %s\n",
          boost::lexical_cast<std::string>(pose_sym.key()).c_str());

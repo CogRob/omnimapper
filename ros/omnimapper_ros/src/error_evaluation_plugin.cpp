@@ -232,7 +232,7 @@ void omnimapper::ErrorEvaluationPlugin::Update(
     gtsam::Vector quat = rot.quaternion();
 
     omnimapper::Time t1;
-    mapper_->GetTimeAtPoseSymbol(key_symbol, t1);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, &t1);
 
     gtsam::Pose3 gt_p1 = GetPoseAtTime(t1);
 
@@ -412,9 +412,9 @@ void omnimapper::ErrorEvaluationPlugin::ComputeTrajectoryStatistics(
 
         // Get the timestamps of these poses
         omnimapper::Time t1;
-        mapper_->GetTimeAtPoseSymbol(sym1, t1);
+        mapper_->GetTimeAtPoseSymbol(sym1, &t1);
         omnimapper::Time t2;
-        mapper_->GetTimeAtPoseSymbol(sym2, t2);
+        mapper_->GetTimeAtPoseSymbol(sym2, &t2);
 
         // Get the ground truth poses for the corresponding times
         gtsam::Pose3 gt_p1 = GetPoseAtTime(t1);
@@ -517,7 +517,7 @@ void omnimapper::ErrorEvaluationPlugin::WriteMapperTrajectoryFile(
   gtsam::Symbol key_symbol = gtsam::Symbol('x', sym_idx);
   while (!done) {
     omnimapper::Time key_time;
-    mapper_->GetTimeAtPoseSymbol(key_symbol, key_time);
+    mapper_->GetTimeAtPoseSymbol(key_symbol, &key_time);
     gtsam::Pose3 sam_pose =
         current_solution.at<gtsam::Pose3>(key_symbol);  // key_value.value;
     gtsam::Rot3 rot = sam_pose.rotation();

@@ -882,7 +882,7 @@ void ObjectPlugin<PointT>::ClusterCloudCallback(
 
   // Get pose symbol for this timestamp
   gtsam::Symbol pose_symbol;
-  mapper_->GetPoseSymbolAtTime(t, pose_symbol);
+  mapper_->GetPoseSymbolAtTime(t, &pose_symbol);
   boost::optional<gtsam::Pose3> cloud_pose = mapper_->PredictPose(pose_symbol);
 
   /* transfrom point clouds to base_frame */

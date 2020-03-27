@@ -227,7 +227,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::SpinOnce() {
       current_lscan->header.stamp
           .toBoost();  // omnimapper::stamp2ptime(current_lscan->header.stamp);
 
-  mapper_->GetPoseSymbolAtTime(current_time, current_sym);
+  mapper_->GetPoseSymbolAtTime(current_time, &current_sym);
   std::cout << "Pose symbol for current scan: " << current_sym.index()
             << std::endl;
   lscans_.insert(

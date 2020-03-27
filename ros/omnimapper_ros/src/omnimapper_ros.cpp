@@ -706,7 +706,7 @@ void OmniMapperROS<PointT>::CloudCallback(
     boost::posix_time::ptime header_time = omnimapper::StampToPtime(
         cloud->header.stamp);  // msg->header.stamp.toBoost ();
     if (debug_) std::cout << "header time: " << header_time << std::endl;
-    omb_.GetPoseSymbolAtTime(header_time, sym);
+    omb_.GetPoseSymbolAtTime(header_time, &sym);
     double end_getpose = pcl::getTime();
     if (debug_)
       std::cout << "cloudCallback: get_pose took "

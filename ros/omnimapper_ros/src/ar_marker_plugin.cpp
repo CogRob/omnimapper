@@ -19,7 +19,7 @@ void ARMarkerPlugin::MarkerCallback(
   omnimapper::Time msg_time = omnimapper::RosTimeToPtime(ros::Time::now());
 
   gtsam::Symbol pose_symbol;
-  mapper_->GetPoseSymbolAtTime(msg_time, pose_symbol);
+  mapper_->GetPoseSymbolAtTime(msg_time, &pose_symbol);
 
   for (std::size_t i = 0; i < msg.markers.size(); i++) {
     gtsam::Symbol marker_symbol('a', msg.markers[i].id);

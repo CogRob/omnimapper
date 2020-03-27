@@ -118,7 +118,7 @@ set(srcs
 add_library(omnimapper SHARED ${incs} ${srcs})
 target_link_libraries(omnimapper
   ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
-  tbb tbbmalloc cpu_tsdf profiler)
+  tbb tbbmalloc cpu_tsdf profiler glog)
 
 install(TARGETS omnimapper DESTINATION lib)
 install(FILES ${incs} DESTINATION include/${PROJECT_NAME})

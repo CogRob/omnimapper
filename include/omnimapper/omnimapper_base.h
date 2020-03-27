@@ -155,12 +155,12 @@ class OmniMapperBase {
 
   /** \brief Adds an initial pose x_0 to the mapper. TODO: user specificed
    * initial pose */
-  void InitializePose(Time& t);
+  void InitializePose(const Time& t);
 
   /** \brief Sets the initial pose, to be initialized at the timestamp of the
    * first recieved message.  Has no effect if called when already initialized.
    */
-  void SetInitialPose(gtsam::Pose3& init_pose);
+  void SetInitialPose(const gtsam::Pose3& init_pose);
 
   /** \brief Sets a time functor to use for getting the current time. */
   void SetTimeFunctor(omnimapper::GetTimeFunctorPtr time_functor);
@@ -168,11 +168,11 @@ class OmniMapperBase {
   /** \brief Given a timestamp, return a pose symbol.  If a pose symbol already
    * exists for the requested timestamp, this is returned, else a new symbol is
    * created. */
-  void GetPoseSymbolAtTime(Time& t, gtsam::Symbol& sym);
+  void GetPoseSymbolAtTime(const Time& t, gtsam::Symbol* sym);
 
   /** \brief Given a symbol, return the timestamp.  This is primarily used for
    * doing error analysis after mapping. */
-  void GetTimeAtPoseSymbol(gtsam::Symbol& sym, Time& t);
+  void GetTimeAtPoseSymbol(const gtsam::Symbol& sym, Time* t);
 
   /** \brief Returns the most recent solution */
   gtsam::Values GetSolution();
@@ -192,7 +192,7 @@ class OmniMapperBase {
   gtsam::Pose3 GetLatestPose();
 
   /** \brief Returns the most recent optimized pose, and the timestamp. */
-  void getLatestPose(gtsam::Pose3& pose, Time& time);
+  void GetLatestPose(gtsam::Pose3* pose, Time* time);
 
   /** \brief Optimizes the graph.  This will update the SLAM problem with the
    * newly added factors, and optimize. */
@@ -208,11 +208,11 @@ class OmniMapperBase {
 
   /** \brief Adds a pose plugin that will add a pose constraint when requested.
    */
-  void AddPosePlugin(PosePluginPtr& plugin);
+  void AddPosePlugin(const PosePluginPtr& plugin);
 
   /** \brief Adds an output plugin, which will be called each time the map is
    * updated. */
-  void AddOutputPlugin(OutputPluginPtr& plugin);
+  void AddOutputPlugin(const OutputPluginPtr& plugin);
 
   /** \brief Notify all output plugins that the state has changed. */
   void UpdateOutputPlugins();
@@ -221,31 +221,31 @@ class OmniMapperBase {
   inline gtsam::Symbol CurrentPoseSymbol() { return current_pose_symbol_; }
 
   /** \brief Adds a factor to the factor graph. */
-  bool AddFactor(gtsam::NonlinearFactor::shared_ptr& new_factor);
+  bool AddFactor(const gtsam::NonlinearFactor::shared_ptr& new_factor);
 
   /** \brief Adds a factor to the factor graph bypassing the pose chain. */
-  bool AddFactorDirect(gtsam::NonlinearFactor::shared_ptr& new_factor);
+  bool AddFactorDirect(const gtsam::NonlinearFactor::shared_ptr& new_factor);
 
   /** \brief Adds an initial value to the values. */
-  bool AddNewValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+  bool AddNewValue(const gtsam::Symbol& new_symbol, const gtsam::Value& new_value);
 
   /** \brief Updates an existing value.  TODO: Fix this. */
-  void UpdateValue(gtsam::Symbol& new_symbol, gtsam::Value& new_value);
+  void UpdateValue(const gtsam::Symbol& new_symbol, const gtsam::Value& new_value);
 
   /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test. */
-  void UpdatePlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
-                   gtsam::Plane<PointT>& meas_plane);
+  void UpdatePlane(const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
+                   const gtsam::Plane<PointT>& meas_plane);
 
   /** \brief Update a bounded plane -- TODO: remove this, should make updateable
    * value. */
-  void UpdateBoundedPlane(gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
-                          omnimapper::BoundedPlane3<PointT>& meas_plane);
+  void UpdateBoundedPlane(const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
+                          const omnimapper::BoundedPlane3<PointT>& meas_plane);
 
   /** \brief Looks up a pose by symbol. */
-  boost::optional<gtsam::Pose3> GetPose(gtsam::Symbol& pose_sym);
+  boost::optional<gtsam::Pose3> GetPose(const gtsam::Symbol& pose_sym);
 
   /** \brief Predicts a pose that has not yet been committed / optimized. */
-  boost::optional<gtsam::Pose3> PredictPose(gtsam::Symbol& pose_sym);
+  boost::optional<gtsam::Pose3> PredictPose(const gtsam::Symbol& pose_sym);
 
   /** \brief Prints latest solution. */
   void PrintSolution();
@@ -282,6 +282,18 @@ class OmniMapperBase {
   // public: setShouldAddPoseFn(boost::function<bool()> fn);
 
   //////////////////////////////////////////////////////////////////////////////
+
+ private:
+  /** \brief The implementaiton of Optimize(). */
+  void OptimizeInternal();
+
+  /** \brief The implementaiton of CommitNextPoseNode(). */
+  bool CommitNextPoseNodeInternal();
+
+  /** \brief The implementaiton of UpdateOutputPlugins(). */
+  void UpdateOutputPluginsInternal();
+
+
 };
 
 }  // namespace omnimapper

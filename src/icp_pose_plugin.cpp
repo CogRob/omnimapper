@@ -188,7 +188,7 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
   if (debug_)
     std::cout << "ICP Plugin: Getting symbol for current time: " << current_time
               << std::endl;
-  mapper_->GetPoseSymbolAtTime(current_time, current_sym);
+  mapper_->GetPoseSymbolAtTime(current_time, &current_sym);
   // std::cout << "stamp time: " << current_cloud_->header.stamp << " converted
   // time: " << current_time << std::endl;
   if (debug_)
