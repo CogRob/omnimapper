@@ -33,7 +33,8 @@ link_directories(${PCL_LIBRARY_DIRS})
 message("EIGEN_INCLUDE_DIRS: " ${EIGEN_INCLUDE_DIRS})
 message("GTSAM_LIBS: " ${GTSAM_LIBS})
 
-set(GTSAM_LINK_LIB "gtsam")
+# We compiled GTSAM with TBB so tbb is also required.
+set(GTSAM_LINK_LIB gtsam tbb tbbmalloc)
 
 ###########################################################################
 # Find MKL
@@ -131,43 +132,26 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omnimapperConfig.cmake
 add_executable(omnimapper_test src/omnimapper_test.cpp)
 target_link_libraries(omnimapper_test omnimapper)
 
-# add_executable(omnimapper_static_test src/omnimapper_test.cpp ${srcs})
-# target_link_libraries(omnimapper_static_test
-#   ${GTSAM_LINK_LIB} ${MKL_LIBRARIES} ${PCL_LIBRARIES}
-#   tbb tbbmalloc cpu_tsdf profiler)
+add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
+target_link_libraries(omnimapper_plane_test omnimapper)
 
-# add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
-# target_link_libraries(omnimapper_handheld omnimapper ${PCL_LIBRARIES} tbb)
+add_executable(omnimapper_handheld src/omnimapper_handheld_demo.cpp)
+target_link_libraries(omnimapper_handheld omnimapper)
 
-# add_executable(omnimapper_plane_test src/omnimapper_plane_test.cpp)
-# target_link_libraries(omnimapper_plane_test omnimapper ${PCL_LIBRARIES} tbb)
-#
-# add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
-# target_link_libraries(organized_feature_extraction_demo
-#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-#
-# add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
-# target_link_libraries(organized_feature_extraction_demo_tbb
-#   omnimapper ${PCL_LIBRARIES} /usr/lib/x86_64-linux-gnu/libX11.so.6 tbb)
-#
-# add_executable(tbb_test src/tbb_test.cpp)
-# target_link_libraries(tbb_test omnimapper ${PCL_LIBRARIES})
+add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
+target_link_libraries(omnimapper_handheld_pcd omnimapper)
 
-# add_executable(omnimapper src/omnimapper.cpp)
-# target_link_libraries(omnimapper omnimapper)
+add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
+target_link_libraries(omnimapper_simple_icp_demo omnimapper)
 
-# add_executable(omnimapper_simple_icp_demo src/omnimapper_simple_icp_demo.cpp)
-# target_link_libraries(omnimapper_simple_icp_demo omnimapper ${PCL_LIBRARIES})
+add_executable(organized_feature_extraction_demo src/organized_feature_extraction_demo.cpp)
+target_link_libraries(organized_feature_extraction_demo omnimapper /usr/lib/x86_64-linux-gnu/libX11.so.6)
 
-# add_executable(omnimapper_handheld_pcd src/omnimapper_handheld_pcd_demo.cpp)
-# target_link_libraries(omnimapper_handheld_pcd omnimapper
-# ${PCL_LIBRARIES} /opt/ros/groovy/lib/librostime.so)
+add_executable(organized_feature_extraction_demo_tbb src/organized_feature_extraction_demo_tbb.cpp)
+target_link_libraries(organized_feature_extraction_demo_tbb omnimapper /usr/lib/x86_64-linux-gnu/libX11.so.6)
 
-# add_executable(isam_splice_test src/isam_splice_test.cpp)
-# target_link_libraries(isam_splice_test gtsam)
+add_executable(tbb_test src/tbb_test.cpp)
+target_link_libraries(tbb_test omnimapper)
 
-# add_executable(omnimapper_plane_test2 src/omnimapper_plane_test2.cpp)
-# target_link_libraries(omnimapper_plane_test2 omnimapper ${PCL_LIBRARIES})
-
-# add_executable(tbb_test2 src/tbb_test2.cpp)
-# target_link_libraries(tbb_test2 omnimapper ${PCL_LIBRARIES} tbb)
+add_executable(isam_splice_test src/isam_splice_test.cpp)
+target_link_libraries(isam_splice_test ${GTSAM_LINK_LIB})
