@@ -32,11 +32,13 @@ void omnimapper::OmniMapperBase::Reset() {
 
 void omnimapper::OmniMapperBase::SetInitialPose(
     const gtsam::Pose3& initial_pose) {
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   initial_pose_ = initial_pose;
 }
 
 void omnimapper::OmniMapperBase::SetTimeFunctor(
     omnimapper::GetTimeFunctorPtr time_functor) {
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   get_time_ = time_functor;
 }
 
@@ -69,7 +71,10 @@ void omnimapper::OmniMapperBase::GetLatestPose(gtsam::Pose3* pose, Time* time) {
 
 void omnimapper::OmniMapperBase::InitializePose(const Time& t) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
+  InitializePoseInternal(t);
+}
 
+void omnimapper::OmniMapperBase::InitializePoseInternal(const Time& t) {
   if (initialized_) {
     LOG(FATAL) << "OmniMapperBase is already initialized.";
     return;
@@ -86,7 +91,7 @@ void omnimapper::OmniMapperBase::InitializePose(const Time& t) {
   pose_prior_noise << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
   gtsam::PriorFactor<gtsam::Pose3> pose_prior(
       initial_symbol, initial_pose_,
-      gtsam::noiseModel::Diagonal::Sigmas(pose_prior_noise);
+      gtsam::noiseModel::Diagonal::Sigmas(pose_prior_noise));
   new_factors_.add(pose_prior);
 
   // Add the initial symbol to the pose chain.
@@ -98,7 +103,7 @@ void omnimapper::OmniMapperBase::InitializePose(const Time& t) {
   symbol_lookup_.insert({initial_symbol, new_itr});
   time_lookup_.insert({t, new_itr});
 
-  Optimize();
+  OptimizeInternal();
   initialized_ = true;
   latest_committed_node_ = new_itr;
 
@@ -106,7 +111,7 @@ void omnimapper::OmniMapperBase::InitializePose(const Time& t) {
 }
 
 bool omnimapper::OmniMapperBase::AddFactorDirect(
-    gtsam::NonlinearFactor::shared_ptr& new_factor) {
+    const gtsam::NonlinearFactor::shared_ptr& new_factor) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   new_factors_.push_back(new_factor);
   return true;
@@ -125,13 +130,13 @@ void omnimapper::OmniMapperBase::UpdateOutputPluginsInternal() {
   double start = pcl::getTime();
 
   for (std::size_t i = 0; i < output_plugins_.size(); i++) {
-    LOG_IF(INFO, debug_) << "Updating plugin " << i
-                         << " with " << vis_values->size() << "values.";
+    LOG_IF(INFO, debug_) << "Updating plugin " << i << " with "
+                         << vis_values->size() << "values.";
     output_plugins_[i]->Update(vis_values, vis_graph);
   }
   double end = pcl::getTime();
-  LOG_IF(INFO, debug_) << "Updating output plugins took "
-                       << double(end - start) << " seconds.";
+  LOG_IF(INFO, debug_) << "Updating output plugins took " << double(end - start)
+                       << " seconds.";
 }
 
 void omnimapper::OmniMapperBase::Spin() {
@@ -150,7 +155,7 @@ void omnimapper::OmniMapperBase::SpinOnce() {
   const bool updated = CommitNextPoseNodeInternal();
 
   if (updated) {
-    UpdateOutputPlugins();
+    UpdateOutputPluginsInternal();
     if (debug_) {
       gtsam::Pose3 new_pose_value =
           current_solution_.at<gtsam::Pose3>(latest_committed_node_->symbol);
@@ -193,7 +198,7 @@ void omnimapper::OmniMapperBase::PrintSolution() {
 }
 
 boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::GetPose(
-    gtsam::Symbol& pose_sym) {
+    const gtsam::Symbol& pose_sym) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   if (current_solution_.exists<gtsam::Pose3>(pose_sym))
     return (current_solution_.at<gtsam::Pose3>(pose_sym));
@@ -238,9 +243,9 @@ void omnimapper::OmniMapperBase::UpdateValue(const gtsam::Symbol& update_symbol,
   // state.update(update_symbol, update_value);
 }
 
-void omnimapper::OmniMapperBase::UpdatePlane(const gtsam::Symbol& update_symbol,
-                                             const gtsam::Pose3& pose,
-                                             const gtsam::Plane<PointT>& meas_plane) {
+void omnimapper::OmniMapperBase::UpdatePlane(
+    const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
+    const gtsam::Plane<PointT>& meas_plane) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
   LOG(INFO) << "Updating Plane symbol: " << update_symbol;
@@ -264,7 +269,7 @@ void omnimapper::OmniMapperBase::UpdatePlane(const gtsam::Symbol& update_symbol,
 
 void omnimapper::OmniMapperBase::UpdateBoundedPlane(
     const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
-    const omnimapper::BoundedPlane3<PointT>& meas_plane) {
+    omnimapper::BoundedPlane3<PointT>* meas_plane) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
   // TODO: We should not have factor specific update functions, they should be
@@ -273,7 +278,7 @@ void omnimapper::OmniMapperBase::UpdateBoundedPlane(
   if (new_values_.exists(update_symbol)) {
     const omnimapper::BoundedPlane3<PointT> to_update =
         new_values_.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-    to_update.extendBoundary(pose, meas_plane);
+    to_update.extendBoundary(pose, *meas_plane);
     // extendBoundary manipulates a cloud it has pointer to. The actual
     // manipulated data is not stored inside BoundedPlane3. So we don't need to
     // write to_update back.
@@ -281,7 +286,7 @@ void omnimapper::OmniMapperBase::UpdateBoundedPlane(
     const gtsam::Values& isam_values = isam2_.getLinearizationPoint();
     const omnimapper::BoundedPlane3<PointT>& to_update =
         isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-    to_update.extendBoundary(pose, meas_plane);
+    to_update.extendBoundary(pose, *meas_plane);
     // extendBoundary manipulates a cloud it has pointer to. The actual
     // manipulated data is not stored inside BoundedPlane3. So we don't need to
     // write to_update back.
@@ -310,7 +315,7 @@ bool omnimapper::OmniMapperBase::AddFactor(
   for (std::size_t i = 0; i < keys.size(); i++) {
     if (gtsam::symbolChr(keys[i]) == 'x') {
       LOG_IF(INFO, debug_) << "Going to compare keys.";
-      CHECK(symbol_lookup_.exists(keys[i]));
+      CHECK(symbol_lookup_.count(keys[i]));
       if (symbol_lookup_[keys[i]]->time > latest_pose_time) {
         latest_pose_idx = i;
         latest_pose_time = symbol_lookup_[keys[i]]->time;
@@ -347,14 +352,13 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNode() {
   return CommitNextPoseNodeInternal();
 }
 
-
 bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
   if (debug_ && false) {
     LOG(INFO) << "PoseChain size: " << chain_.size();
-    for (const omnimapper::PoseChainNode& node: chain_) {
+    for (const omnimapper::PoseChainNode& node : chain_) {
       LOG(INFO) << "Node " << node.symbol.chr() << " " << node.symbol.index()
                 << ", time" << boost::posix_time::to_simple_string(node.time)
-                << ", has " << node.factors.size() << " factors".
+                << ", has " << node.factors.size() << " factors.";
     }
   }
 
@@ -363,14 +367,14 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
       latest_committed_node_;
   to_commit++;
   LOG_IF(INFO, debug_) << "Latest node: "
-      << latest_committed_node_->symbol.chr() << " "
-      << latest_committed_node_->symbol.index();
-  LOG_IF(INFO, debug_) << "To commit node: "
-      << to_commit->symbol.chr() << " " << to_commit->symbol.index();
+                       << latest_committed_node_->symbol.chr() << " "
+                       << latest_committed_node_->symbol.index();
+  LOG_IF(INFO, debug_) << "To commit node: " << to_commit->symbol.chr() << " "
+                       << to_commit->symbol.index();
 
   if (to_commit == chain_.end()) {
     LOG(ERROR) << "Called CommitNextPoseNode "
-               << "but latest node has already been committed."
+               << "but latest node has already been committed.";
     return false;
   }
 
@@ -379,7 +383,7 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
     if (!(((*get_time_)() - to_commit->time) >
           boost::posix_time::seconds(commit_window_))) {
       LOG_EVERY_N(INFO, 5) << "CommitNextPoseNode suppressed. "
-                           << "Not time to commit yet."
+                           << "Not time to commit yet.";
       return false;
     }
   }
@@ -462,7 +466,6 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
           << "OmniMapper: Tried to commit without any between factors! "
           << "Waiting for between factor. "
           << "Node has " << to_commit->factors.size() << " factors";
-      }
       return false;
     }
   }
@@ -484,7 +487,7 @@ void omnimapper::OmniMapperBase::GetPoseSymbolAtTime(const Time& t,
   // If we haven't initialized yet, we do so on the first symbol request
   if (!initialized_) {
     LOG(INFO) << "Got symbol prior to initializing.";
-    InitializePose(t);
+    InitializePoseInternal(t);
   }
 
   // If we have a pose symbol for this timestamp, just return it.
@@ -501,7 +504,7 @@ void omnimapper::OmniMapperBase::GetPoseSymbolAtTime(const Time& t,
         << "OmniMapperBase: ERROR: Pose symbol requested for timestamp earlier "
            "than latest committed stamp! Increase the commit window length, or "
            "implement pose chain splicing (not yet implemented). "
-        << "Requested: " << t ", Latest: " << latest_committed_node_->time;
+        << "Requested: " << t << ", Latest: " << latest_committed_node_->time;
 
     largest_pose_index_++;
     gtsam::Symbol new_sym('x', largest_pose_index_);
@@ -511,7 +514,9 @@ void omnimapper::OmniMapperBase::GetPoseSymbolAtTime(const Time& t,
     LOG_IF(INFO, debug_) << "OmniMapperBase: need new symbol at: " << t;
 
     // Find the node with the previous stamp.
-    for (auto itr = chain_.end(), itr--; itr != chain_.begin(); itr--) {
+    auto itr = chain_.end();
+    --itr;
+    for (; itr != chain_.begin(); itr--) {
       if (itr->time < t) break;
     }
     itr++;
@@ -526,7 +531,7 @@ void omnimapper::OmniMapperBase::GetPoseSymbolAtTime(const Time& t,
 
 void omnimapper::OmniMapperBase::GetTimeAtPoseSymbol(const gtsam::Symbol& sym,
                                                      Time* t) {
-  boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   *t = symbol_lookup_[sym]->time;
 }
 
@@ -539,9 +544,9 @@ void omnimapper::OmniMapperBase::OptimizeInternal() {
   double opt_start = pcl::getTime();
   LOG(INFO) << "Start to optimize.";
 
-  LOG_IF(INFO, debug_) << "Current Solution: " << current_solution_;
-  LOG_IF(INFO, debug_) << "Optimizing with new Factors: " << new_factors_;
-  LOG_IF(INFO, debug_) << "Optimizing with new Values: " << new_values_;
+  if (debug_) current_solution_.print("Current Solution: \n");
+  if (debug_) new_factors_.print("Optimize with Factors: \n");
+  if (debug_) new_values_.print("Optimize with Values: \n");
 
   gtsam::ISAM2Result result = isam2_.update(new_factors_, new_values_);
   current_solution_ = isam2_.calculateEstimate();
@@ -555,14 +560,16 @@ void omnimapper::OmniMapperBase::OptimizeInternal() {
 }
 
 boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::PredictPose(
-    gtsam::Symbol& pose_sym) {
+    const gtsam::Symbol& pose_sym) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
   if (current_solution_.exists<gtsam::Pose3>(pose_sym)) {
     return (current_solution_.at<gtsam::Pose3>(pose_sym));
   } else if (pose_plugins_.size() > 0) {
     // This pose isn't in our SLAM problem yet, but may be pending addition.
-    for (auto itr = chain_.end(), itr--; itr != latest_committed_node_; --itr) {
+    auto itr = chain_.end();
+    --itr;
+    for (; itr != latest_committed_node_; --itr) {
       if (itr->symbol == pose_sym) {
         // Estimate from latest commited time to this time, using first
         // available pose plugin.
@@ -579,8 +586,8 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::PredictPose(
                      << " was not actually committed properly.";
         }
 
-        CHECK_GT(pose_plugins.size, 0) <<
-            "Need at least one pose plugin to predict non-committed pose.";
+        CHECK_GT(pose_plugins_.size(), 0)
+            << "Need at least one pose plugin to predict non-committed pose.";
         // TODO: If we don't have any pose plugins, our best guess is the most
         // recently optimized pose, that is
         // current_solution.at<gtsam::Pose3>(latest_committed_node->symbol);

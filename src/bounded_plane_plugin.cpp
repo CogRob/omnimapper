@@ -326,7 +326,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     } else {
       // lock plane & update
       printf("BoundedPlanePlugin: Extending boundary...\n");
-      mapper_->UpdateBoundedPlane(best_symbol, *new_pose, meas_plane);
+      mapper_->UpdateBoundedPlane(best_symbol, *new_pose, &meas_plane);
       // omnimapper::BoundedPlane3<PointT> map_plane =
       // current_solution.at<omnimapper::BoundedPlane3<PointT> > (best_symbol);
       // map_plane.extendBoundary((*new_pose), meas_plane);

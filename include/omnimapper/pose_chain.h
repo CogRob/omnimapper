@@ -31,7 +31,7 @@ struct PoseChainNode {
   /* \brief Empty Constructor */
   PoseChainNode();
 
-  PoseChainNode(Time& t, gtsam::Symbol& sym)
+  PoseChainNode(const Time& t, const gtsam::Symbol& sym)
       : time(t), symbol(sym), status(UNCOMMITTED) {}
 };
 

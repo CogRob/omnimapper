@@ -227,10 +227,12 @@ class OmniMapperBase {
   bool AddFactorDirect(const gtsam::NonlinearFactor::shared_ptr& new_factor);
 
   /** \brief Adds an initial value to the values. */
-  bool AddNewValue(const gtsam::Symbol& new_symbol, const gtsam::Value& new_value);
+  bool AddNewValue(const gtsam::Symbol& new_symbol,
+                   const gtsam::Value& new_value);
 
   /** \brief Updates an existing value.  TODO: Fix this. */
-  void UpdateValue(const gtsam::Symbol& new_symbol, const gtsam::Value& new_value);
+  void UpdateValue(const gtsam::Symbol& new_symbol,
+                   const gtsam::Value& new_value);
 
   /** \brief Update a plane TODO: REMOVE THIS -- just adding this as a test. */
   void UpdatePlane(const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
@@ -238,8 +240,9 @@ class OmniMapperBase {
 
   /** \brief Update a bounded plane -- TODO: remove this, should make updateable
    * value. */
-  void UpdateBoundedPlane(const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
-                          const omnimapper::BoundedPlane3<PointT>& meas_plane);
+  void UpdateBoundedPlane(const gtsam::Symbol& update_symbol,
+                          const gtsam::Pose3& pose,
+                          omnimapper::BoundedPlane3<PointT>* meas_plane);
 
   /** \brief Looks up a pose by symbol. */
   boost::optional<gtsam::Pose3> GetPose(const gtsam::Symbol& pose_sym);
@@ -293,7 +296,8 @@ class OmniMapperBase {
   /** \brief The implementaiton of UpdateOutputPlugins(). */
   void UpdateOutputPluginsInternal();
 
-
+  /** \brief The implementaiton of InitializePose(). */
+  void InitializePoseInternal(const Time& t);
 };
 
 }  // namespace omnimapper

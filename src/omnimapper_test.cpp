@@ -1,14 +1,13 @@
-#include <boost/filesystem.hpp>
 #include <glog/logging.h>
-
+#include <omnimapper/icp_pose_plugin.h>
+#include <omnimapper/omnimapper_base.h>
+#include <omnimapper/omnimapper_visualizer_pcl.h>
 #include <pcl/common/time.h>
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <omnimapper/icp_pose_plugin.h>
-#include <omnimapper/omnimapper_base.h>
-#include <omnimapper/omnimapper_visualizer_pcl.h>
+#include <boost/filesystem.hpp>
 
 int main(int argc, char** argv) {
   FLAGS_logtostderr = 1;
