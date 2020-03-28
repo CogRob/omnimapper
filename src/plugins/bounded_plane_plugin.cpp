@@ -105,7 +105,9 @@ void BoundedPlanePlugin<PointT>::regionsToMeasurements(
     pcl::PointCloud<PointT> empty_inliers;
 
     printf("border before: %lu\n", border.size());
-    removeDuplicatePoints(*border_cloud);
+    if (border.size()) {
+      removeDuplicatePoints(*border_cloud);
+    }
     border = border_cloud->points;
     printf("border after: %lu\n", border.size());
 
