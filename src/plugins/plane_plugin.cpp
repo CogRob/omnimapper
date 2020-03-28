@@ -285,17 +285,17 @@ void PlaneMeasurementPlugin<PointT>::planarRegionCallback(
 
       // TEST
       // Extending...
-      if (lowest_error != std::numeric_limits<double>::infinity()) {
-        // gtsam::Plane<PointT> extend_plane =
-        // current_solution.at<gtsam::Plane<PointT> >(best_symbol); printf
-        // ("Extend plane before: %lf %lf %lf %lf\n", extend_plane.a (),
-        // extend_plane.b (), extend_plane.c (), extend_plane.d ());
-        // extend_plane.Extend (*new_pose, meas_plane);
-        // printf ("Extend plane after: %lf %lf %lf %lf\n", extend_plane.a (),
-        // extend_plane.b (), extend_plane.c (), extend_plane.d ());
-        // mapper_->updateValue (best_symbol, extend_plane);
-        mapper_->updatePlane(best_symbol, *new_pose, meas_plane);
-      }
+      // if (lowest_error != std::numeric_limits<double>::infinity()) {
+      //   // gtsam::Plane<PointT> extend_plane =
+      //   // current_solution.at<gtsam::Plane<PointT> >(best_symbol); printf
+      //   // ("Extend plane before: %lf %lf %lf %lf\n", extend_plane.a (),
+      //   // extend_plane.b (), extend_plane.c (), extend_plane.d ());
+      //   // extend_plane.Extend (*new_pose, meas_plane);
+      //   // printf ("Extend plane after: %lf %lf %lf %lf\n", extend_plane.a (),
+      //   // extend_plane.b (), extend_plane.c (), extend_plane.d ());
+      //   // mapper_->updateValue (best_symbol, extend_plane);
+      //   mapper_->updatePlane(best_symbol, *new_pose, meas_plane);
+      // }
       // END TEST
     }
   }
