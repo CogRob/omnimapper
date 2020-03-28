@@ -224,9 +224,10 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
         omnimapper::BoundedPlane3<PointT>::TransformCoefficients(meas_plane,
                                                                  new_pose_inv);
     for (int i = 0; i < meas_boundary_map->points.size(); i++) {
-      printf("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
-             meas_boundary_map->points[i].x, meas_boundary_map->points[i].y,
-             meas_boundary_map->points[i].z);
+      // printf("Meas Boundary Map: Boundary Point: %lf %lf %lf\n",
+      //        meas_boundary_map->points[i].x,
+      //        meas_boundary_map->points[i].y,
+      //        meas_boundary_map->points[i].z);
 
       double ptp_dist =
           fabs(meas_map_coeffs[0] * meas_boundary_map->points[i].x +
