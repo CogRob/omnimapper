@@ -25,7 +25,7 @@ ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin(
       score_threshold_(0.5),
       trans_noise_(1.0),
       rot_noise_(1.0),
-      debug_(true),
+      debug_(false),
       // TODO(shengye): overwrite_timestamps_ was false. Confirm we need true?
       overwrite_timestamps_(false),
       previous_sym_(gtsam::Symbol('x', 0)),
@@ -240,9 +240,8 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
   }
 
   const double spin_end = pcl::getTime();
-  LOG_IF(INFO, debug_) << "ICP Plugin took " << double(spin_end - spin_start)
-                       << " seconds";
-  LOG_IF(INFO, debug_) << "ICPPoseMeasurementPlugin added a pose.";
+  LOG(INFO) << "ICP Plugin added a pose, took " << double(spin_end - spin_start)
+            << " seconds";
   return true;
 }
 
@@ -270,13 +269,13 @@ bool ICPPoseMeasurementPlugin<PointT>::AddConstraint(
     // If we have an initial guess.
     gtsam::Pose3 initial_guess = cloud1_pose->between(*cloud2_pose);
     if (debug_) {
-      cloud1_pose->print("Pose1\n");
+      cloud1_pose->print("Pose1:\n");
       LOG(INFO) << "Cloud 1 pose det: "
                 << cloud1_pose->rotation().matrix().determinant();
-      cloud2_pose->print("Pose2\n");
+      cloud2_pose->print("Pose2:\n");
       LOG(INFO) << "Cloud 2 pose det: "
                 << cloud2_pose->rotation().matrix().determinant();
-      initial_guess.print("Initial guess");
+      initial_guess.print("Initial guess:");
       LOG(INFO) << "Initial guess det: "
                 << initial_guess.rotation().matrix().determinant();
     }
@@ -312,13 +311,11 @@ bool ICPPoseMeasurementPlugin<PointT>::AddConstraint(
         new gtsam::BetweenFactor<gtsam::Pose3>(sym1, sym2, relative_pose,
                                                noise));
     mapper_->AddFactor(between);
-    if (debug_) {
-      LOG(INFO) << "Added factor beteen " << std::string(sym1) << " and "
-                << std::string(sym2);
-      relative_pose.print("\n\nICP Relative Pose\n");
-      LOG(INFO) << "ICP score: " << icp_score << ", relative pose det: "
-                << relative_pose.rotation().matrix().determinant();
-    }
+    LOG(INFO) << "Added factor beteen " << std::string(sym1) << " and "
+              << std::string(sym2);
+    relative_pose.print("ICP Relative Pose:\n");
+    LOG(INFO) << "ICP score: " << icp_score << ", relative pose det: "
+              << relative_pose.rotation().matrix().determinant();
     if (icp_converged && icp_score < icp_score_threshold) {
       // This is actual success, we will return false if the factor was added
       // because of add_identity_on_failure_.

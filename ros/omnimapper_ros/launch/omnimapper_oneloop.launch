@@ -1,19 +1,17 @@
 <launch>
   <param name="/use_sim_time" value="true"/>
 
-  <!--
   <include file="$(find openni_launch)/launch/openni.launch">
     <arg name="load_driver" value="false" />
   </include>
-  -->
 
   <node name="OmniMapperROSNode" pkg="omnimapper_ros"
         type="omnimapper_ros_node" respawn="false" output="screen"  >
     <param name="use_planes" value="false" />
     <param name="use_bounded_planes" value="false" />
     <param name="use_objects" value="false" />
-    <param name="use_csm" value="true" />
-    <param name="use_icp" value="false" />
+    <param name="use_csm" value="false" />
+    <param name="use_icp" value="true" />
     <param name="use_occ_edge_icp" value="false" />
     <param name="use_tf" value="true" />
     <param name="use_tsdf_plugin" value="false" />

@@ -129,7 +129,7 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PCL_LIBRARIES}
-  omnimapper gtsam profiler tbb tbbmalloc csm)
+  omnimapper gtsam glog profiler tbb tbbmalloc csm)
 
 add_executable(time_test src/time_test.cpp)
 target_link_libraries(time_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -139,16 +139,16 @@ target_link_libraries(
   omnimapper_ros_nodelet ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper)
 
 add_executable(omnimapper_ros_node src/omnimapper_ros_node.cpp)
-target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler)
+target_link_libraries(omnimapper_ros_node ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam glog tbbmalloc profiler)
 
 add_executable(benchmark_icp_seq src/benchmark_icp_seq.cpp)
-target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler tbb)
+target_link_libraries(benchmark_icp_seq ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam glog tbbmalloc profiler tbb)
 
 add_executable(benchmark_icp_lc src/benchmark_icp_lc.cpp)
-target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc profiler tbb)
+target_link_libraries(benchmark_icp_lc ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam glog tbbmalloc profiler tbb)
 
 add_executable(omnimapper_pcd src/omnimapper_ros_pcd.cpp)
-target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc tbb)
+target_link_libraries(omnimapper_pcd ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam glog tbbmalloc tbb)
 
 add_executable(omnimapper_openni src/omnimapper_ros_openni.cpp)
-target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam tbbmalloc tbb)
+target_link_libraries(omnimapper_openni ${PROJECT_NAME} ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} omnimapper gtsam glog tbbmalloc tbb)

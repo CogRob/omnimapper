@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper_ros/tf_pose_plugin.h>
 
 namespace omnimapper {
@@ -14,7 +15,7 @@ TFPosePlugin::TFPosePlugin(omnimapper::OmniMapperBase* mapper)
 gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
     boost::posix_time::ptime t1, gtsam::Symbol sym1,
     boost::posix_time::ptime t2, gtsam::Symbol sym2) {
-  // Convert the timestamps
+  // Convert the timestamps.
   ros::Time rt1 = PtimeToRosTime(t1);
   ros::Time rt2 = PtimeToRosTime(t2);
 
@@ -28,53 +29,45 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
   try {
     tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_, rt1,
                                   ros::Duration(0.2));
-
-    tf_listener_.lookupTransform(odom_frame_name_, base_frame_name_, rt1, tf1);
-
     tf_listener_.waitForTransform(odom_frame_name_, base_frame_name_, rt2,
                                   ros::Duration(0.2));
-
+    tf_listener_.lookupTransform(odom_frame_name_, base_frame_name_, rt1, tf1);
     tf_listener_.lookupTransform(odom_frame_name_, base_frame_name_, rt2, tf2);
   } catch (tf::TransformException ex) {
-    ROS_INFO(
-        "OmniMapper reports :: Transform from %s to %s not yet available.  "
-        "Exception: %s",
-        odom_frame_name_.c_str(), base_frame_name_.c_str(), ex.what());
-    ROS_INFO("Writing identity instead\n");
+    LOG(ERROR) << "Failed to get TF from " << odom_frame_name_ << " to "
+               << base_frame_name_.c_str() << ", reason: " << ex.what();
     got_tf = false;
   }
 
   if (got_tf) {
     gtsam::Pose3 pose1 = TfToPose3(tf1);
     gtsam::Pose3 pose2 = TfToPose3(tf2);
-    // gtsam::Pose3 relative_pose = pose1.between (pose2);
     relative_pose = pose1.between(pose2);
+  } else {
+    LOG(INFO) << "Will use identity because couldn't get tf.";
   }
 
-  printf("TFPosePlugin: Adding factor between %zu and %zu\n", sym1.index(),
-         sym2.index());
-  printf("TFPosePlugin: Relative transform: %lf %lf %lf\n", relative_pose.x(),
-         relative_pose.y(), relative_pose.z());
+  LOG(INFO) << "TFPosePlugin: Adding factor between " << std::string(sym1)
+            << " and " << std::string(sym2);
+  LOG(INFO) << "TFPosePlugin, relative transform is ("
+            << relative_pose.x() << ", " << relative_pose.y() << ", "
+            << relative_pose.z() << ")";
 
-  double trans_noise = translation_noise_;  // 1.0;
-  double rot_noise = rotation_noise_;       // 1.0;
-  // double roll_noise = 0.01;
-  // doulbe pitch_noise = 0.01;
-  // gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas
-  // (gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise, trans_noise,
-  // trans_noise, trans_noise));
-  gtsam::SharedDiagonal noise = gtsam::noiseModel::Diagonal::Sigmas(
-      (gtsam::Vector(6) << roll_noise_, pitch_noise_, yaw_noise_, trans_noise,
-       trans_noise, trans_noise));
-  // omnimapper::OmniMapperBase::NonlinearFactorPtr between (new
-  // gtsam::BetweenFactor<gtsam::Pose3> (sym2, sym1, relative_pose, noise));
+  const double trans_noise = translation_noise_;
+  const double rot_noise = rotation_noise_;
+  gtsam::Vector noise_vector(6);
+  noise_vector << roll_noise_, pitch_noise_, yaw_noise_,
+                  trans_noise, trans_noise, trans_noise;
+  gtsam::SharedDiagonal noise =
+      gtsam::noiseModel::Diagonal::Sigmas(noise_vector);
   gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between(
       new gtsam::BetweenFactor<gtsam::Pose3>(sym1, sym2, relative_pose, noise));
   between->print("TF BetweenFactor:\n");
-  // mapper_->addFactor (between);
-  return (between);
+  return between;
 }
 
-bool TFPosePlugin::Ready() { return (true); }
+bool TFPosePlugin::Ready() {
+  return true;
+}
 
 }  // namespace omnimapper
