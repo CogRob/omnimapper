@@ -3,9 +3,12 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <omnimapper/ThreadPool.h>
 #include <omnimapper/get_transform_functor.h>
 #include <omnimapper/pose_plugin.h>
-#include <pcl/io/pcd_grabber.h>
+#include <pcl/common/projection_matrix.h>
+
+#include <boost/thread/mutex.hpp>
 
 namespace omnimapper {
 /** \brief ICPPoseMeasurementPlugin adds sequential pose constraints based on
@@ -13,9 +16,9 @@ namespace omnimapper {
  *
  * \author Alex Trevor
  */
+// ICPPoseMeasurementPlugin should be a omnimapper::PosePlugin.
 template <typename PointT>
-class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
-{
+class ICPPoseMeasurementPlugin {
   typedef typename pcl::PointCloud<PointT> Cloud;
   typedef typename Cloud::Ptr CloudPtr;
   typedef typename Cloud::ConstPtr CloudConstPtr;
@@ -25,15 +28,12 @@ class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
 
  public:
   ICPPoseMeasurementPlugin(omnimapper::OmniMapperBase* mapper);
-  // ICPPoseMeasurementPlugin (omnimapper::OmniMapperBase* mapper, pcl::Grabber&
-  // grabber);
   ~ICPPoseMeasurementPlugin();
-  // bool addInitialPose ();
   void Spin();
   bool SpinOnce();
-  bool RegisterClouds(CloudConstPtr& cloud1, CloudConstPtr& cloud2,
-                      CloudPtr& aligned_cloud2, Eigen::Matrix4f& tform,
-                      double& score);
+  bool RegisterClouds(const CloudConstPtr& cloud1, const CloudConstPtr& cloud2,
+                      CloudPtr* aligned_cloud2, Eigen::Matrix4f* tform,
+                      double* score);
   bool AddConstraint(gtsam::Symbol sym1, gtsam::Symbol sym2,
                      double icp_score_thresh);
   bool TryLoopClosure(gtsam::Symbol sym);
@@ -84,6 +84,7 @@ class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
   GetTransformFunctorPtr get_sensor_to_base_;
   omnimapper::Time last_processed_time_;
   bool initialized_;
+  boost::mutex clouds_mutex_;
   std::map<gtsam::Symbol, CloudConstPtr> clouds_;
   std::map<gtsam::Symbol, gtsam::Point3> cloud_centroids_;
   // std::map<gtsam::Symbol, CloudConstPtr> full_res_clouds_;
@@ -91,7 +92,6 @@ class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
 
   std::map<gtsam::Symbol, Eigen::Affine3d> sensor_to_base_transforms_;
 
-  // pcl::Grabber& grabber_;
   CloudConstPtr current_cloud_;
   boost::mutex current_cloud_mutex_;
   bool have_new_cloud_;
@@ -114,5 +114,7 @@ class ICPPoseMeasurementPlugin  //: public omnimapper::PosePlugin
   float loop_closure_distance_threshold_;
   bool paused_;
   bool save_full_res_clouds_;
+  std::size_t min_cloud_size_;
+  ThreadPool thread_pool_;
 };
 }  // namespace omnimapper

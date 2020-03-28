@@ -1,11 +1,11 @@
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
-
 #include <omnimapper/bounded_plane_plugin.h>
 #include <omnimapper/geometry.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
+
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace omnimapper {
 template <typename PointT>
@@ -17,7 +17,7 @@ BoundedPlanePlugin<PointT>::BoundedPlanePlugin(
 
 template <typename PointT>
 static bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
-                                                 CloudPtr boundary2) {
+                                                        CloudPtr boundary2) {
   for (const auto& point : boundary1->points) {
     if (pcl::isPointIn2DPolygon(point, *boundary2)) return true;
   }
@@ -29,8 +29,8 @@ static bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
 
 template <typename PointT>
 static bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(
-    Eigen::Vector4d& coeffs1, CloudPtr boundary1,
-    Eigen::Vector4d& coeffs2, CloudPtr boundary2) {
+    Eigen::Vector4d& coeffs1, CloudPtr boundary1, Eigen::Vector4d& coeffs2,
+    CloudPtr boundary2) {
   const Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   const Eigen::Vector4d minus_z_axis(0.0, 0.0, -1.0, 0.0);
 
@@ -56,14 +56,14 @@ static void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
           (boundary_cloud->points[i].y == boundary_cloud->points[j].y)) {
         if (j - i > (boundary_cloud->points.size() / 2.0)) {
           boundary_cloud->points.erase(boundary_cloud->points.begin() + j,
-                                      boundary_cloud->points.end());
+                                       boundary_cloud->points.end());
           boundary_cloud->points.erase(boundary_cloud->points.begin(),
-                                      boundary_cloud->points.begin() + i);
+                                       boundary_cloud->points.begin() + i);
           i = 1;
           j = i + 1;
         } else {
           boundary_cloud->points.erase(boundary_cloud->points.begin() + i,
-                                      boundary_cloud->points.begin() + j);
+                                       boundary_cloud->points.begin() + j);
           i = 1;
           j = i + 1;
         }
@@ -75,7 +75,8 @@ static void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
 template <typename PointT>
 void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
     const std::vector<pcl::PlanarRegion<PointT>,
-                Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >& regions,
+                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+        regions,
     const omnimapper::Time& t,
     std::vector<omnimapper::BoundedPlane3<PointT> >* plane_measurements) {
   // If we have a sensor_to_base_transform function, use it and apply the
@@ -131,10 +132,10 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
         model_base[3] = -1 * model_base.dot(centroid4f_base);
       }
 
-      LOG(INFO) << "Model: " << model[0] << " " << model[1] << " "
-                << model[2] << " " << model[3]
-                << "; Base model: " << model_base[0] << " " << model_base[1]
-                << " " << model_base[2] << " " << model_base[3];
+      LOG(INFO) << "Model: " << model[0] << " " << model[1] << " " << model[2]
+                << " " << model[3] << "; Base model: " << model_base[0] << " "
+                << model_base[1] << " " << model_base[2] << " "
+                << model_base[3];
       CloudPtr border_base(new Cloud());
       pcl::transformPointCloud(*border_cloud, *border_base, sensor_to_base);
       omnimapper::BoundedPlane3<PointT> plane(model_base[0], model_base[1],
@@ -152,7 +153,7 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
 template <typename PointT>
 void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     const std::vector<pcl::PlanarRegion<PointT>,
-                Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
         regions,
     const omnimapper::Time& t) {
   LOG(INFO) << "BoundedPlanePlugin got " << regions.size() << " regions.";
@@ -166,7 +167,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
   // Get the planes from the mapper.
   gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> > plane_filtered =
       mapper_->GetSolutionAndUncommitted()
-      .filter<omnimapper::BoundedPlane3<PointT> >();
+          .filter<omnimapper::BoundedPlane3<PointT> >();
 
   // Get the pose symbol for this time.
   gtsam::Symbol pose_sym;
@@ -182,7 +183,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
   gtsam::Pose3 new_pose_inv = new_pose->inverse();
   Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
-  for (const auto& meas_plane: plane_measurements) {
+  for (const auto& meas_plane : plane_measurements) {
     double lowest_error = std::numeric_limits<double>::infinity();
     gtsam::Symbol best_symbol = gtsam::Symbol('p', max_plane_id_);
 
@@ -196,9 +197,9 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     Eigen::Vector4d meas_map_coeffs =
         omnimapper::BoundedPlane3<PointT>::TransformCoefficients(meas_plane,
                                                                  new_pose_inv);
-    for (const auto& point: meas_boundary_map->points) {
-      LOG(INFO) << "Meas Boundary Map: Boundary Point: ("
-                << point.x << ", " << point.y << ", " << point.z << ")";
+    for (const auto& point : meas_boundary_map->points) {
+      LOG(INFO) << "Meas Boundary Map: Boundary Point: (" << point.x << ", "
+                << point.y << ", " << point.z << ")";
       const double ptp_dist =
           fabs(meas_map_coeffs[0] * point.x + meas_map_coeffs[1] * point.y +
                meas_map_coeffs[2] * point.z + meas_map_coeffs[3]);
@@ -218,16 +219,16 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
     if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) continue;
 
-    for(const typename gtsam::Values::Filtered<
-        omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value:
-        plane_filtered) {
+    for (const typename gtsam::Values::Filtered<
+             omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value :
+         plane_filtered) {
       gtsam::Symbol key_symbol(key_value.key);
       const omnimapper::BoundedPlane3<PointT> plane = key_value.value;
       Eigen::Vector4d pred_coeffs =
-          omnimapper::BoundedPlane3<PointT>::TransformCoefficients(
-              plane, (*new_pose));
-      const Eigen::Vector3d pred_norm(
-          pred_coeffs[0], pred_coeffs[1], pred_coeffs[2]);
+          omnimapper::BoundedPlane3<PointT>::TransformCoefficients(plane,
+                                                                   (*new_pose));
+      const Eigen::Vector3d pred_norm(pred_coeffs[0], pred_coeffs[1],
+                                      pred_coeffs[2]);
       const double pred_d = pred_coeffs[3];
 
       const double angular_error = acos(meas_norm.dot(pred_norm));
@@ -263,9 +264,9 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
           map_p3_coeffs[3], meas_boundary_map);
       mapper_->AddNewValue(best_symbol, map_plane);
       LOG(INFO) << "BoundedPlanePlugin created a new plane: "
-                << std::string(best_symbol) << ", ("
-                << map_p3_coeffs[0] << "," << map_p3_coeffs[1] << ","
-                << map_p3_coeffs[2] << "," << map_p3_coeffs[3] << ")";
+                << std::string(best_symbol) << ", (" << map_p3_coeffs[0] << ","
+                << map_p3_coeffs[1] << "," << map_p3_coeffs[2] << ","
+                << map_p3_coeffs[3] << ")";
       ++max_plane_id_;
     } else {
       mapper_->UpdateBoundedPlane(best_symbol, *new_pose, &meas_plane);

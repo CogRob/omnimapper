@@ -1,7 +1,7 @@
-#include <string>
-
 #include <omnimapper/omnimapper_base.h>
 #include <pcl/common/time.h>
+
+#include <string>
 
 omnimapper::OmniMapperBase::OmniMapperBase()
     : suppress_commit_window_(false),
@@ -144,7 +144,7 @@ void omnimapper::OmniMapperBase::UpdateOutputPluginsInternal() {
 void omnimapper::OmniMapperBase::Spin() {
   while (true) {
     SpinOnce();
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   }
 }
 
@@ -332,9 +332,9 @@ bool omnimapper::OmniMapperBase::AddFactor(
     return false;
   }
 
-  LOG_IF(INFO, debug_)
-      << "Adding factor to pose: "
-      << std::string(symbol_lookup_[keys[latest_pose_idx]]->symbol);
+  LOG_IF(INFO, debug_) << "Adding factor to pose: "
+                       << std::string(
+                              symbol_lookup_[keys[latest_pose_idx]]->symbol);
   // If that pose has been committed already, we can add this directly for the
   // next optimization run.
   if (symbol_lookup_[keys[latest_pose_idx]]->status ==
@@ -359,9 +359,9 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
   if (debug_ && false) {
     LOG(INFO) << "PoseChain size: " << chain_.size();
     for (const omnimapper::PoseChainNode& node : chain_) {
-      LOG(INFO) << "Node " << std::string(node.symbol)
-                << ", time" << boost::posix_time::to_simple_string(node.time)
-                << ", has " << node.factors.size() << " factors.";
+      LOG(INFO) << "Node " << std::string(node.symbol) << ", time"
+                << boost::posix_time::to_simple_string(node.time) << ", has "
+                << node.factors.size() << " factors.";
     }
   }
 
@@ -369,9 +369,9 @@ bool omnimapper::OmniMapperBase::CommitNextPoseNodeInternal() {
   std::list<omnimapper::PoseChainNode>::iterator to_commit =
       latest_committed_node_;
   to_commit++;
-  LOG_IF(INFO, debug_)
-      << "Latest node: " << std::string(latest_committed_node_->symbol) << ", "
-      << "To commit node: " << std::string(to_commit->symbol);
+  LOG_IF(INFO, debug_) << "Latest node: "
+                       << std::string(latest_committed_node_->symbol) << ", "
+                       << "To commit node: " << std::string(to_commit->symbol);
 
   if (to_commit == chain_.end()) {
     LOG(ERROR) << "Called CommitNextPoseNode "

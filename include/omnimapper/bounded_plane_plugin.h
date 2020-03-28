@@ -21,7 +21,7 @@ class BoundedPlanePlugin {
    * measurements suitable for use with the OmniMapper. */
   void RegionsToMeasurements(
       const std::vector<pcl::PlanarRegion<PointT>,
-                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+                        Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
           regions,
       const omnimapper::Time& t,
       std::vector<omnimapper::BoundedPlane3<PointT> >* plane_measurements);
@@ -31,13 +31,14 @@ class BoundedPlanePlugin {
   static bool PolygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
 
   static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
-      Eigen::Vector4d& coeffs2, CloudPtr boundary2);
+                                   Eigen::Vector4d& coeffs2,
+                                   CloudPtr boundary2);
 
   /** \brief planarRegionCallback receives segmented data from the segmentation.
    */
   void PlanarRegionCallback(
       const std::vector<pcl::PlanarRegion<PointT>,
-                  Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+                        Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
           regions,
       const omnimapper::Time& t);
 

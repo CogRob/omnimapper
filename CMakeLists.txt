@@ -83,6 +83,7 @@ set(incs
   include/omnimapper/bounded_plane_plugin.h
   include/omnimapper/OrientedPlane3.h
   include/omnimapper/OrientedPlane3Factor.h
+  include/omnimapper/ThreadPool.h
 )
 
 set(third_party_incs

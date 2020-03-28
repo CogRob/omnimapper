@@ -11,8 +11,8 @@ NoMotionPosePlugin::AddRelativePose(boost::posix_time::ptime t1,
                                     gtsam::Symbol sym1,
                                     boost::posix_time::ptime t2,
                                     gtsam::Symbol sym2) {
-  LOG(INFO) << "Adding factor between "
-            << std::string(sym1) << " and " << std::string(sym2);
+  LOG(INFO) << "Adding factor between " << std::string(sym1) << " and "
+            << std::string(sym2);
   gtsam::Pose3 relative_pose = gtsam::Pose3::identity();
 
   // TODO(shengye): Should the following be configurable?
@@ -20,8 +20,8 @@ NoMotionPosePlugin::AddRelativePose(boost::posix_time::ptime t1,
   const double rot_noise = 100.0;
 
   gtsam::Vector noise_vector(6);
-  noise_vector << rot_noise, rot_noise, rot_noise,
-                 trans_noise, trans_noise, trans_noise;
+  noise_vector << rot_noise, rot_noise, rot_noise, trans_noise, trans_noise,
+      trans_noise;
   gtsam::SharedDiagonal noise =
       gtsam::noiseModel::Diagonal::Sigmas(noise_vector);
   gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between(
@@ -29,8 +29,6 @@ NoMotionPosePlugin::AddRelativePose(boost::posix_time::ptime t1,
   return between;
 }
 
-bool NoMotionPosePlugin::Ready() {
-  return true;
-}
+bool NoMotionPosePlugin::Ready() { return true; }
 
 }  // namespace omnimapper
