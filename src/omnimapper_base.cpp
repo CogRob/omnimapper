@@ -133,7 +133,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   // current pose time
   bool initialized = false;
 
-  for (int i = 0; i < pose_plugins.size(); i++) {
+  for (std::size_t i = 0; i < pose_plugins.size(); i++) {
     // TODO: make this a boost::optional, in case the plugin is disabled or
     // unable to give a pose
     gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr new_pose_factor =
@@ -172,7 +172,7 @@ bool omnimapper::OmniMapperBase::commitNextPoseNode() {
   if (!initialized) {
     // If we have no pose factors, we need a relative pose measurement to
     // initialize the pose
-    for (int i = 0; i < to_commit->factors.size(); i++) {
+    for (std::size_t i = 0; i < to_commit->factors.size(); i++) {
       gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between =
           boost::dynamic_pointer_cast<gtsam::BetweenFactor<gtsam::Pose3> >(
               (to_commit->factors[i]));
@@ -245,6 +245,7 @@ bool omnimapper::OmniMapperBase::addFactorDirect(
   // boost::mutex::scoped_lock (omnimapper_mutex_);
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   new_factors.push_back(new_factor);
+  return true;
 }
 
 /**
@@ -265,8 +266,7 @@ bool omnimapper::OmniMapperBase::addFactor(
                                      // this
 
   if (debug_) printf("addFactor: starting to look at keys\n");
-
-  for (int i = 0; i < keys.size(); i++) {
+  for (std::size_t i = 0; i < keys.size(); i++) {
     if (gtsam::symbolChr(keys[i]) == 'x') {
       if (debug_) printf("Going to compare keys\n");
       if (symbol_lookup[keys[i]]->time > latest_pose_time) {
@@ -530,57 +530,54 @@ void omnimapper::OmniMapperBase::updateValue(gtsam::Symbol& update_symbol,
   return;
 }
 
-// void
-// omnimapper::OmniMapperBase::updatePlane (gtsam::Symbol& update_symbol,
-// gtsam::Pose3& pose, gtsam::Plane<PointT>& meas_plane)
-// {
-//   boost::lock_guard<boost::mutex> lock (omnimapper_mutex_);
-//   if (new_values.exists (update_symbol))
-//   {
-//     gtsam::Plane<PointT> to_update = new_values.at<gtsam::Plane<PointT>
-//     >(update_symbol); to_update.Extend2 (pose, meas_plane); new_values.update
-//     (update_symbol, to_update); return;
-//   }
+void omnimapper::OmniMapperBase::updatePlane(gtsam::Symbol& update_symbol,
+                                             gtsam::Pose3& pose,
+                                             gtsam::Plane<PointT>& meas_plane) {
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
+  if (new_values.exists(update_symbol)) {
+    gtsam::Plane<PointT> to_update =
+        new_values.at<gtsam::Plane<PointT> >(update_symbol);
+    to_update.Extend2(pose, meas_plane);
+    new_values.update(update_symbol, to_update);
+    return;
+  }
 
-//     std::cout << "Update value not supported!" << std::endl;
-//   assert (false);
-//   exit (1);
-//   //gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
-//   //gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT>
-//   >(update_symbol);
-//   //to_update.Extend2 (pose, meas_plane);
-//   /////to_update.Extend (pose, meas_plane);
+  std::cout << "Update value not supported!" << std::endl;
+  assert(false);
+  exit(1);
+  // gtsam::Values& state = isam2.getLinearizationPointUnsafe ();
+  // gtsam::Plane<PointT> to_update = state.at<gtsam::Plane<PointT>
+  //>(update_symbol);
+  // to_update.Extend2 (pose, meas_plane);
+  /////to_update.Extend (pose, meas_plane);
 
-//   //state.update (update_symbol, to_update);
-//   return;
-// }
+  // state.update (update_symbol, to_update);
+  return;
+}
 
-// void
-// omnimapper::OmniMapperBase::updateBoundedPlane (gtsam::Symbol& update_symbol,
-// gtsam::Pose3& pose, omnimapper::BoundedPlane3<PointT>& meas_plane)
-// {
-//   // TODO: We should not have factor specific update functions, they should
-//   be derived from updateable value. boost::lock_guard<boost::mutex> lock
-//   (omnimapper_mutex_); if (new_values.exists(update_symbol))
-//   {
-//     omnimapper::BoundedPlane3<PointT> to_update =
-//     new_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-//     to_update.extendBoundary(pose, meas_plane);
-//     //new_values.at<omnimapper::BoundedPlane3<PointT>
-//     >(update_symbol).extendBoundary(pose, meas_plane);
-//     //new_values.update (update_symbol, to_update);
-//   }
-//   else
-//   {
-//     const gtsam::Values& isam_values = isam2.getLinearizationPoint();
-//     const omnimapper::BoundedPlane3<PointT>& to_update =
-//     isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-//     to_update.extendBoundary(pose, meas_plane);
-//     //isam2.getLinearizationPoint().at<omnimapper::BoundedPlane3<PointT>
-//     >(update_symbol).extendBoundary(pose, meas_plane);
-//   }
-//   return;
-// }
+void omnimapper::OmniMapperBase::updateBoundedPlane(
+    gtsam::Symbol& update_symbol, gtsam::Pose3& pose,
+    omnimapper::BoundedPlane3<PointT>& meas_plane) {
+  // TODO: We should not have factor specific update functions, they should be
+  // derived from updateable value.
+  boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
+  if (new_values.exists(update_symbol)) {
+    omnimapper::BoundedPlane3<PointT> to_update =
+        new_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    // new_values.at<omnimapper::BoundedPlane3<PointT>
+    //>(update_symbol).extendBoundary(pose, meas_plane);
+    // new_values.update (update_symbol, to_update);
+  } else {
+    const gtsam::Values& isam_values = isam2.getLinearizationPoint();
+    const omnimapper::BoundedPlane3<PointT>& to_update =
+        isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
+    to_update.extendBoundary(pose, meas_plane);
+    // isam2.getLinearizationPoint().at<omnimapper::BoundedPlane3<PointT>
+    //>(update_symbol).extendBoundary(pose, meas_plane);
+  }
+  return;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::getPose(
@@ -704,9 +701,9 @@ void omnimapper::OmniMapperBase::updateOutputPlugins() {
   boost::shared_ptr<gtsam::NonlinearFactorGraph> vis_graph(
       new gtsam::NonlinearFactorGraph(current_graph));
   double start = pcl::getTime();
-  for (int i = 0; i < output_plugins.size(); i++) {
+  for (std::size_t i = 0; i < output_plugins.size(); i++) {
     if (debug_)
-      printf("Updating plugin %d with %zu values\n", i, vis_values->size());
+      printf("Updating plugin %zu with %zu values\n", i, vis_values->size());
     output_plugins[i]->update(vis_values, vis_graph);
   }
   double end = pcl::getTime();

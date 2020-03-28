@@ -10,32 +10,53 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(FindTBB)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS timer thread)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.8 REQUIRED)
+find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 include_directories(
   include
+)
+
+include_directories(
+  ${Boost_INCLUDE_DIRS}
+  ${GTSAM_INCLUDE_DIR}
   ${PCL_COMMON_INCLUDE_DIRS}
+  ${TBB_INCLUDE_DIR}
 )
 
 set (library_srcs
   src/omnimapper_base.cpp
   src/time.cpp
   src/transform_tools.cpp
+  src/BoundedPlane3.cpp
+  src/BoundedPlaneFactor.cpp
+  src/plane_factor.cpp
+  src/plane.cpp
+  src/omnimapper_visualizer_pcl
 )
 
 set (plugins_srcs
   src/plugins/icp_plugin.cpp
   src/plugins/no_motion_pose_plugin.cpp
+  src/plugins/bounded_plane_plugin.cpp
+  src/plugins/plane_plugin.cpp
 )
 
 set (organized_segmentation_srcs
   src/organized_segmentation/organized_segmentation_tbb.cpp
+)
+
+set(dependencies
+  Eigen3
 )
 
 set(library_name ${PROJECT_NAME})
@@ -47,12 +68,13 @@ add_library(${library_name} SHARED
 
 target_link_libraries(${library_name}
   ${PCL_LIBRARIES}
-  ${GTSAM_LIBRARIES}
+  gtsam
+  ${Boost_LIBRARIES}
   ${TBB_LIBRARIES}
 )
 
 ament_target_dependencies(${library_name}
-  Eigen3
+  ${dependencies}
 )
 
 target_include_directories(${library_name}
@@ -61,7 +83,22 @@ target_include_directories(${library_name}
   ${GTSAM_INCLUDE_DIR}
 )
 
+add_executable(omnimapper_test src/omnimapper_test.cpp)
+
+ament_target_dependencies(omnimapper_test
+  ${dependencies}
+)
+
+target_link_libraries(omnimapper_test
+  ${library_name}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  gtsam
+  ${TBB_LIBRARIES}
+)
+
 install(TARGETS ${library_name}
+  omnimapper_test
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
