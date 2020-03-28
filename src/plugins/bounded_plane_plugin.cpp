@@ -209,7 +209,7 @@ void BoundedPlanePlugin<PointT>::planarRegionCallback(
 
   for (int i = 0; i < plane_measurements.size(); i++) {
     double lowest_error = std::numeric_limits<double>::infinity();
-    gtsam::Symbol best_symbol = gtsam::Symbol('p', max_plane_id_);
+    gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
 
     omnimapper::BoundedPlane3<PointT> meas_plane = plane_measurements[i];
     Eigen::Vector3d meas_norm = meas_plane.normal().unitVector();
