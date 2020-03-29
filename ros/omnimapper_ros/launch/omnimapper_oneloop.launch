@@ -53,7 +53,7 @@
     <param name="init_qy" value="0.0" />
     <param name="init_qz" value="0.0" />
     <param name="init_qw" value="1.0" />
-    <param name="use_rviz_plugin" value="false" />
+    <param name="use_rviz_plugin" value="true" />
     <param name="draw_pose_array" value="true" />
     <param name="draw_pose_graph" value="true" />
     <param name="draw_label_cloud" value="true" />
