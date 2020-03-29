@@ -87,8 +87,8 @@ class OmniMapperBase {
  public:
   // Helpful typedefs
   typedef boost::shared_ptr<gtsam::NonlinearFactor> NonlinearFactorPtr;
-  typedef boost::shared_ptr<omnimapper::PosePlugin> PosePluginPtr;
-  typedef boost::shared_ptr<omnimapper::OutputPlugin> OutputPluginPtr;
+  typedef omnimapper::PosePlugin* PosePluginRawPtr;
+  typedef omnimapper::OutputPlugin* OutputPluginRawPtr;
 
  protected:
   // An ISAM2 instance
@@ -134,9 +134,9 @@ class OmniMapperBase {
   // A list of pose plugins.  The first plugin in the list will add the pose to
   // the graph and specify the initialization point, while the rest will only
   // add factors.
-  std::vector<PosePluginPtr> pose_plugins_;
+  std::vector<PosePluginRawPtr> pose_plugins_;
   // A list of output plugins, for visualization, map publication, etc.
-  std::vector<OutputPluginPtr> output_plugins_;
+  std::vector<OutputPluginRawPtr> output_plugins_;
 
   // Debug mode
   bool debug_;
@@ -208,11 +208,11 @@ class OmniMapperBase {
 
   /** \brief Adds a pose plugin that will add a pose constraint when requested.
    */
-  void AddPosePlugin(const PosePluginPtr& plugin);
+  void AddPosePlugin(PosePluginRawPtr plugin);
 
   /** \brief Adds an output plugin, which will be called each time the map is
    * updated. */
-  void AddOutputPlugin(const OutputPluginPtr& plugin);
+  void AddOutputPlugin(OutputPluginRawPtr plugin);
 
   /** \brief Notify all output plugins that the state has changed. */
   void UpdateOutputPlugins();
@@ -242,7 +242,7 @@ class OmniMapperBase {
    * value. */
   void UpdateBoundedPlane(const gtsam::Symbol& update_symbol,
                           const gtsam::Pose3& pose,
-                          omnimapper::BoundedPlane3<PointT>* meas_plane);
+                          const omnimapper::BoundedPlane3<PointT>& meas_plane);
 
   /** \brief Looks up a pose by symbol. */
   boost::optional<gtsam::Pose3> GetPose(const gtsam::Symbol& pose_sym);

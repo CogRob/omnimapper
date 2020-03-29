@@ -8,7 +8,7 @@
   <node name="OmniMapperROSNode" pkg="omnimapper_ros"
         type="omnimapper_ros_node" respawn="false" output="screen"  >
     <param name="use_planes" value="false" />
-    <param name="use_bounded_planes" value="false" />
+    <param name="use_bounded_planes" value="true" />
     <param name="use_objects" value="false" />
     <param name="use_csm" value="false" />
     <param name="use_icp" value="true" />

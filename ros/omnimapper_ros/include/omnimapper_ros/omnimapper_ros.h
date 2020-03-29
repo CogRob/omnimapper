@@ -110,6 +110,7 @@ class OmniMapperROS {
   omnimapper::OmniMapperVisualizerRViz<PointT> vis_plugin_;
 
   // CSM Visualization
+  // csm_vis_plugin_ depends on csm_plugin_
   omnimapper::CSMVisualizerRViz<sensor_msgs::LaserScan> csm_vis_plugin_;
 
   // TSDF Plugin
@@ -118,6 +119,7 @@ class OmniMapperROS {
   // Benchmark Data Analysis
   omnimapper::TUMDataErrorPlugin bag_error_plugin_;
 
+  // eval_plugin_ depends on vis_plugin_, it must be defined after vis_plugin_;
   omnimapper::ErrorEvaluationPlugin eval_plugin_;
 
   // Distortion Model
@@ -129,7 +131,7 @@ class OmniMapperROS {
   // Organized Feature Extraction
   omnimapper::OrganizedFeatureExtraction<PointT> organized_feature_extraction_;
 
-  // TF Listener  (for initialization)
+  // TF Listener (for initialization)
   tf::TransformListener tf_listener_;
   tf::TransformBroadcaster tf_broadcaster_;
 

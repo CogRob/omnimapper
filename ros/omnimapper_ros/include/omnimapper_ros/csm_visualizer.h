@@ -16,8 +16,7 @@ class CSMVisualizerRViz : public omnimapper::OutputPlugin {
   void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
   void SetCSMPlugin(
-      boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<LScanT> >&
-          csm_plugin) {
+      omnimapper::CanonicalScanMatcherPlugin<LScanT>* csm_plugin) {
     csm_plugin_ = csm_plugin;
   }
   bool DrawCSMMap(omnimapper_ros::VisualizeFullCloud::Request& req,
@@ -36,8 +35,7 @@ class CSMVisualizerRViz : public omnimapper::OutputPlugin {
 
   ros::ServiceServer draw_csm_map_srv_;
 
-  boost::shared_ptr<omnimapper::CanonicalScanMatcherPlugin<LScanT> >
-      csm_plugin_;
+  omnimapper::CanonicalScanMatcherPlugin<LScanT>* csm_plugin_;
 
   boost::shared_ptr<gtsam::Values> vis_values_;
 

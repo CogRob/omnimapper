@@ -30,58 +30,71 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
 
  public:
   OmniMapperVisualizerRViz(omnimapper::OmniMapperBase *mapper);
+
   void Update(boost::shared_ptr<gtsam::Values> &vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph> &vis_graph);
+
   void SpinOnce();
+
   void Spin();
+
   void PlanarRegionCallback(
       std::vector<pcl::PlanarRegion<PointT>,
                   Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
           regions,
       omnimapper::Time t);
+
   void DrawBBox(pcl::PointCloud<pcl::PointXYZRGB> &cloud,
                 ros::Publisher &marker_pub_, int obj_idx);
+
   void LabelCloudCallback(const CloudConstPtr &cloud,
                           const LabelCloudConstPtr &labels);
+
   void ClusterCloudCallback(std::vector<CloudPtr> clusters, omnimapper::Time t,
                             boost::optional<std::vector<pcl::PointIndices> >);
-  void SetICPPlugin(
-      boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >
-          &icp_plugin) {
+
+  void SetICPPlugin(omnimapper::ICPPoseMeasurementPlugin<PointT> *icp_plugin) {
     icp_plugin_ = icp_plugin;
   }
-  void SetObjectPlugin(
-      boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > &object_plugin) {
+
+  void SetObjectPlugin(omnimapper::ObjectPlugin<PointT> *object_plugin) {
     object_plugin_ = object_plugin;
   }
+
   bool DrawObjectObservationCloud(
       omnimapper_ros::VisualizeFullCloud::Request &req,
       omnimapper_ros::VisualizeFullCloud::Response &res);
+
   bool DrawICPCloudsCallback(omnimapper_ros::VisualizeFullCloud::Request &req,
                              omnimapper_ros::VisualizeFullCloud::Response &res);
+
   bool PublishModel(omnimapper_ros::PublishModel::Request &req,
                     omnimapper_ros::PublishModel::Response &res);
+
   void SetDrawPoseArray(bool draw_pose_array) {
     draw_pose_array_ = draw_pose_array;
   }
+
   void SetDrawPoseGraph(bool draw_pose_graph) {
     draw_pose_graph_ = draw_pose_graph;
   }
+
   void SetOutputGraphviz(bool output_graphviz) {
     output_graphviz_ = output_graphviz;
   }
+
   void SetDrawICPCloudsAlways(bool draw_always) {
     draw_icp_clouds_always_ = draw_always;
     if (draw_always) draw_icp_clouds_ = true;
   }
 
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer>
+  interactive_markers::InteractiveMarkerServer *
   GetInteractiveMarkerServerPtr() {
-    return (marker_server_);
+    return marker_server_.get();
   }
 
-  boost::shared_ptr<interactive_markers::MenuHandler> GetMenuHandlerPtr() {
-    return (menu_handler_);
+  interactive_markers::MenuHandler *GetMenuHandlerPtr() {
+    return menu_handler_.get();
   }
 
   /** \brief Initializes the Interactive Menu */
@@ -128,11 +141,11 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
   bool updated_;
 
   // Interactive Markers
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer>
+  boost::unique_ptr<interactive_markers::InteractiveMarkerServer>
       marker_server_;
 
   // Menu Handler
-  boost::shared_ptr<interactive_markers::MenuHandler> menu_handler_;
+  boost::unique_ptr<interactive_markers::MenuHandler> menu_handler_;
 
   // Playback Menu Entry Handle
   interactive_markers::MenuHandler::EntryHandle playback_menu_;
@@ -172,25 +185,20 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
   ros::ServiceServer publish_model_srv_;
 
   // ICP Plugin Ref
-  boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
+  omnimapper::ICPPoseMeasurementPlugin<PointT> *icp_plugin_;
 
   // Object Plugin Ref
-  boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > object_plugin_;
+  omnimapper::ObjectPlugin<PointT> *object_plugin_;
 
   std::vector<pcl::PlanarRegion<PointT>,
               Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >
       latest_planes_;
 
   bool draw_icp_clouds_;
-
   bool draw_icp_clouds_always_;
-
   double draw_icp_clouds_interval_;
-
   double draw_icp_clouds_prev_time_;
-
   bool draw_icp_clouds_downsampled_;
-
   bool draw_planar_landmarks_;
 
   bool draw_pose_array_;
@@ -198,7 +206,6 @@ class OmniMapperVisualizerRViz : public omnimapper::OutputPlugin {
   bool draw_pose_graph_;
 
   bool draw_object_observation_cloud_;
-
   bool draw_object_observation_bboxes_;
 
   bool draw_pose_marginals_;

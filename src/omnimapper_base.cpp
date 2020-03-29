@@ -209,13 +209,13 @@ boost::optional<gtsam::Pose3> omnimapper::OmniMapperBase::GetPose(
 }
 
 void omnimapper::OmniMapperBase::AddPosePlugin(
-    const omnimapper::OmniMapperBase::PosePluginPtr& plugin) {
+    omnimapper::OmniMapperBase::PosePluginRawPtr plugin) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   pose_plugins_.push_back(plugin);
 }
 
 void omnimapper::OmniMapperBase::AddOutputPlugin(
-    const omnimapper::OmniMapperBase::OutputPluginPtr& plugin) {
+    omnimapper::OmniMapperBase::OutputPluginRawPtr plugin) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
   output_plugins_.push_back(plugin);
 }
@@ -271,7 +271,7 @@ void omnimapper::OmniMapperBase::UpdatePlane(
 
 void omnimapper::OmniMapperBase::UpdateBoundedPlane(
     const gtsam::Symbol& update_symbol, const gtsam::Pose3& pose,
-    omnimapper::BoundedPlane3<PointT>* meas_plane) {
+    const omnimapper::BoundedPlane3<PointT>& meas_plane) {
   boost::lock_guard<boost::mutex> lock(omnimapper_mutex_);
 
   // TODO: We should not have factor specific update functions, they should be
@@ -280,7 +280,7 @@ void omnimapper::OmniMapperBase::UpdateBoundedPlane(
   if (new_values_.exists(update_symbol)) {
     const omnimapper::BoundedPlane3<PointT> to_update =
         new_values_.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-    to_update.extendBoundary(pose, *meas_plane);
+    to_update.extendBoundary(pose, meas_plane);
     // extendBoundary manipulates a cloud it has pointer to. The actual
     // manipulated data is not stored inside BoundedPlane3. So we don't need to
     // write to_update back.
@@ -288,7 +288,7 @@ void omnimapper::OmniMapperBase::UpdateBoundedPlane(
     const gtsam::Values& isam_values = isam2_.getLinearizationPoint();
     const omnimapper::BoundedPlane3<PointT>& to_update =
         isam_values.at<omnimapper::BoundedPlane3<PointT> >(update_symbol);
-    to_update.extendBoundary(pose, *meas_plane);
+    to_update.extendBoundary(pose, meas_plane);
     // extendBoundary manipulates a cloud it has pointer to. The actual
     // manipulated data is not stored inside BoundedPlane3. So we don't need to
     // write to_update back.

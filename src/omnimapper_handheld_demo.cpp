@@ -50,8 +50,7 @@ int main(int argc, char** argv) {
   // Create a no motion pose plugin, to add a weak prior of no movement
   // Also serves to keep the pose chain connected in the case that ICP fails
   omnimapper::NoMotionPosePlugin no_motion_plugin(&omb);
-  boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr(&no_motion_plugin);
-  omb.AddPosePlugin(no_motion_ptr);
+  omb.AddPosePlugin(&no_motion_plugin);
 
   // Create an ICP pose measurement plugin
   // omnimapper::ICPPoseMeasurementPlugin<PointT> icp_plugin(&omb,
@@ -79,8 +78,7 @@ int main(int argc, char** argv) {
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
   vis_pcl.SpinOnce();
-  boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_pcl);
-  omb.AddOutputPlugin(vis_ptr);
+  omb.AddOutputPlugin(&vis_pcl);
 
   // Set the ICP Plugin on the visualizer
   boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(

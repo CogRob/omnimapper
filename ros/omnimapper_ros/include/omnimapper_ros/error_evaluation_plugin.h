@@ -63,14 +63,12 @@ class ErrorEvaluationPlugin : public omnimapper::OutputPlugin {
   // Sets the interactive marker server (for example, to share one with the RViz
   // plugin
   void SetInteractiveMarkerServerPtr(
-      boost::shared_ptr<interactive_markers::InteractiveMarkerServer>&
-          marker_server) {
+      interactive_markers::InteractiveMarkerServer* marker_server) {
     marker_server_ = marker_server;
   }
 
   // Sets the menu handler (for example, to share one with the RViz plugin
-  void SetMenuHandlerPtr(
-      boost::shared_ptr<interactive_markers::MenuHandler>& menu_handler) {
+  void SetMenuHandlerPtr(interactive_markers::MenuHandler* menu_handler) {
     menu_handler_ = menu_handler;
   }
 
@@ -89,11 +87,10 @@ class ErrorEvaluationPlugin : public omnimapper::OutputPlugin {
   ros::NodeHandle nh_;
 
   // Interactive Markers
-  boost::shared_ptr<interactive_markers::InteractiveMarkerServer>
-      marker_server_;
+  interactive_markers::InteractiveMarkerServer* marker_server_;
 
   // Interactive Menu Handler
-  boost::shared_ptr<interactive_markers::MenuHandler> menu_handler_;
+  interactive_markers::MenuHandler* menu_handler_;
 
   // Playback Menu Entry Handle
   interactive_markers::MenuHandler::EntryHandle playback_menu_;

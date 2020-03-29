@@ -381,14 +381,14 @@ bool ICPPoseMeasurementPlugin<PointT>::TryLoopClosure(gtsam::Symbol sym) {
   const int pose_index_thresh = 20;
 
   // Get the latest solution from the mapper.
-  const gtsam::Values solution = mapper_->GetSolution();
-
+  gtsam::Values solution = mapper_->GetSolution();
   // Look up the current pose.
   while (!solution.exists<gtsam::Pose3>(sym)) {
     LOG(INFO) << "Looking for the pose of " << std::string(sym);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     solution = mapper_->GetSolution();
   }
+
   const gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
   gtsam::Point3 current_centroid;
   {

@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 project(omnimapper)
 
-SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+SET(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 
-set(IGNORE_WARNING_FLAGS "-Wno-unused-variable -Wno-unused-parameter -Wno-deprecated-declarations")
+set(IGNORE_WARNING_FLAGS "-Wno-unused-variable -Wno-unused-parameter -Wno-deprecated-declarations -Wno-unused-but-set-variable")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++11 -Werror -Wall -Wextra ${IGNORE_WARNING_FLAGS}")
 # Enable asan

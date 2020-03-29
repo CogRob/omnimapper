@@ -83,16 +83,15 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   tf_plugin_.SetPitchNoise(tf_pitch_noise_);
   tf_plugin_.SetYawNoise(tf_yaw_noise_);
   if (use_tf_) {
-    LOG(ERROR) << "Using ROS TFPlugin.";
-    boost::shared_ptr<omnimapper::PosePlugin> tf_plugin_ptr(&tf_plugin_);
-    omb_.AddPosePlugin(std::move(tf_plugin_ptr));
+    LOG(INFO) << "Using ROS TF plugin.";
+    omb_.AddPosePlugin(&tf_plugin_);
   }
 
   // Add the No Motion Plugin (null motion model)
   if (use_no_motion_) {
-    LOG(ERROR) << "Using NoMotionPlugin.";
-    boost::shared_ptr<omnimapper::PosePlugin> no_motion_ptr(&no_motion_plugin_);
-    omb_.AddPosePlugin(std::move(no_motion_ptr));
+    LOG(ERROR) << "Using NoMotionPlugin, "
+               << "are you sure you don't want to use tf?";
+    omb_.AddPosePlugin(&no_motion_plugin_);
   }
 
   // Set up a sensor_to_base functor, for plugins to use.
@@ -272,14 +271,10 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     laserScan_sub_ =
         n_.subscribe("/scan", 1, &OmniMapperROS::LaserScanCallback, this);
 
-    boost::shared_ptr<
-        omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan> >
-        csm_ptr(&csm_plugin_);
-    csm_vis_plugin_.SetCSMPlugin(csm_ptr);
+    csm_vis_plugin_.SetCSMPlugin(&csm_plugin_);
 
     // Install the visualizer
-    boost::shared_ptr<omnimapper::OutputPlugin> csm_vis_ptr(&csm_vis_plugin_);
-    omb_.AddOutputPlugin(csm_vis_ptr);
+    omb_.AddOutputPlugin(&csm_vis_plugin_);
 
     boost::thread csm_thread(
         &omnimapper::CanonicalScanMatcherPlugin<sensor_msgs::LaserScan>::Spin,
@@ -290,15 +285,12 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   // TODO(shengye): This is very dangerous -- if the vis_plugin_ ever abandons
   // the shared pointer, it will try to free icp_plugin_, but icp_plugin_ can
   // not be freed.
-  boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(
-      &icp_plugin_);
-  vis_plugin_.SetICPPlugin(icp_ptr);
+  vis_plugin_.SetICPPlugin(&icp_plugin_);
 
   // Set up the Object Plugin with the visualizer.
   // TODO(shengye): obj_ptr took the ownership of object_plugin_ but it
   // shouldn't have done it.
-  boost::shared_ptr<omnimapper::ObjectPlugin<PointT> > obj_ptr(&object_plugin_);
-  vis_plugin_.SetObjectPlugin(obj_ptr);
+  vis_plugin_.SetObjectPlugin(&object_plugin_);
 
   // Subscribe to Point Clouds
   pointcloud_sub_ =
@@ -310,24 +302,20 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     vis_plugin_.SetDrawPoseArray(draw_pose_array_);
     vis_plugin_.SetDrawPoseGraph(draw_pose_graph_);
     vis_plugin_.SetDrawICPCloudsAlways(draw_icp_clouds_always_);
-    boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_plugin_);
-    omb_.AddOutputPlugin(vis_ptr);
+    omb_.AddOutputPlugin(&vis_plugin_);
   }
 
   // Set up the TSDF plugin.
   if (use_tsdf_plugin_) {
     LOG(INFO) << "Use tsdf output plugin.";
-    tsdf_plugin_.SetICPPlugin(icp_ptr);
-    boost::shared_ptr<omnimapper::OutputPlugin> tsdf_ptr(&tsdf_plugin_);
-    omb_.AddOutputPlugin(tsdf_ptr);
+    tsdf_plugin_.SetICPPlugin(&icp_plugin_);
+    omb_.AddOutputPlugin(&tsdf_plugin_);
   }
 
   // Set up the error plugin.
   if (use_error_plugin_) {
     LOG(INFO) << "Use error output plugin.";
-    boost::shared_ptr<omnimapper::OutputPlugin> error_plugin_ptr(
-        &bag_error_plugin_);
-    omb_.AddOutputPlugin(error_plugin_ptr);
+    omb_.AddOutputPlugin(&bag_error_plugin_);
   }
 
   generate_tsdf_srv_ = n_.advertiseService(
@@ -360,15 +348,13 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   if (evaluation_mode_ || use_error_eval_plugin_) {
     // TODO(shengye): Again, claimed the ownership when it should not and could
     // not.
-    boost::shared_ptr<omnimapper::OutputPlugin> eval_plugin_ptr(&eval_plugin_);
-    omb_.AddOutputPlugin(eval_plugin_ptr);  // Calls the update function
+    omb_.AddOutputPlugin(&eval_plugin_);  // Calls the update function
 
     // Set up Visualization and Interactive Markers
     LOG(INFO) << "Getting interactive ptrs.";
-    boost::shared_ptr<interactive_markers::InteractiveMarkerServer> ims_ptr =
+    interactive_markers::InteractiveMarkerServer* ims_ptr =
         vis_plugin_.GetInteractiveMarkerServerPtr();
-    boost::shared_ptr<interactive_markers::MenuHandler> mh_ptr =
-        vis_plugin_.GetMenuHandlerPtr();
+    interactive_markers::MenuHandler* mh_ptr = vis_plugin_.GetMenuHandlerPtr();
     LOG(INFO) << "Setting ptrs";
     eval_plugin_.SetInteractiveMarkerServerPtr(ims_ptr);
     eval_plugin_.SetMenuHandlerPtr(mh_ptr);

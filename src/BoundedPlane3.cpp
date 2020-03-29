@@ -170,7 +170,7 @@ gtsam::Vector omnimapper::BoundedPlane3<PointT>::error(
 
 template <typename PointT>
 void omnimapper::BoundedPlane3<PointT>::extendBoundary(
-    const gtsam::Pose3& pose, BoundedPlane3<PointT>& plane) const {
+    const gtsam::Pose3& pose, const BoundedPlane3<PointT>& plane) const {
   boost::lock_guard<boost::mutex> lock(*plane_mutex_);
   Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   // return;

@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     }
   }
   sort(pcd_files.begin(), pcd_files.end());
-  printf("Found %d PCDs.\n", pcd_files.size());
+  printf("Found %zu PCDs.\n", pcd_files.size());
 
   // Create a PCD Grabber
   pcl::PCDGrabber<PointT> grabber(pcd_files, 1.0, false);
@@ -53,8 +53,7 @@ int main(int argc, char** argv) {
   // Create a visualizer
   omnimapper::OmniMapperVisualizerPCL<PointT> vis_pcl(&omb);
   vis_pcl.SpinOnce();
-  boost::shared_ptr<omnimapper::OutputPlugin> vis_ptr(&vis_pcl);
-  omb.AddOutputPlugin(vis_ptr);
+  omb.AddOutputPlugin(&vis_pcl);
 
   // Set the ICP Plugin on the visualizer
   boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_ptr(

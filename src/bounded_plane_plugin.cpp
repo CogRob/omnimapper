@@ -16,8 +16,8 @@ BoundedPlanePlugin<PointT>::BoundedPlanePlugin(
 }
 
 template <typename PointT>
-static bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
-                                                        CloudPtr boundary2) {
+bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
+                                                 CloudPtr boundary2) {
   for (const auto& point : boundary1->points) {
     if (pcl::isPointIn2DPolygon(point, *boundary2)) return true;
   }
@@ -28,9 +28,10 @@ static bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
 }
 
 template <typename PointT>
-static bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(
-    Eigen::Vector4d& coeffs1, CloudPtr boundary1, Eigen::Vector4d& coeffs2,
-    CloudPtr boundary2) {
+bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(Eigen::Vector4d& coeffs1,
+                                                      CloudPtr boundary1,
+                                                      Eigen::Vector4d& coeffs2,
+                                                      CloudPtr boundary2) {
   const Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   const Eigen::Vector4d minus_z_axis(0.0, 0.0, -1.0, 0.0);
 
@@ -48,7 +49,7 @@ static bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(
 }
 
 template <typename PointT>
-static void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
+void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
     pcl::PointCloud<PointT>* boundary_cloud) {
   for (std::size_t i = 1; i < boundary_cloud->points.size() - 1; i++) {
     for (std::size_t j = i + 1; j < boundary_cloud->points.size() - 1; j++) {
@@ -104,7 +105,10 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
     const bool intersects = boost::geometry::intersects(border_cloud->points);
     if (intersects) {
       LOG(ERROR) << "BoundedPlanePlugin got invalid measurement.";
-      // TODO: remove debug
+      // TODO(shengye): for now we will just ignore this plane.
+      continue;
+
+      // TODO: If needed, we can save the PCD and exit.
       const std::string meas_name = "/tmp/invalid_meas.pcd";
       pcl::io::savePCDFileBinaryCompressed(meas_name, *border_cloud);
       LOG(FATAL) << "Saved measurement cloud to " << meas_name;
@@ -185,7 +189,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
 
   for (const auto& meas_plane : plane_measurements) {
     double lowest_error = std::numeric_limits<double>::infinity();
-    gtsam::Symbol best_symbol = gtsam::Symbol('p', max_plane_id_);
+    gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
 
     Eigen::Vector3d meas_norm = meas_plane.normal().point3().vector();
     double meas_d = meas_plane.d();
@@ -203,9 +207,10 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
       const double ptp_dist =
           fabs(meas_map_coeffs[0] * point.x + meas_map_coeffs[1] * point.y +
                meas_map_coeffs[2] * point.z + meas_map_coeffs[3]);
-      if (ptp_dist > 0.01) {
+      // TODO(shengye): This was 0.01 before.
+      if (ptp_dist > 0.1) {
         LOG(FATAL) << "ERROR: Initializing boundary at bad place: "
-                   << "Point is " << ptp_dist << "from plane.";
+                   << "Point is " << ptp_dist << " from plane.";
       }
     }
 
@@ -269,7 +274,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
                 << map_p3_coeffs[3] << ")";
       ++max_plane_id_;
     } else {
-      mapper_->UpdateBoundedPlane(best_symbol, *new_pose, &meas_plane);
+      mapper_->UpdateBoundedPlane(best_symbol, *new_pose, meas_plane);
       LOG(INFO) << "BoundedPlanePlugin extended plane: "
                 << std::string(best_symbol);
     }

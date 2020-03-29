@@ -58,8 +58,7 @@ class OmniMapperHandheldNode {
         fake_grabber_(fake_files_, 1.0, false),
         organized_feature_extraction_(fake_grabber_) {
     // Add the TF Pose Plugin
-    boost::shared_ptr<omnimapper::PosePlugin> tf_plugin_ptr(&tf_plugin_);
-    omb_.AddPosePlugin(tf_plugin_ptr);
+    omb_.AddPosePlugin(&tf_plugin_);
 
     // Set up an ICP Plugin
     icp_plugin_.setUseGICP(true);

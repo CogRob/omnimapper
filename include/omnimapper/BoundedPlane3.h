@@ -106,14 +106,14 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
 
   // extend the boundary cloud with a new measurement
   void extendBoundary(const gtsam::Pose3& pose,
-                      BoundedPlane3<PointT>& plane) const;
+                      const BoundedPlane3<PointT>& plane) const;
 
   // retract the boundary cloud to a given measurement
   void retractBoundary(const gtsam::Pose3& pose, BoundedPlane3<PointT>& plane);
 
   CloudPtr boundary() const { return (boundary_); }
 
-  double d() { return (d_); }
+  double d() const { return (d_); }
 
   static BoundedPlane3 Transform(const omnimapper::BoundedPlane3<PointT>& plane,
                                  const gtsam::Pose3& xr,

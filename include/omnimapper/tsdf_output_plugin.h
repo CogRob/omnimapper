@@ -56,9 +56,7 @@ class TSDFOutputPlugin : public omnimapper::OutputPlugin {
   TSDFOutputPlugin(omnimapper::OmniMapperBase* mapper);
   void Update(boost::shared_ptr<gtsam::Values>& vis_values,
               boost::shared_ptr<gtsam::NonlinearFactorGraph>& vis_graph);
-  void SetICPPlugin(
-      boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> >&
-          icp_plugin) {
+  void SetICPPlugin(omnimapper::ICPPoseMeasurementPlugin<PointT>* icp_plugin) {
     icp_plugin_ = icp_plugin;
   };
   void GenerateTSDF(double grid_size, int resolution);
@@ -67,7 +65,7 @@ class TSDFOutputPlugin : public omnimapper::OutputPlugin {
   OmniMapperBase* mapper_;
 
   // ICP Plugin Ref
-  boost::shared_ptr<omnimapper::ICPPoseMeasurementPlugin<PointT> > icp_plugin_;
+  omnimapper::ICPPoseMeasurementPlugin<PointT>* icp_plugin_;
 
   boost::shared_ptr<gtsam::Values> latest_solution_;
 };
