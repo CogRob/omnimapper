@@ -172,6 +172,7 @@ class OrganizedFeatureExtraction {
   // Threads
   boost::thread vis_thread_;
   boost::thread process_thread_;
+  boost::thread spin_thread_;
 
   // Flags
   bool debug_;
@@ -180,6 +181,9 @@ class OrganizedFeatureExtraction {
   // Output
   std::ofstream ne_times_file_;
   std::ofstream mps_times_file_;
+
+ private:
+  void SpinThread();
 
  public:
   OrganizedFeatureExtraction(pcl::Grabber& grabber);

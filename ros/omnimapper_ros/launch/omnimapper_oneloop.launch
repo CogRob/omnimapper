@@ -40,7 +40,6 @@
     <param name="plane_range_noise" value="0.1" />
     <param name="plane_angular_noise" value="0.174532925" />
     <param name="tf_trans_noise" value="0.05" />
-    <param name="tf_rot_noise" value="pcl::deg2rad(10.0)" />
     <param name="tf_roll_noise" value="0.001" />
     <param name="tf_pitch_noise" value="0.001" />
     <param name="tf_yaw_noise" value="0.2" />
@@ -81,7 +80,7 @@
     <param name="object_landmarks" value="true" />
     <param name="save_object_models" value="true" />
     <param name="object_min_height" value="0.3" />
-    <param name="use_organized_feature_extraction" value="false" />
+    <param name="use_organized_feature_extraction" value="true" />
     <param name="debug" value="false" />
     <param name="ar_mode" value="false" />
   </node>

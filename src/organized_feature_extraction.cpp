@@ -538,11 +538,17 @@ bool OrganizedFeatureExtraction<PointT>::Ready() {
   return true;
 }
 
+template <typename PointT>
+void OrganizedFeatureExtraction<PointT>::Spin() {
+  spin_thread_ =
+      boost::thread(&OrganizedFeatureExtraction<PointT>::SpinThread, this);
+}
+
 /** \brief Run the visualizer
  *
  */
 template <typename PointT>
-void OrganizedFeatureExtraction<PointT>::Spin() {
+void OrganizedFeatureExtraction<PointT>::SpinThread() {
   while (true) {
     // viewer_->spinOnce (100);
 

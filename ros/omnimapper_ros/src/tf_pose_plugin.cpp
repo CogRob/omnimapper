@@ -9,7 +9,9 @@ TFPosePlugin::TFPosePlugin(omnimapper::OmniMapperBase* mapper)
       tf_listener_(ros::Duration(30.0)),
       odom_frame_name_("/odom"),
       base_frame_name_("/camera_depth_optical_frame"),
-      rotation_noise_(1.0),
+      roll_noise_(1.0),
+      pitch_noise_(1.0),
+      yaw_noise_(1.0),
       translation_noise_(1.0) {}
 
 gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
@@ -54,7 +56,6 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
             << relative_pose.z() << ")";
 
   const double trans_noise = translation_noise_;
-  const double rot_noise = rotation_noise_;
   gtsam::Vector noise_vector(6);
   noise_vector << roll_noise_, pitch_noise_, yaw_noise_,
                   trans_noise, trans_noise, trans_noise;

@@ -31,7 +31,6 @@ class TFPosePlugin : public omnimapper::PosePlugin {
 
   std::string base_frame_name_;
 
-  double rotation_noise_;
   double roll_noise_, pitch_noise_, yaw_noise_;
 
   double translation_noise_;
@@ -52,7 +51,6 @@ class TFPosePlugin : public omnimapper::PosePlugin {
     base_frame_name_ = base_frame_name;
   }
   void SetRotationNoise(double rotation_noise) {
-    rotation_noise_ = rotation_noise;
     roll_noise_ = rotation_noise;
     pitch_noise_ = rotation_noise;
     yaw_noise_ = rotation_noise;
