@@ -51,14 +51,13 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
 
   LOG(INFO) << "TFPosePlugin: Adding factor between " << std::string(sym1)
             << " and " << std::string(sym2);
-  LOG(INFO) << "TFPosePlugin, relative transform is ("
-            << relative_pose.x() << ", " << relative_pose.y() << ", "
-            << relative_pose.z() << ")";
+  LOG(INFO) << "TFPosePlugin, relative transform is (" << relative_pose.x()
+            << ", " << relative_pose.y() << ", " << relative_pose.z() << ")";
 
   const double trans_noise = translation_noise_;
   gtsam::Vector noise_vector(6);
-  noise_vector << roll_noise_, pitch_noise_, yaw_noise_,
-                  trans_noise, trans_noise, trans_noise;
+  noise_vector << roll_noise_, pitch_noise_, yaw_noise_, trans_noise,
+      trans_noise, trans_noise;
   gtsam::SharedDiagonal noise =
       gtsam::noiseModel::Diagonal::Sigmas(noise_vector);
   gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between(
@@ -67,8 +66,6 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
   return between;
 }
 
-bool TFPosePlugin::Ready() {
-  return true;
-}
+bool TFPosePlugin::Ready() { return true; }
 
 }  // namespace omnimapper

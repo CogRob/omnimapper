@@ -45,8 +45,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
 
   // Optionally get initial pose from TF.
   if (init_pose_from_tf_) {
-    CHECK(!use_init_pose_)
-        << "Use either use_init_pose or init_pose_from_tf.";
+    CHECK(!use_init_pose_) << "Use either use_init_pose or init_pose_from_tf.";
     bool got_tf = false;
     tf::StampedTransform init_transform;
 
@@ -373,7 +372,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
     eval_plugin_.SetInteractiveMarkerServerPtr(ims_ptr);
     eval_plugin_.SetMenuHandlerPtr(mh_ptr);
     eval_plugin_.InitMenu();
-    LOG(INFO) <<  "Done with that.";
+    LOG(INFO) << "Done with that.";
   }
 
   if (evaluation_mode_) {
@@ -408,7 +407,6 @@ void OmniMapperROS<PointT>::RunEvaluation(
     std::string& associated_filename, std::string& groundtruth_filename,
     std::string& pcd_path, std::string& output_trajectory_filename,
     std::string& output_timing_filename) {
-
   // Clear old state.
   omb_.Reset();
   icp_plugin_.Reset();
@@ -673,14 +671,14 @@ void OmniMapperROS<PointT>::CloudCallback(
     organized_feature_extraction_.CloudCallback(cloud);
     const double end_ofe = pcl::getTime();
     LOG_IF(INFO, debug_) << "CloudCallback: ofe_cb took "
-                        << double(end_ofe - start_ofe) << " seconds.";
+                         << double(end_ofe - start_ofe) << " seconds.";
   }
 
   if (add_pose_per_cloud_) {
     const double start_getpose = pcl::getTime();
     gtsam::Symbol sym;
-    boost::posix_time::ptime header_time = omnimapper::StampToPtime(
-        cloud->header.stamp);
+    boost::posix_time::ptime header_time =
+        omnimapper::StampToPtime(cloud->header.stamp);
     LOG_IF(INFO, debug_) << "Header time: " << header_time << std::endl;
     omb_.GetPoseSymbolAtTime(header_time, &sym);
     const double end_getpose = pcl::getTime();
