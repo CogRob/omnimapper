@@ -76,12 +76,6 @@ foreach(dir ${dirs})
   message(STATUS "link dir='${dir}'")
 endforeach()
 
-# # Build ROS Messages and Services
-# add_message_files(FILES
-#   ObjectInfo.msg
-#   ObjectInfos.msg
-# )
-
 add_service_files(
   FILES
   OutputMapTSDF.srv

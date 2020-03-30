@@ -192,7 +192,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
 
     Eigen::Vector3d meas_norm = meas_plane.normal().point3().vector();
-    double meas_d = meas_plane.d();
+    const double meas_d = meas_plane.d();
     CloudPtr meas_boundary = meas_plane.boundary();
     CloudPtr meas_boundary_map(new Cloud());
     Eigen::Affine3f pose2map = Pose3ToTransform(*new_pose);
@@ -207,8 +207,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
       const double ptp_dist =
           fabs(meas_map_coeffs[0] * point.x + meas_map_coeffs[1] * point.y +
                meas_map_coeffs[2] * point.z + meas_map_coeffs[3]);
-      // TODO(shengye): This was 0.01 before.
-      if (ptp_dist > 0.1) {
+      if (ptp_dist > 0.01) {
         LOG(FATAL) << "ERROR: Initializing boundary at bad place: "
                    << "Point is " << ptp_dist << " from plane.";
       }

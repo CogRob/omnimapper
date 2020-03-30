@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper/organized_feature_extraction_tbb.h>
 #include <omnimapper/time.h>
 #include <pcl/segmentation/plane_refinement_comparator.h>
@@ -26,6 +27,7 @@
 // pcl::Label>;
 
 namespace omnimapper {
+
 template <typename PointT>
 OrganizedFeatureExtractionTBB<PointT>::OrganizedFeatureExtractionTBB()
     : input_cloud_(boost::none),
@@ -245,10 +247,11 @@ void OrganizedFeatureExtractionTBB<PointT>::SpinOnce() {
 
 template <typename PointT>
 void OrganizedFeatureExtractionTBB<PointT>::Publish() {
-  std::cout << "Publishing..." << std::endl;
+  LOG(INFO) << "OrganizedFeatureExtraction Publishing.";
   // Publish plane Labels
   if (plane_label_cloud_callback_) {
     if (clust_input_cloud_ && clust_input_labels_) {
+      LOG(INFO) << "Publish plane labels.";
       plane_label_cloud_callback_(*clust_input_cloud_, *clust_input_labels_);
     }
   }
@@ -256,6 +259,7 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   // Publish plane regions
   if (planar_region_stamped_callbacks_.size() > 0) {
     if (pub_mps_regions_) {
+      LOG(INFO) << "Publish plane regions.";
       Time timestamp = StampToPtime((*clust_input_cloud_)->header.stamp);
       for (std::size_t i = 0; i < planar_region_stamped_callbacks_.size(); i++)
         planar_region_stamped_callbacks_[i](*pub_mps_regions_, timestamp);
@@ -265,6 +269,7 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   // Publish Cluster Labels
   if (cluster_label_cloud_callbacks_.size() > 0) {
     if (pub_cluster_cloud_ && pub_cluster_labels_) {
+      LOG(INFO) << "Publish cluster labels.";
       for (std::size_t i = 0; i < cluster_label_cloud_callbacks_.size(); i++)
         cluster_label_cloud_callbacks_[i](*pub_cluster_cloud_,
                                           *pub_cluster_labels_);
@@ -273,11 +278,11 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
 
   // Publish Cluster Clouds
   if (cluster_cloud_callbacks_.size() > 0) {
-    std::cout << "Have cluster cloud callbacks!" << std::endl;
+    LOG(INFO) << "Publish cluster clouds.";
     if (pub_cluster_cloud_) {
       Time timestamp = StampToPtime((*pub_cluster_cloud_)->header.stamp);
       for (std::size_t i = 0; i < cluster_cloud_callbacks_.size(); i++) {
-        std::cout << "Publishing cluster clouds!\n" << std::endl;
+        LOG(INFO) << "Publish cluster clouds with callback " << i;
         cluster_cloud_callbacks_[i](*pub_clusters_, timestamp,
                                     *pub_cluster_indices_);
       }
@@ -288,231 +293,11 @@ void OrganizedFeatureExtractionTBB<PointT>::Publish() {
   if (occluding_edge_callback_) {
     std::cout << "Have occ edge callbacks!" << std::endl;
     if (pub_occluding_edge_cloud_) {
-      std::cout << "publishing occ edges!" << std::endl;
+      LOG(INFO) << "Publish occluding edges.";
       occluding_edge_callback_(*pub_occluding_edge_cloud_);
     }
   }
 }
-
-/*
-    template <typename PointT> void
-    OrganizedFeatureExtractionTBB<PointT>::processFrame ()
-    {
-      while (true)
-      {
-        //CloudConstPtr cloud;
-        // Get the latest cloud from the sensor
-        bool should_process = false;
-        if (cloud_mutex.try_lock ()){
-        //{
-          //boost::lock_guard<boost::mutex> lock (cloud_mutex);
-          //boost::mutex::scoped_lock (cloud_mutex);
-          should_process = updated_cloud_;
-          if (should_process)
-            stage1_cloud_ = prev_sensor_cloud_;
-          updated_cloud_ = false;
-          cloud_mutex.unlock ();
-        }
-
-        // condition var test
-        // {
-        //   boost::unique_lock<boost::mutex> lock (cloud_mutex);
-        //   while (!updated_cloud_)
-        //   {
-        //     updated_cond_.wait (lock);
-        //   }
-        //   stage1_cloud_ = prev_sensor_cloud_;
-        //   should_process = true;
-        //   updated_cloud_ = false;
-        // }
-        // end codition var test
-
-        if (!should_process)
-        {
-          boost::this_thread::sleep (boost::posix_time::milliseconds (1));
-          //printf ("no new data\n");
-        }
-        else
-        {
-          FPS_CALC ("processing");
-          //printf ("new data: %d\n", stage1_cloud_->points.size ());
-
-          // Kick off a thread to estimate surface normals for this frame
-          //printf ("Stage1 cloud has: %d\n", stage1_cloud_->points.size ());
-
-          ne.setInputCloud (stage1_cloud_);
-          //ne.compute (*stage1_normals_);
-          //boost::thread ne_thread (&pcl::IntegralImageNormalEstimation<PointT,
-   pcl::Normal>::compute, &ne, *stage1_normals_);
-          //ne_thread.join ();
-          double ne_thread_spawn = pcl::getTime ();
-          boost::thread ne_thread
-   (&OrganizedFeatureExtractionTBB::computeNormals, boost::ref (this));
-          //ne_thread.join ();
-
-          // Now we extract features for the frame before this, for which we now
-   have normals
-          // Extract planes
-          mps.setInputNormals (stage2_normals_);
-          mps.setInputCloud (stage2_cloud_);
-          //if (stage2_cloud_->points.size () > 0)
-          //  mps.segmentAndRefine (regions);
-          double mps_thread_spawn = pcl::getTime ();
-          boost::thread mps_thread
-   (&OrganizedFeatureExtractionTBB::computePlanes, boost::ref (this));
-
-          // Extract edges
-          oed.setInputCloud (stage2_cloud_);
-          double oed_thread_spawn = pcl::getTime ();
-          boost::thread oed_thread
-   (&OrganizedFeatureExtractionTBB::computeEdges, boost::ref (this));
-
-          // Compute Euclidean Clusters
-          double clust_thread_spawn = pcl::getTime ();
-          boost::thread clust_thread
-   (&OrganizedFeatureExtractionTBB::computeClusters, boost::ref (this));
-
-          // Wait for these to all complete
-          ne_thread.join ();
-          if (debug_)
-            std::cout << "NE thread joined: " << double(pcl::getTime () -
-   ne_thread_spawn) << std::endl; oed_thread.join (); if (debug_) std::cout <<
-   "OED thread joined: " << double(pcl::getTime () - oed_thread_spawn) <<
-   std::endl; mps_thread.join (); if (debug_) std::cout << "MPS thread joined: "
-   << double(pcl::getTime () - mps_thread_spawn) << std::endl; clust_thread.join
-   (); if (debug_) std::cout << "Clust thread joined: " << double (pcl::getTime
-   () - clust_thread_spawn) << std::endl;
-
-          //printf ("publishing with %d %d\n", stage2_cloud_->points.size (),
-   labels->points.size ());
-          // if (label_cloud_callback_)
-          // {
-          //   std::cout << "Starting label callback!" << std::endl;
-          //   std::cout << "Stage 2 cloud: " << stage2_cloud_->points.size ()
-   << std::endl;
-          //   std::cout << "Stage3 labels: " << mps_output_labels_->points.size
-   () << std::endl;
-          //   double cb_start = pcl::getTime ();
-          //   label_cloud_callback_ (stage2_cloud_, mps_output_labels_);
-          //   std::cout << "Callback took: " << double (pcl::getTime () -
-   cb_start) << std::endl;
-          // }
-
-          if (cluster_label_cloud_callbacks_.size() >0)
-          {
-            if ((stage4_cloud_->points.size () > 200) &&
-   (stage5_labels_->points.size () > 200))
-            {
-              std::cout << "Starting cluster label cloud callback!" <<
-   std::endl; std::cout << "Stage4 cloud: " << stage4_cloud_->points.size () <<
-   std::endl; std::cout << "stage5 labels: " << stage5_labels_->points.size ()
-   << std::endl; for(int i=0; i< cluster_label_cloud_callbacks_.size(); i++)
-               cluster_label_cloud_callbacks_[i] (stage4_cloud_,
-   stage5_labels_);
-            }
-          }
-
-          if (cluster_cloud_callbacks_.size () > 0)
-          {
-            if (stage5_clusters_.size () > 0)
-            {
-              Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
-              for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
-              {
-                cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp,
-   stage5_cluster_indices_);
-              }
-            }
-          }
-
-          // if (region_cloud_callback_)
-          // {
-          //   double cb_start = pcl::getTime ();
-          //   region_cloud_callback_ (stage2_cloud_, mps_output_regions_);
-          //   std::cout << "Callback took: " << double (pcl::getTime () -
-   cb_start) << std::endl;
-          // }
-
-          if (occluding_edge_callback_)
-          {
-            if (mps_output_occluding_cloud_->points.size () > 200)
-              occluding_edge_callback_ (mps_output_occluding_cloud_);
-          }
-
-          if (planar_region_stamped_callbacks_.size () > 0)
-          {
-            std::cout << "Starting planar region stamped callback" << std::endl;
-            std::cout << "stage3 regions has: " << mps_output_regions_.size ()
-   << std::endl; Time timestamp = stamp2ptime (stage2_cloud_->header.stamp); if
-   (stage2_cloud_->points.size () > 200)
-            {
-              for (int i = 0; i < planar_region_stamped_callbacks_.size (); i++)
-                planar_region_stamped_callbacks_[i] (mps_output_regions_,
-   timestamp);
-            }
-          }
-
-
-          // Store result
-          // {
-          //   // boost::mutex::scoped_lock lock (vis_mutex);
-          //   // // Store the latest results for the visualizer
-          //   // Update completed stage1 to stage2
-          //   boost::lock_guard<boost::mutex> lock (cloud_mutex);
-          //   stage4_regions_ = mps_output_regions_;
-          //   stage4_cloud_ = mps_output_cloud_;
-          //   mps_output_cloud_ = stage2_cloud_;
-          //   stage2_cloud_ = stage1_cloud_;
-          //   stage2_normals_ = stage1_normals_;
-          //   stage4_labels_ = mps_output_labels_;
-          //   //stage4_labels_.swap (mps_output_labels_);
-          //   stage4_model_coefficients_ = mps_output_model_coefficients_;
-          //   stage4_inlier_indices_ = mps_output_inlier_indices_;
-          //   stage4_label_indices_ = mps_output_label_indices_;
-          //   stage4_boundary_indices_ =  mps_output_boundary_indices_;
-          //   mps_output_model_coefficients_.clear ();
-
-          //   // updated_data_ = true;
-          //   printf ("stage1_cloud use_count: %d\n", stage1_cloud_.use_count
-   ());
-          //   printf ("stage2_cloud use_count: %d\n", stage2_cloud_.use_count
-   ());
-          //   printf ("mps_output_cloud use_count: %d\n",
-   mps_output_cloud_.use_count ());
-          //   printf ("stage4_cloud use_count: %d\n", stage4_cloud_.use_count
-   ());
-          // }
-
-          // alt
-          {
-            boost::mutex::scoped_lock lock (cloud_mutex);
-            stage4_regions_ = mps_output_regions_;
-            mps_output_regions_.clear ();
-            std::cout << "stage1 stamp: " << stage1_cloud_->header.stamp <<
-   std::endl; std::cout << "stage2 stamp: " << stage2_cloud_->header.stamp <<
-   std::endl; std::cout << "stage3 stamp: " << mps_output_cloud_->header.stamp
-   << std::endl; stage4_cloud_.swap (mps_output_cloud_); mps_output_cloud_.swap
-   (stage2_cloud_); stage2_cloud_.swap (stage1_cloud_); std::cout << "stage1
-   stamp after: " << stage1_cloud_->header.stamp << std::endl; std::cout <<
-   "stage2 stamp after: " << stage2_cloud_->header.stamp << std::endl; std::cout
-   << "stage3 stamp after: " << mps_output_cloud_->header.stamp << std::endl;
-            std::cout << "stage4 stamp after: " << stage4_cloud_->header.stamp
-   << std::endl; stage2_normals_ = stage1_normals_;
-            //stage4_labels_.swap (mps_output_labels_);
-            stage4_labels_ = mps_output_labels_;
-            mps_output_labels_ = LabelCloudPtr (new LabelCloud ());
-            stage4_model_coefficients_ = mps_output_model_coefficients_;
-            stage4_inlier_indices_ = mps_output_inlier_indices_;
-            stage4_label_indices_ = mps_output_label_indices_;
-            stage4_boundary_indices_ =  mps_output_boundary_indices_;
-          }
-
-        }
-
-      }
-
-    }
-*/
 
 // Compute the normals
 template <typename PointT>
@@ -744,3 +529,228 @@ void OrganizedFeatureExtractionTBB<PointT>::SetClusterCloudCallback(
 // Instantiate
 // template class omnimapper::OrganizedFeatureExtractionTBB<pcl::PointXYZ>;
 template class omnimapper::OrganizedFeatureExtractionTBB<pcl::PointXYZRGBA>;
+
+/*
+template <typename PointT> void
+OrganizedFeatureExtractionTBB<PointT>::processFrame ()
+{
+  while (true)
+  {
+    //CloudConstPtr cloud;
+    // Get the latest cloud from the sensor
+    bool should_process = false;
+    if (cloud_mutex.try_lock ()){
+      //{
+      //boost::lock_guard<boost::mutex> lock (cloud_mutex);
+      //boost::mutex::scoped_lock (cloud_mutex);
+      should_process = updated_cloud_;
+      if (should_process)
+        stage1_cloud_ = prev_sensor_cloud_;
+      updated_cloud_ = false;
+      cloud_mutex.unlock ();
+    }
+
+    // condition var test
+    // {
+    //   boost::unique_lock<boost::mutex> lock (cloud_mutex);
+    //   while (!updated_cloud_)
+    //   {
+    //     updated_cond_.wait (lock);
+    //   }
+    //   stage1_cloud_ = prev_sensor_cloud_;
+    //   should_process = true;
+    //   updated_cloud_ = false;
+    // }
+    // end codition var test
+
+    if (!should_process)
+    {
+      boost::this_thread::sleep (boost::posix_time::milliseconds (1));
+      //printf ("no new data\n");
+    }
+    else
+    {
+      FPS_CALC ("processing");
+      //printf ("new data: %d\n", stage1_cloud_->points.size ());
+
+      // Kick off a thread to estimate surface normals for this frame
+      //printf ("Stage1 cloud has: %d\n", stage1_cloud_->points.size ());
+
+      ne.setInputCloud (stage1_cloud_);
+      //ne.compute (*stage1_normals_);
+      //boost::thread ne_thread (&pcl::IntegralImageNormalEstimation<PointT,
+      pcl::Normal>::compute, &ne, *stage1_normals_);
+      //ne_thread.join ();
+      double ne_thread_spawn = pcl::getTime ();
+      boost::thread ne_thread
+        (&OrganizedFeatureExtractionTBB::computeNormals, boost::ref (this));
+      //ne_thread.join ();
+
+      // Now we extract features for the frame before this, for which we now
+      have normals
+        // Extract planes
+        mps.setInputNormals (stage2_normals_);
+      mps.setInputCloud (stage2_cloud_);
+      //if (stage2_cloud_->points.size () > 0)
+      //  mps.segmentAndRefine (regions);
+      double mps_thread_spawn = pcl::getTime ();
+      boost::thread mps_thread
+        (&OrganizedFeatureExtractionTBB::computePlanes, boost::ref (this));
+
+      // Extract edges
+      oed.setInputCloud (stage2_cloud_);
+      double oed_thread_spawn = pcl::getTime ();
+      boost::thread oed_thread
+        (&OrganizedFeatureExtractionTBB::computeEdges, boost::ref (this));
+
+      // Compute Euclidean Clusters
+      double clust_thread_spawn = pcl::getTime ();
+      boost::thread clust_thread
+        (&OrganizedFeatureExtractionTBB::computeClusters, boost::ref (this));
+
+      // Wait for these to all complete
+      ne_thread.join ();
+      if (debug_)
+        std::cout << "NE thread joined: " << double(pcl::getTime () -
+            ne_thread_spawn) << std::endl; oed_thread.join (); if (debug_)
+std::cout << "OED thread joined: " << double(pcl::getTime () - oed_thread_spawn)
+<< std::endl; mps_thread.join (); if (debug_) std::cout << "MPS thread joined: "
+          << double(pcl::getTime () - mps_thread_spawn) << std::endl;
+clust_thread.join
+          (); if (debug_) std::cout << "Clust thread joined: " << double
+(pcl::getTime
+                                                                          () -
+clust_thread_spawn) << std::endl;
+
+      //printf ("publishing with %d %d\n", stage2_cloud_->points.size (),
+      labels->points.size ());
+      // if (label_cloud_callback_)
+      // {
+      //   std::cout << "Starting label callback!" << std::endl;
+      //   std::cout << "Stage 2 cloud: " << stage2_cloud_->points.size ()
+      << std::endl;
+      //   std::cout << "Stage3 labels: " << mps_output_labels_->points.size
+      () << std::endl;
+      //   double cb_start = pcl::getTime ();
+      //   label_cloud_callback_ (stage2_cloud_, mps_output_labels_);
+      //   std::cout << "Callback took: " << double (pcl::getTime () -
+      cb_start) << std::endl;
+      // }
+
+      if (cluster_label_cloud_callbacks_.size() >0)
+      {
+        if ((stage4_cloud_->points.size () > 200) &&
+            (stage5_labels_->points.size () > 200))
+        {
+          std::cout << "Starting cluster label cloud callback!" <<
+            std::endl; std::cout << "Stage4 cloud: " <<
+stage4_cloud_->points.size () << std::endl; std::cout << "stage5 labels: " <<
+stage5_labels_->points.size ()
+            << std::endl; for(int i=0; i< cluster_label_cloud_callbacks_.size();
+i++) cluster_label_cloud_callbacks_[i] (stage4_cloud_, stage5_labels_);
+        }
+      }
+
+      if (cluster_cloud_callbacks_.size () > 0)
+      {
+        if (stage5_clusters_.size () > 0)
+        {
+          Time timestamp = stamp2ptime (stage4_cloud_->header.stamp);
+          for (int i = 0; i < cluster_cloud_callbacks_.size (); i++)
+          {
+            cluster_cloud_callbacks_[i] (stage5_clusters_, timestamp,
+                stage5_cluster_indices_);
+          }
+        }
+      }
+
+      // if (region_cloud_callback_)
+      // {
+      //   double cb_start = pcl::getTime ();
+      //   region_cloud_callback_ (stage2_cloud_, mps_output_regions_);
+      //   std::cout << "Callback took: " << double (pcl::getTime () -
+      cb_start) << std::endl;
+      // }
+
+      if (occluding_edge_callback_)
+      {
+        if (mps_output_occluding_cloud_->points.size () > 200)
+          occluding_edge_callback_ (mps_output_occluding_cloud_);
+      }
+
+      if (planar_region_stamped_callbacks_.size () > 0)
+      {
+        std::cout << "Starting planar region stamped callback" << std::endl;
+        std::cout << "stage3 regions has: " << mps_output_regions_.size ()
+          << std::endl; Time timestamp = stamp2ptime
+(stage2_cloud_->header.stamp); if (stage2_cloud_->points.size () > 200)
+          {
+            for (int i = 0; i < planar_region_stamped_callbacks_.size (); i++)
+              planar_region_stamped_callbacks_[i] (mps_output_regions_,
+                  timestamp);
+          }
+      }
+
+
+      // Store result
+      // {
+      //   // boost::mutex::scoped_lock lock (vis_mutex);
+      //   // // Store the latest results for the visualizer
+      //   // Update completed stage1 to stage2
+      //   boost::lock_guard<boost::mutex> lock (cloud_mutex);
+      //   stage4_regions_ = mps_output_regions_;
+      //   stage4_cloud_ = mps_output_cloud_;
+      //   mps_output_cloud_ = stage2_cloud_;
+      //   stage2_cloud_ = stage1_cloud_;
+      //   stage2_normals_ = stage1_normals_;
+      //   stage4_labels_ = mps_output_labels_;
+      //   //stage4_labels_.swap (mps_output_labels_);
+      //   stage4_model_coefficients_ = mps_output_model_coefficients_;
+      //   stage4_inlier_indices_ = mps_output_inlier_indices_;
+      //   stage4_label_indices_ = mps_output_label_indices_;
+      //   stage4_boundary_indices_ =  mps_output_boundary_indices_;
+      //   mps_output_model_coefficients_.clear ();
+
+      //   // updated_data_ = true;
+      //   printf ("stage1_cloud use_count: %d\n", stage1_cloud_.use_count
+      ());
+      //   printf ("stage2_cloud use_count: %d\n", stage2_cloud_.use_count
+      ());
+      //   printf ("mps_output_cloud use_count: %d\n",
+      mps_output_cloud_.use_count ());
+      //   printf ("stage4_cloud use_count: %d\n", stage4_cloud_.use_count
+      ());
+      // }
+
+      // alt
+      {
+        boost::mutex::scoped_lock lock (cloud_mutex);
+        stage4_regions_ = mps_output_regions_;
+        mps_output_regions_.clear ();
+        std::cout << "stage1 stamp: " << stage1_cloud_->header.stamp <<
+          std::endl; std::cout << "stage2 stamp: " <<
+stage2_cloud_->header.stamp << std::endl; std::cout << "stage3 stamp: " <<
+mps_output_cloud_->header.stamp
+          << std::endl; stage4_cloud_.swap (mps_output_cloud_);
+mps_output_cloud_.swap (stage2_cloud_); stage2_cloud_.swap (stage1_cloud_);
+std::cout << "stage1 stamp after: " << stage1_cloud_->header.stamp << std::endl;
+std::cout << "stage2 stamp after: " << stage2_cloud_->header.stamp << std::endl;
+std::cout
+          << "stage3 stamp after: " << mps_output_cloud_->header.stamp <<
+std::endl; std::cout << "stage4 stamp after: " << stage4_cloud_->header.stamp
+          << std::endl; stage2_normals_ = stage1_normals_;
+        //stage4_labels_.swap (mps_output_labels_);
+        stage4_labels_ = mps_output_labels_;
+        mps_output_labels_ = LabelCloudPtr (new LabelCloud ());
+        stage4_model_coefficients_ = mps_output_model_coefficients_;
+        stage4_inlier_indices_ = mps_output_inlier_indices_;
+        stage4_label_indices_ = mps_output_label_indices_;
+        stage4_boundary_indices_ =  mps_output_boundary_indices_;
+      }
+
+    }
+
+    }
+
+  }
+*/

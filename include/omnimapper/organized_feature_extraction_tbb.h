@@ -241,6 +241,8 @@ class OrganizedFeatureExtractionTBB {
 
  public:
   OrganizedFeatureExtractionTBB();
+  OrganizedFeatureExtractionTBB(pcl::Grabber& grabber)
+      : OrganizedFeatureExtractionTBB() {}
 
   void CloudCallback(const CloudConstPtr& cloud);
   void ComputeNormals();

@@ -64,7 +64,7 @@
     <param name="broadcast_map_to_odom" value="true" />
     <param name="broadcast_current_pose" value="false" />
     <param name="use_distortion_model" value="false" />
-    <param name="use_rgbd_sensor_base_tf_functor" value="false" />
+    <param name="use_rgbd_sensor_base_tf_functor" value="true" />
     <param name="distortion_model_path" value="/home/atrevor/github/atrevor_sandbox/sdmiller_calibration/new_distortion_model" />
     <param name="evaluation_mode" value="false" />
     <param name="evaluation_pcd_path" value="true" />
