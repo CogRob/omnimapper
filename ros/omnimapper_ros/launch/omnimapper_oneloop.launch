@@ -84,8 +84,4 @@
     <param name="debug" value="false" />
     <param name="ar_mode" value="false" />
   </node>
-
-  <node name="tf_world" pkg="tf" type="static_transform_publisher"
-        args="0.465 -0.014 0.902 1.57 0 1.57 /odom /world 100"
-        respawn="false" output="screen"/>
 </launch>
