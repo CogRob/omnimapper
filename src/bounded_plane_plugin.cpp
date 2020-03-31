@@ -188,8 +188,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
   Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
   for (const auto& meas_plane : plane_measurements) {
-    boost::lock_guard<boost::mutex> meas_plane_lock(*(meas_plane.boundary().second));
     const CloudConstPtr meas_boundary = meas_plane.boundary().first;
+    const boost::shared_ptr<boost::mutex> meas_boundary_mutex = meas_plane.boundary().second;
 
     double lowest_error = std::numeric_limits<double>::infinity();
     gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
@@ -198,7 +198,11 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     const double meas_d = meas_plane.d();
     CloudPtr meas_boundary_map(new Cloud());
     const Eigen::Affine3f pose2map = Pose3ToTransform(*new_pose);
-    pcl::transformPointCloud(*meas_boundary, *meas_boundary_map, pose2map);
+
+    {
+      boost::lock_guard<boost::mutex> meas_plane_lock(*meas_boundary_mutex);
+      pcl::transformPointCloud(*meas_boundary, *meas_boundary_map, pose2map);
+    }
 
     Eigen::Vector4d meas_map_coeffs =
         omnimapper::BoundedPlane3<PointT>::TransformCoefficients(meas_plane,
@@ -225,8 +229,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
     if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) continue;
 
-    BOOST_FOREACH (typename gtsam::Values::ConstFiltered<
-             omnimapper::BoundedPlane3<PointT> >::KeyValuePair key_value,
+    for (const typename gtsam::Values::ConstFiltered<
+             omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value:
          plane_filtered) {
       gtsam::Symbol key_symbol(key_value.key);
       const omnimapper::BoundedPlane3<PointT> plane = key_value.value;
@@ -287,10 +291,13 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
         gtsam::noiseModel::Diagonal::Sigmas(measurement_noise_vector);
 
     gtsam::Vector measurement_vector = meas_plane.planeCoefficients();
-    omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor(
-        new omnimapper::BoundedPlaneFactor<PointT>(
-            measurement_vector, meas_boundary, measurement_noise, pose_sym,
-            best_symbol));
+    omnimapper::OmniMapperBase::NonlinearFactorPtr plane_factor;
+    {
+      boost::lock_guard<boost::mutex> meas_plane_lock(*meas_boundary_mutex);
+      plane_factor = boost::make_shared<omnimapper::BoundedPlaneFactor<PointT>>(
+          measurement_vector, meas_boundary, measurement_noise, pose_sym,
+          best_symbol);
+    }
     plane_factor->print("BoundedPlaneFactor:\n");
     mapper_->AddFactor(plane_factor);
     LOG(INFO) << "BoundedPlanePlugin added a factor.";
