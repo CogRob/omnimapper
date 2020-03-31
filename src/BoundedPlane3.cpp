@@ -1,3 +1,5 @@
+#include <glog/logging.h>
+
 #include <omnimapper/BoundedPlane3.h>
 #include <omnimapper/geometry.h>
 #include <omnimapper/transform_helpers.h>
@@ -23,7 +25,7 @@ template <typename PointT>
 omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
     const gtsam::Vector& v) const {
   boost::lock_guard<boost::mutex> lock(*plane_mutex_);
-  std::cout << "BoundedPlane3: retracting: " << v << std::endl;
+  LOG(INFO) << "BoundedPlane3: retracting: " << v;
 
   // Retract coefficients
   gtsam::Vector2 n_v(v(0), v(1));
@@ -39,8 +41,8 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
   // new_coeffs);
   Eigen::Affine3d transform = PlanarAlignmentTransform(new_coeffs, old_coeffs);
 
-  std::cout << "BoundedPlane3: transform translation: "
-            << transform.translation() << std::endl;
+  LOG(INFO) << "BoundedPlane3: transform translation: "
+            << transform.translation();
 
   CloudPtr new_boundary(new Cloud());
   pcl::transformPointCloud(*boundary_, *new_boundary, transform);
@@ -60,7 +62,7 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
              new_coeffs[1] * new_boundary->points[i].y +
              new_coeffs[2] * new_boundary->points[i].z + new_coeffs[3]);
     if (ptp_dist > 0.001) {
-      printf("ERROR: Retract fail: Point is %lf from plane.\n", ptp_dist);
+      LOG(INFO) << "ERROR: Retract fail: Point is " << ptp_dist << "from plane.";
       exit(1);
     }
   }
@@ -158,13 +160,16 @@ gtsam::Vector omnimapper::BoundedPlane3<PointT>::error(
   gtsam::Vector n_error = -n_.localCoordinates(plane.n_);
 
   if (!(std::isfinite(n_error[0]) && std::isfinite(n_error[1]))) {
-    printf("BoundedPlane3: ERROR: Got NaN error on local coords!\n");
+    n_.print("BoundedPlane3 NaN debug, n_");
+    plane.n_.print("BoundedPlane3 NaN debug, plane.n_");
+    LOG(INFO) << n_error.size() << ", " << n_error[0] << ", " << n_error[1];
+
+    LOG(FATAL) << "BoundedPlane3: ERROR: Got NaN error on local coords!";
     // exit (3);
   }
 
   double d_error = d_ - plane.d_;
-  std::cout << "BoundedPlane3: error: " << n_error << " " << d_error
-            << std::endl;
+  LOG(INFO) << "BoundedPlane3: error: " << n_error << " " << d_error;
   return (gtsam::Vector(3) << n_error(0), n_error(1), d_error);
 }
 
@@ -188,9 +193,9 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   Eigen::Affine3d lm_combined_inv = lm_combined.inverse();
   // Eigen::Affine3d lm_combined_inv = map_to_pose * xy_to_lm;
   CloudPtr map_xy(new Cloud());
-  printf("BoundedPlane3: transforming landmark to pose.\n");
+  LOG(INFO) << "BoundedPlane3: transforming landmark to pose.";
   pcl::transformPointCloud(*boundary_, *map_xy, lm_combined);
-  printf("BoundedPlane3: transformed.\n");
+  LOG(INFO) << "BoundedPlane3: transformed.";
 
   // Move the measurement to the xy plane
   Eigen::Vector4d meas_coeffs = plane.planeCoefficients();
@@ -198,9 +203,9 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   Eigen::Affine3d meas_to_xy = PlanarAlignmentTransform(z_axis, meas_coeffs);
   // Eigen::Affine3d meas_to_xy = planarAlignmentTransform(meas_coeffs, z_axis);
   CloudPtr meas_xy(new Cloud());
-  printf("BoundedPlane3: transforming measurement to xy.\n");
+  LOG(INFO) << "BoundedPlane3: transforming measurement to xy.";
   pcl::transformPointCloud(*meas_boundary, *meas_xy, meas_to_xy);
-  printf("BoundedPlane3: transformed.  Merging.\n");
+  LOG(INFO) << "BoundedPlane3: transformed.  Merging.";
 
   // TEST
   if (check_input) {
@@ -216,7 +221,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
                map_coeffs[1] * boundary_->points[i].y +
                map_coeffs[2] * boundary_->points[i].z + map_coeffs[3]);
       if (ptp_dist > 0.01) {
-        printf("ERROR: Boundary: Point is %lf from plane.\n", ptp_dist);
+        LOG(INFO) << "ERROR: Boundary: Point is " << ptp_dist << "from plane.";
         exit(1);
       }
     }
@@ -231,7 +236,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
                              z_axis[1] * meas_xy->points[i].y +
                              z_axis[2] * meas_xy->points[i].z + z_axis[3]);
       if (ptp_dist > 0.001) {
-        printf("ERROR: MeasXY: Point is %lf from plane.\n", ptp_dist);
+        LOG(INFO) << "ERROR: MeasXY: Point is " << ptp_dist << "from plane.";
         exit(1);
       }
     }
@@ -246,28 +251,27 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
                              z_axis[1] * map_xy->points[i].y +
                              z_axis[2] * map_xy->points[i].z + z_axis[3]);
       if (ptp_dist > 0.001) {
-        printf("ERROR: MapXY: Point is %lf from plane.\n", ptp_dist);
+        LOG(INFO) << "ERROR: MapXY: Point is " << ptp_dist << "from plane.";
         exit(1);
       }
     }
 
     bool boundary_intersects = boost::geometry::intersects(boundary_->points);
     if (boundary_intersects) {
-      printf("BoundedPlane3: map boundary intersects!\n");
+      LOG(INFO) << "BoundedPlane3: map boundary intersects!";
       exit(1);
     }
     bool meas_boundary_intersects =
         boost::geometry::intersects(meas_boundary->points);
     if (meas_boundary_intersects)
-      printf("BoundedPlane3: meas boundary intersects!\n");
+      LOG(INFO) << "BoundedPlane3: meas boundary intersects!";
 
-    printf(
-        "BoundedPlane3: Attempting to merge meas_xy (%zu) with map_xy (%zu)\n",
-        meas_xy->points.size(), map_xy->points.size());
+    LOG(INFO) << "BoundedPlane3: Attempting to merge meas_xy (" <<
+        meas_xy->points.size() << "with map_xy" << map_xy->points.size();
     bool meas_xy_intersect = boost::geometry::intersects(meas_xy->points);
-    if (meas_xy_intersect) printf("BoundedPlane3: Meas_xy_intersects!\n");
+    LOG_IF(INFO, meas_xy_intersect) << "BoundedPlane3: Meas_xy_intersects!";
     bool map_xy_intersect = boost::geometry::intersects(map_xy->points);
-    if (map_xy_intersect) printf("BoundedPlane3: Map_xy intersects!\n");
+    LOG_IF(INFO, map_xy_intersect) << "BoundedPlane3: Map_xy intersects!";
   }
 
   double map_area = boost::geometry::area(map_xy->points);
@@ -287,24 +291,22 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
   bool worked = omnimapper::FusePlanarPolygonsConvexXY<PointT>(
       *meas_xy, *map_xy, *merged_xy);
   if (!worked) {
-    printf("BoundedPlane3: Error inside extend!\n");
+    LOG(INFO) << "BoundedPlane3: Error inside extend!";
     return;
     // exit(1);
   }
 
-  printf("BoundedPlane3: Merged: map: %zu meas: %zu combined: %zu \n",
-         map_xy->points.size(), meas_xy->points.size(),
-         merged_xy->points.size());
+  LOG(INFO) << "BoundedPlane3: Merged: map: " << map_xy->points.size() <<
+    " meas:" << meas_xy->points.size() << " combined:" << merged_xy->points.size();
   double merged_area = boost::geometry::area(merged_xy->points);
   if ((merged_area < meas_area) || (merged_area < map_area)) {
-    printf("BoundedPlane3: meas_area: %lf map_area: %lf merged_area: %lf \n",
-           meas_area, map_area, merged_area);
+    LOG(INFO) << "BoundedPlane3: meas_area: " << meas_area << " map_area: "  << map_area << " merged_area: " << merged_area;
     // exit(1);
   }
 
   bool merged_intersects = boost::geometry::intersects(merged_xy->points);
   if (merged_intersects) {
-    printf("BoundedPlane3: merged intersects!\n");
+    LOG(INFO) << "BoundedPlane3: merged intersects!";
     char merged_name[2048];
     sprintf(merged_name, "merged.pcd");
     pcl::io::savePCDFileBinaryCompressed(merged_name, *merged_xy);
@@ -334,7 +336,7 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
              map_lm_coeffs[1] * merged_map->points[i].y +
              map_lm_coeffs[2] * merged_map->points[i].z + map_lm_coeffs[3]);
     if (ptp_dist > 0.001) {
-      printf("ERROR: Merged Map: Point is %lf from plane.\n", ptp_dist);
+      LOG(INFO) << "ERROR: Merged Map: Point is " << ptp_dist << "from plane.";
       exit(1);
     }
   }

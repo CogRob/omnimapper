@@ -288,6 +288,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
         new omnimapper::BoundedPlaneFactor<PointT>(
             measurement_vector, meas_boundary, measurement_noise, pose_sym,
             best_symbol));
+    plane_factor->print("BoundedPlaneFactor:\n");
     mapper_->AddFactor(plane_factor);
     LOG(INFO) << "BoundedPlanePlugin added a factor.";
   }  // plane measurements

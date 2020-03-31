@@ -8,6 +8,7 @@
 #include <pcl/point_types.h>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 namespace omnimapper {
 /**
@@ -39,34 +40,41 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   BoundedPlane3(const BoundedPlane3<PointT>& plane)
       : n_(plane.n_),
         d_(plane.d_),
-        boundary_(new Cloud(*plane.boundary_)),
-        plane_mutex_(plane.plane_mutex_) {
-    // boost::lock_guard<boost::mutex> lock (*plane_mutex_);
-    // boundary_ = plane.boundary_;
+        plane_mutex_(new boost::mutex()) {
+    // TODO(shengye): Should we do a pointer-copy? Technically we have access to
+    // the mutex. Or maybe we do that for rvalue-reference?
+    boost::lock_guard<boost::mutex> lock (*(plane.plane_mutex_));
+    boundary_ = CloudPtr(new Cloud(*plane.boundary_));
+  }
+
+  BoundedPlane3(const gtsam::Unit3& s, double d, CloudPtr boundary)
+      : n_(s),
+        d_(d),
+        boundary_(new Cloud(*boundary)),
+        plane_mutex_(new boost::mutex()) {
   }
 
   BoundedPlane3(const gtsam::Unit3& s, double d, CloudPtr boundary,
                 MutexPtr boundary_mutex)
       : n_(s),
         d_(d),
-        boundary_(new Cloud(*boundary)),
+        boundary_(boundary),
         plane_mutex_(boundary_mutex) {
-    // boost::lock_guard<boost::mutex> lock (*plane_mutex_);
-    // boundary_ = boundary;
   }
 
-  BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary,
-                MutexPtr boundary_mutex = MutexPtr(new boost::mutex()))
+  BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary)
       : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
         boundary_(new Cloud(*boundary)),
+        plane_mutex_(new boost::mutex()) {
+  }
+
+  BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary,
+                MutexPtr boundary_mutex)
+      : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
+        d_(d),
+        boundary_(boundary),
         plane_mutex_(boundary_mutex) {
-    // boost::lock_guard<boost::mutex> lock (*plane_mutex_);
-    // boundary_ = boundary;
-    // gtsam::Point3 p (a, b, c);
-    // n_ = gtsam::Unit3 (p);
-    // d_ = d;
-    // boundary_ = boundary;
   }
 
   /// The print fuction
