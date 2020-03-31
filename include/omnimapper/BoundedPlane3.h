@@ -20,61 +20,66 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   typedef typename Cloud::Ptr CloudPtr;
   typedef typename Cloud::ConstPtr CloudConstPtr;
   typedef typename boost::shared_ptr<boost::mutex> MutexPtr;
+  typedef typename std::pair<CloudPtr, MutexPtr> CloudMutexPtrPair;
+  typedef typename std::pair<CloudConstPtr, MutexPtr> CloudConstMutexPtrPair;
 
  protected:
   gtsam::Unit3 n_;
   double d_;
 
-  CloudPtr boundary_;
   boost::shared_ptr<boost::mutex> plane_mutex_;
+  CloudPtr boundary_;
 
  public:
-  BoundedPlane3() : boundary_(new Cloud()), plane_mutex_(new boost::mutex()) {}
+  BoundedPlane3() : plane_mutex_(new boost::mutex()), boundary_(new Cloud()) {}
 
-  // Construct from coefficients and boundary
-  // BoundedPlane3 (double a, double b, double c, double d, CloudPtr boundary)
-  //   : OrientedPlane3 (a, b, c, d),
-  //     boundary_ (boundary)
-  // {}
-
-  BoundedPlane3(const BoundedPlane3<PointT>& plane)
+  BoundedPlane3(const BoundedPlane3<PointT>& plane, bool deep_copy)
       : n_(plane.n_),
-        d_(plane.d_),
-        plane_mutex_(new boost::mutex()) {
-    // TODO(shengye): Should we do a pointer-copy? Technically we have access to
-    // the mutex. Or maybe we do that for rvalue-reference?
-    boost::lock_guard<boost::mutex> lock (*(plane.plane_mutex_));
-    boundary_ = CloudPtr(new Cloud(*plane.boundary_));
+        d_(plane.d_) {
+    if (deep_copy) {
+      boost::lock_guard<boost::mutex> lock (*(plane.plane_mutex_));
+      boundary_ = CloudPtr(new Cloud(*plane.boundary_));
+      plane_mutex_ = boost::make_shared<boost::mutex>();
+    } else {
+      boundary_ = plane.boundary_;
+      plane_mutex_ = plane.plane_mutex_;
+    }
   }
 
-  BoundedPlane3(const gtsam::Unit3& s, double d, CloudPtr boundary)
+  // By default we do not perform a deep copy.
+  BoundedPlane3(const BoundedPlane3<PointT>& plane)
+      : BoundedPlane3(plane, false) {}
+
+  // If no mutex is provided, we perform deep copy, but we assume boundary is
+  // already locked.
+  BoundedPlane3(const gtsam::Unit3& s, double d, const CloudConstPtr& boundary)
       : n_(s),
         d_(d),
-        boundary_(new Cloud(*boundary)),
-        plane_mutex_(new boost::mutex()) {
+        plane_mutex_(new boost::mutex()),
+        boundary_(new Cloud(*boundary)) {
   }
 
-  BoundedPlane3(const gtsam::Unit3& s, double d, CloudPtr boundary,
-                MutexPtr boundary_mutex)
+  BoundedPlane3(const gtsam::Unit3& s, double d,
+                const std::pair<CloudPtr, MutexPtr>& cloud_mutex_pair)
       : n_(s),
         d_(d),
-        boundary_(boundary),
-        plane_mutex_(boundary_mutex) {
+        plane_mutex_(cloud_mutex_pair.second) ,
+        boundary_(cloud_mutex_pair.first) {
   }
 
-  BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary)
+  BoundedPlane3(double a, double b, double c, double d, const CloudConstPtr& boundary)
       : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
-        boundary_(new Cloud(*boundary)),
-        plane_mutex_(new boost::mutex()) {
+        plane_mutex_(new boost::mutex()),
+        boundary_(new Cloud(*boundary)) {
   }
 
-  BoundedPlane3(double a, double b, double c, double d, CloudPtr boundary,
-                MutexPtr boundary_mutex)
+  BoundedPlane3(double a, double b, double c, double d,
+                const std::pair<CloudPtr, MutexPtr>& cloud_mutex_pair)
       : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
-        boundary_(boundary),
-        plane_mutex_(boundary_mutex) {
+        plane_mutex_(cloud_mutex_pair.second),
+        boundary_(cloud_mutex_pair.first) {
   }
 
   /// The print fuction
@@ -119,7 +124,9 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   // retract the boundary cloud to a given measurement
   void retractBoundary(const gtsam::Pose3& pose, BoundedPlane3<PointT>& plane);
 
-  CloudPtr boundary() const { return (boundary_); }
+  CloudConstMutexPtrPair boundary() const { return std::make_pair(static_cast<CloudConstPtr>(boundary_), plane_mutex_); }
+
+  CloudMutexPtrPair boundary() { return std::make_pair(boundary_, plane_mutex_); }
 
   double d() const { return (d_); }
 

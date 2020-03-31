@@ -27,7 +27,7 @@ class BoundedPlaneFactor
 
   /// Constructor with measured plane coefficients (a,b,c,d), noise model, pose
   /// symbol
-  BoundedPlaneFactor(const gtsam::Vector& z, CloudPtr boundary,
+  BoundedPlaneFactor(const gtsam::Vector& z, CloudConstPtr boundary,
                      const gtsam::SharedGaussian& noiseModel, gtsam::Key pose,
                      gtsam::Key landmark)
       : Base(noiseModel, pose, landmark),

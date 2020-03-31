@@ -28,11 +28,11 @@ class BoundedPlanePlugin {
 
   static void RemoveDuplicatePoints(pcl::PointCloud<PointT>* boundary_cloud);
 
-  static bool PolygonsOverlap(CloudPtr boundary1, CloudPtr boundary2);
+  static bool PolygonsOverlap(CloudConstPtr boundary1, CloudConstPtr boundary2);
 
-  static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudPtr boundary1,
+  static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudConstPtr boundary1,
                                    Eigen::Vector4d& coeffs2,
-                                   CloudPtr boundary2);
+                                   CloudConstPtr boundary2);
 
   /** \brief planarRegionCallback receives segmented data from the segmentation.
    */

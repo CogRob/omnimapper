@@ -130,7 +130,7 @@ class OmniMapperROS {
   std::vector<std::string> fake_files_;
   pcl::PCDGrabber<PointT> fake_grabber_;
   // Organized Feature Extraction
-  omnimapper::OrganizedFeatureExtraction<PointT>
+  omnimapper::OrganizedFeatureExtractionTBB<PointT>
       organized_feature_extraction_;
 
   // TF Listener (for initialization)

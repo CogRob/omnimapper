@@ -69,8 +69,9 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
 
   // return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted,
   // boundary_, plane_mutex_));
-  return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted,
-                                            new_boundary, plane_mutex_));
+  return omnimapper::BoundedPlane3<PointT>(
+        n_retracted, d_retracted,
+        std::make_pair(new_boundary, boost::make_shared<boost::mutex>()));
   // return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted,
   // boundary_));
 }
@@ -110,9 +111,11 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::Transform(
   // pcl::transformPointCloud (*(plane.boundary_), *transformed_boundary,
   // transform);
 
-  BoundedPlane3<PointT> transformed_plane(unit_vec(0), unit_vec(1), unit_vec(2),
-                                          pred_d, plane.boundary_,
-                                          plane.plane_mutex_);
+  // TODO(shengye): Here we actually have a deep copy. Profile and if this the
+  // the bottleneck, optmize it with non-deep copy construction.
+  boost::lock_guard<boost::mutex> lock_plane(*(plane.boundary().second));
+  BoundedPlane3<PointT> transformed_plane(
+      unit_vec(0), unit_vec(1), unit_vec(2), pred_d, plane.boundary().first);
   // BoundedPlane3<PointT> transformed_plane (unit_vec (0), unit_vec (1),
   // unit_vec (2), pred_d, transformed_boundary);
 
@@ -177,6 +180,11 @@ template <typename PointT>
 void omnimapper::BoundedPlane3<PointT>::extendBoundary(
     const gtsam::Pose3& pose, const BoundedPlane3<PointT>& plane) const {
   boost::lock_guard<boost::mutex> lock(*plane_mutex_);
+  CloudConstMutexPtrPair meas_boundary_mutex_pair = plane.boundary();
+  boost::lock_guard<boost::mutex> meas_lock(*(meas_boundary_mutex_pair.second));
+
+  CloudConstPtr meas_boundary = meas_boundary_mutex_pair.first;
+
   Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   // return;
 
@@ -199,7 +207,6 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
 
   // Move the measurement to the xy plane
   Eigen::Vector4d meas_coeffs = plane.planeCoefficients();
-  CloudPtr meas_boundary = plane.boundary();
   Eigen::Affine3d meas_to_xy = PlanarAlignmentTransform(z_axis, meas_coeffs);
   // Eigen::Affine3d meas_to_xy = planarAlignmentTransform(meas_coeffs, z_axis);
   CloudPtr meas_xy(new Cloud());

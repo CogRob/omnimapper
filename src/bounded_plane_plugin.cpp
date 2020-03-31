@@ -16,8 +16,8 @@ BoundedPlanePlugin<PointT>::BoundedPlanePlugin(
 }
 
 template <typename PointT>
-bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
-                                                 CloudPtr boundary2) {
+bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudConstPtr boundary1,
+                                                 CloudConstPtr boundary2) {
   for (const auto& point : boundary1->points) {
     if (pcl::isPointIn2DPolygon(point, *boundary2)) return true;
   }
@@ -29,9 +29,9 @@ bool BoundedPlanePlugin<PointT>::PolygonsOverlap(CloudPtr boundary1,
 
 template <typename PointT>
 bool BoundedPlanePlugin<PointT>::PolygonsOverlapBoost(Eigen::Vector4d& coeffs1,
-                                                      CloudPtr boundary1,
+                                                      CloudConstPtr boundary1,
                                                       Eigen::Vector4d& coeffs2,
-                                                      CloudPtr boundary2) {
+                                                      CloudConstPtr boundary2) {
   const Eigen::Vector4d z_axis(0.0, 0.0, 1.0, 0.0);
   const Eigen::Vector4d minus_z_axis(0.0, 0.0, -1.0, 0.0);
 
@@ -169,9 +169,9 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
             << " measurements.";
 
   // Get the planes from the mapper.
-  gtsam::Values::Filtered<omnimapper::BoundedPlane3<PointT> > plane_filtered =
-      mapper_->GetSolutionAndUncommitted()
-          .filter<omnimapper::BoundedPlane3<PointT> >();
+  const gtsam::Values solution_and_uncommitted = mapper_->GetSolutionAndUncommitted();
+  gtsam::Values::ConstFiltered<omnimapper::BoundedPlane3<PointT> > plane_filtered =
+    solution_and_uncommitted.filter<omnimapper::BoundedPlane3<PointT> >();
 
   // Get the pose symbol for this time.
   gtsam::Symbol pose_sym;
@@ -188,14 +188,16 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
   Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
 
   for (const auto& meas_plane : plane_measurements) {
+    boost::lock_guard<boost::mutex> meas_plane_lock(*(meas_plane.boundary().second));
+    const CloudConstPtr meas_boundary = meas_plane.boundary().first;
+
     double lowest_error = std::numeric_limits<double>::infinity();
     gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
 
     Eigen::Vector3d meas_norm = meas_plane.normal().point3().vector();
     const double meas_d = meas_plane.d();
-    CloudPtr meas_boundary = meas_plane.boundary();
     CloudPtr meas_boundary_map(new Cloud());
-    Eigen::Affine3f pose2map = Pose3ToTransform(*new_pose);
+    const Eigen::Affine3f pose2map = Pose3ToTransform(*new_pose);
     pcl::transformPointCloud(*meas_boundary, *meas_boundary_map, pose2map);
 
     Eigen::Vector4d meas_map_coeffs =
@@ -223,8 +225,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
     if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) continue;
 
-    for (const typename gtsam::Values::Filtered<
-             omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value :
+    BOOST_FOREACH (typename gtsam::Values::ConstFiltered<
+             omnimapper::BoundedPlane3<PointT> >::KeyValuePair key_value,
          plane_filtered) {
       gtsam::Symbol key_symbol(key_value.key);
       const omnimapper::BoundedPlane3<PointT> plane = key_value.value;
@@ -244,7 +246,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
         double error = angular_error + range_error;
         // Polygon overlap.
         // TODO: this should not be in the map frame due to lever-arm.
-        CloudPtr match_map_boundary = plane.boundary();
+        boost::lock_guard<boost::mutex> plane_lock(*(plane.boundary().second));
+        CloudConstPtr match_map_boundary = plane.boundary().first;
         Eigen::Vector4d match_map_coeffs = plane.planeCoefficients();
         if (PolygonsOverlapBoost(match_map_coeffs, match_map_boundary,
                                  meas_map_coeffs, meas_boundary_map)) {
