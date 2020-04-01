@@ -790,9 +790,11 @@ void omnimapper::OmniMapperVisualizerRViz<PointT>::SpinOnce() {
       Eigen::Vector4f centroid;
 
       {
-        boost::lock_guard<boost::mutex> lock (*(key_value.value.boundary().second));
+        boost::lock_guard<boost::mutex> lock(
+            *(key_value.value.boundary().second));
         CloudConstPtr lm_cloud(key_value.value.boundary().first);
-        (*plane_boundary_cloud) += *lm_cloud;  //(*(key_value.value.boundary ()));
+        (*plane_boundary_cloud) +=
+            *lm_cloud;  //(*(key_value.value.boundary ()));
 
         for (std::size_t i = 0; i < lm_cloud->points.size(); i++) {
           if (!pcl::isFinite(lm_cloud->points[i]))

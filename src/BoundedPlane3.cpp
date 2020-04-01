@@ -1,5 +1,4 @@
 #include <glog/logging.h>
-
 #include <omnimapper/BoundedPlane3.h>
 #include <omnimapper/geometry.h>
 #include <omnimapper/transform_helpers.h>
@@ -62,7 +61,8 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
              new_coeffs[1] * new_boundary->points[i].y +
              new_coeffs[2] * new_boundary->points[i].z + new_coeffs[3]);
     if (ptp_dist > 0.001) {
-      LOG(INFO) << "ERROR: Retract fail: Point is " << ptp_dist << "from plane.";
+      LOG(INFO) << "ERROR: Retract fail: Point is " << ptp_dist
+                << "from plane.";
       exit(1);
     }
   }
@@ -70,8 +70,8 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::retract(
   // return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted,
   // boundary_, plane_mutex_));
   return omnimapper::BoundedPlane3<PointT>(
-        n_retracted, d_retracted,
-        std::make_pair(new_boundary, boost::make_shared<boost::mutex>()));
+      n_retracted, d_retracted,
+      std::make_pair(new_boundary, boost::make_shared<boost::mutex>()));
   // return (omnimapper::BoundedPlane3<PointT>(n_retracted, d_retracted,
   // boundary_));
 }
@@ -114,8 +114,8 @@ omnimapper::BoundedPlane3<PointT> omnimapper::BoundedPlane3<PointT>::Transform(
   // TODO(shengye): Here we actually have a deep copy. Profile and if this the
   // the bottleneck, optmize it with non-deep copy construction.
   boost::lock_guard<boost::mutex> lock_plane(*(plane.boundary().second));
-  BoundedPlane3<PointT> transformed_plane(
-      unit_vec(0), unit_vec(1), unit_vec(2), pred_d, plane.boundary().first);
+  BoundedPlane3<PointT> transformed_plane(unit_vec(0), unit_vec(1), unit_vec(2),
+                                          pred_d, plane.boundary().first);
   // BoundedPlane3<PointT> transformed_plane (unit_vec (0), unit_vec (1),
   // unit_vec (2), pred_d, transformed_boundary);
 
@@ -273,8 +273,9 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
     if (meas_boundary_intersects)
       LOG(INFO) << "BoundedPlane3: meas boundary intersects!";
 
-    LOG(INFO) << "BoundedPlane3: Attempting to merge meas_xy (" <<
-        meas_xy->points.size() << "with map_xy" << map_xy->points.size();
+    LOG(INFO) << "BoundedPlane3: Attempting to merge meas_xy ("
+              << meas_xy->points.size() << "with map_xy"
+              << map_xy->points.size();
     bool meas_xy_intersect = boost::geometry::intersects(meas_xy->points);
     LOG_IF(INFO, meas_xy_intersect) << "BoundedPlane3: Meas_xy_intersects!";
     bool map_xy_intersect = boost::geometry::intersects(map_xy->points);
@@ -303,11 +304,13 @@ void omnimapper::BoundedPlane3<PointT>::extendBoundary(
     // exit(1);
   }
 
-  LOG(INFO) << "BoundedPlane3: Merged: map: " << map_xy->points.size() <<
-    " meas:" << meas_xy->points.size() << " combined:" << merged_xy->points.size();
+  LOG(INFO) << "BoundedPlane3: Merged: map: " << map_xy->points.size()
+            << " meas:" << meas_xy->points.size()
+            << " combined:" << merged_xy->points.size();
   double merged_area = boost::geometry::area(merged_xy->points);
   if ((merged_area < meas_area) || (merged_area < map_area)) {
-    LOG(INFO) << "BoundedPlane3: meas_area: " << meas_area << " map_area: "  << map_area << " merged_area: " << merged_area;
+    LOG(INFO) << "BoundedPlane3: meas_area: " << meas_area
+              << " map_area: " << map_area << " merged_area: " << merged_area;
     // exit(1);
   }
 

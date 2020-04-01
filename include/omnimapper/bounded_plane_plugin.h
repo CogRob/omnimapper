@@ -30,7 +30,8 @@ class BoundedPlanePlugin {
 
   static bool PolygonsOverlap(CloudConstPtr boundary1, CloudConstPtr boundary2);
 
-  static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1, CloudConstPtr boundary1,
+  static bool PolygonsOverlapBoost(Eigen::Vector4d& coeffs1,
+                                   CloudConstPtr boundary1,
                                    Eigen::Vector4d& coeffs2,
                                    CloudConstPtr boundary2);
 

@@ -76,10 +76,10 @@ void BoundedPlanePlugin<PointT>::RemoveDuplicatePoints(
 template <typename PointT>
 void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
     const std::vector<pcl::PlanarRegion<PointT>,
-                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>>&
         regions,
     const omnimapper::Time& t,
-    std::vector<omnimapper::BoundedPlane3<PointT> >* plane_measurements) {
+    std::vector<omnimapper::BoundedPlane3<PointT>>* plane_measurements) {
   // If we have a sensor_to_base_transform function, use it and apply the
   // transform to incoming measurements
   Eigen::Affine3d sensor_to_base;
@@ -128,13 +128,6 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
       Eigen::Vector4f model_base(model_norm_rot[0], model_norm_rot[1],
                                  model_norm_rot[2], d);
 
-      // Eigen::Vector4f vp = -centroid4f_base;
-      // float cos_theta = vp.dot(model_base);
-      // if (cos_theta < 0) {
-      //   model_base *= -1;
-      //   model_base[3] = 0;
-      //   model_base[3] = -1 * model_base.dot(centroid4f_base);
-      // }
       if (model_base[3] < 0) {
         model_base *= -1;
       }
@@ -160,9 +153,8 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
       }
 
       for (const auto& point : border_cloud->points) {
-        const double ptp_dist =
-            fabs(model[0] * point.x + model[1] * point.y +
-                 model[2] * point.z + model[3]);
+        const double ptp_dist = fabs(model[0] * point.x + model[1] * point.y +
+                                     model[2] * point.z + model[3]);
         if (ptp_dist > 0.01) {
           LOG(FATAL) << "ERROR: Initializing boundary at bad place: "
                      << "Point is " << ptp_dist << " from plane.";
@@ -181,21 +173,23 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
 template <typename PointT>
 void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     const std::vector<pcl::PlanarRegion<PointT>,
-                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT> > >&
+                      Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>>&
         regions,
     const omnimapper::Time& t) {
   LOG(INFO) << "BoundedPlanePlugin got " << regions.size() << " regions.";
 
   // Convert the regions to omnimapper::BoundedPlane3.
-  std::vector<omnimapper::BoundedPlane3<PointT> > plane_measurements;
+  std::vector<omnimapper::BoundedPlane3<PointT>> plane_measurements;
   RegionsToMeasurements(regions, t, &plane_measurements);
   LOG(INFO) << "The regoins have " << plane_measurements.size()
             << " measurements.";
 
   // Get the planes from the mapper.
-  const gtsam::Values solution_and_uncommitted = mapper_->GetSolutionAndUncommitted();
-  gtsam::Values::ConstFiltered<omnimapper::BoundedPlane3<PointT> > plane_filtered =
-    solution_and_uncommitted.filter<omnimapper::BoundedPlane3<PointT> >();
+  const gtsam::Values solution_and_uncommitted =
+      mapper_->GetSolutionAndUncommitted();
+  gtsam::Values::ConstFiltered<omnimapper::BoundedPlane3<PointT>>
+      plane_filtered =
+          solution_and_uncommitted.filter<omnimapper::BoundedPlane3<PointT>>();
 
   // Get the pose symbol for this time.
   gtsam::Symbol pose_sym;
@@ -213,7 +207,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
 
   for (const auto& meas_plane : plane_measurements) {
     const CloudConstPtr meas_boundary = meas_plane.boundary().first;
-    const boost::shared_ptr<boost::mutex> meas_boundary_mutex = meas_plane.boundary().second;
+    const boost::shared_ptr<boost::mutex> meas_boundary_mutex =
+        meas_plane.boundary().second;
 
     double lowest_error = std::numeric_limits<double>::infinity();
     gtsam::Symbol best_symbol = gtsam::Symbol('b', max_plane_id_);
@@ -255,7 +250,7 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) continue;
 
     for (const typename gtsam::Values::ConstFiltered<
-             omnimapper::BoundedPlane3<PointT> >::KeyValuePair& key_value:
+             omnimapper::BoundedPlane3<PointT>>::KeyValuePair& key_value :
          plane_filtered) {
       gtsam::Symbol key_symbol(key_value.key);
       const omnimapper::BoundedPlane3<PointT> plane = key_value.value;

@@ -7,8 +7,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
+#include <boost/thread/mutex.hpp>
 
 namespace omnimapper {
 /**
@@ -34,10 +34,9 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   BoundedPlane3() : plane_mutex_(new boost::mutex()), boundary_(new Cloud()) {}
 
   BoundedPlane3(const BoundedPlane3<PointT>& plane, bool deep_copy)
-      : n_(plane.n_),
-        d_(plane.d_) {
+      : n_(plane.n_), d_(plane.d_) {
     if (deep_copy) {
-      boost::lock_guard<boost::mutex> lock (*(plane.plane_mutex_));
+      boost::lock_guard<boost::mutex> lock(*(plane.plane_mutex_));
       boundary_ = CloudPtr(new Cloud(*plane.boundary_));
       plane_mutex_ = boost::make_shared<boost::mutex>();
     } else {
@@ -56,31 +55,28 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
       : n_(s),
         d_(d),
         plane_mutex_(new boost::mutex()),
-        boundary_(new Cloud(*boundary)) {
-  }
+        boundary_(new Cloud(*boundary)) {}
 
   BoundedPlane3(const gtsam::Unit3& s, double d,
                 const std::pair<CloudPtr, MutexPtr>& cloud_mutex_pair)
       : n_(s),
         d_(d),
-        plane_mutex_(cloud_mutex_pair.second) ,
-        boundary_(cloud_mutex_pair.first) {
-  }
+        plane_mutex_(cloud_mutex_pair.second),
+        boundary_(cloud_mutex_pair.first) {}
 
-  BoundedPlane3(double a, double b, double c, double d, const CloudConstPtr& boundary)
+  BoundedPlane3(double a, double b, double c, double d,
+                const CloudConstPtr& boundary)
       : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
         plane_mutex_(new boost::mutex()),
-        boundary_(new Cloud(*boundary)) {
-  }
+        boundary_(new Cloud(*boundary)) {}
 
   BoundedPlane3(double a, double b, double c, double d,
                 const std::pair<CloudPtr, MutexPtr>& cloud_mutex_pair)
       : n_(gtsam::Unit3(gtsam::Point3(a, b, c))),
         d_(d),
         plane_mutex_(cloud_mutex_pair.second),
-        boundary_(cloud_mutex_pair.first) {
-  }
+        boundary_(cloud_mutex_pair.first) {}
 
   /// The print fuction
   void print(const std::string& s = std::string()) const;
@@ -124,9 +120,13 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
   // retract the boundary cloud to a given measurement
   void retractBoundary(const gtsam::Pose3& pose, BoundedPlane3<PointT>& plane);
 
-  CloudConstMutexPtrPair boundary() const { return std::make_pair(static_cast<CloudConstPtr>(boundary_), plane_mutex_); }
+  CloudConstMutexPtrPair boundary() const {
+    return std::make_pair(static_cast<CloudConstPtr>(boundary_), plane_mutex_);
+  }
 
-  CloudMutexPtrPair boundary() { return std::make_pair(boundary_, plane_mutex_); }
+  CloudMutexPtrPair boundary() {
+    return std::make_pair(boundary_, plane_mutex_);
+  }
 
   double d() const { return (d_); }
 
