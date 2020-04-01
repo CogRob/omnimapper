@@ -37,6 +37,9 @@ class TFPosePlugin : public omnimapper::PosePlugin {
 
   bool initialized_;
 
+  // Debug mode
+  bool debug_;
+
  public:
   TFPosePlugin(omnimapper::OmniMapperBase* mapper);
 
@@ -61,5 +64,6 @@ class TFPosePlugin : public omnimapper::PosePlugin {
   void SetTranslationNoise(double translation_noise) {
     translation_noise_ = translation_noise;
   }
+  void SetDebug(bool debug) { debug_ = debug; }
 };
 }  // namespace omnimapper

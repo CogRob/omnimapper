@@ -253,6 +253,9 @@ class OmniMapperBase {
   /** \brief Prints latest solution. */
   void PrintSolution();
 
+  /** \brief Prints latest solution. */
+  void PrintPoseChain();
+
   /** \brief Set whether or not to output verbose debugging information. */
   void SetDebug(bool debug) { debug_ = debug; }
 

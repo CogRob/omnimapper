@@ -84,6 +84,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   tf_plugin_.SetYawNoise(tf_yaw_noise_);
   if (use_tf_) {
     LOG(INFO) << "Using ROS TF plugin.";
+    tf_plugin_.SetDebug(debug_tf_);
     omb_.AddPosePlugin(&tf_plugin_);
   }
 
@@ -123,6 +124,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
       icp_loop_closure_distance_threshold_);
   icp_plugin_.SetSaveFullResClouds(false);
   icp_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
+  icp_plugin_.SetDebug(debug_icp_);
 
   // Set up edge ICP plugin.
   edge_icp_plugin_.SetUseGICP(false);
@@ -138,6 +140,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   edge_icp_plugin_.SetLoopClosureDistanceThreshold(0.15);
   edge_icp_plugin_.SetSaveFullResClouds(false);
   edge_icp_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
+  edge_icp_plugin_.SetDebug(debug_edge_icp_);
 
   // Set up the Plane plugin.
   plane_plugin_.SetOverwriteTimestamps(false);
@@ -154,6 +157,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   bounded_plane_plugin_.SetAngularNoise(plane_angular_noise_);
   bounded_plane_plugin_.SetRangeNoise(plane_range_noise_);
   bounded_plane_plugin_.SetSensorToBaseFunctor(rgbd_to_base_ptr);
+  bounded_plane_plugin_.SetDebug(debug_bounded_planes_);
 
   // Set up the object plugin.
   if (use_objects_) {
@@ -322,7 +326,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
       "generate_map_tsdf", &OmniMapperROS::GenerateMapTSDFCallback, this);
 
   // OmniMapper thread
-  omb_.SetDebug(debug_);
+  omb_.SetDebug(debug_omnimapper_base_);
   boost::thread omb_thread(&omnimapper::OmniMapperBase::Spin, &omb_);
   if (use_icp_) {
     LOG(INFO) << "Staring a thread for ICP";
@@ -620,13 +624,18 @@ void OmniMapperROS<PointT>::LoadROSParams() {
   n_.param("use_organized_feature_extraction",
            use_organized_feature_extraction_, true);
   n_.param("debug", debug_, false);
+  n_.param("debug_icp", debug_icp_, false);
+  n_.param("debug_edge_icp", debug_edge_icp_, false);
+  n_.param("debug_bounded_planes", debug_bounded_planes_, false);
+  n_.param("debug_tf", debug_tf_, false);
+  n_.param("debug_omnimapper_base", debug_omnimapper_base_, false);
   n_.param("ar_mode", ar_mode_, false);
 }
 
 template <typename PointT>
 void OmniMapperROS<PointT>::CloudCallback(
     const sensor_msgs::PointCloud2ConstPtr& msg) {
-  LOG(INFO) << "OmniMapperROS got a cloud.";
+  LOG_IF(INFO, debug_) << "OmniMapperROS got a cloud.";
 
   const double start_cb = pcl::getTime();
   const double start_copy = pcl::getTime();
@@ -694,7 +703,7 @@ void OmniMapperROS<PointT>::CloudCallback(
 template <typename PointT>
 void OmniMapperROS<PointT>::LaserScanCallback(
     const sensor_msgs::LaserScanConstPtr& msg) {
-  LOG(INFO) << "OmniMapperROS received a LaserScan.";
+  LOG_IF(INFO, debug_) << "OmniMapperROS received a LaserScan.";
   gtsam::Symbol sym;
   boost::shared_ptr<sensor_msgs::LaserScan> lscan_ptr(
       new sensor_msgs::LaserScan(*msg));
@@ -706,7 +715,7 @@ template <typename PointT>
 bool OmniMapperROS<PointT>::GenerateMapTSDFCallback(
     omnimapper_ros::OutputMapTSDF::Request& req,
     omnimapper_ros::OutputMapTSDF::Response& res) {
-  LOG(INFO) << "TSDF service called, calling tsdf plugin.";
+  LOG_IF(INFO, debug_) << "TSDF service called, calling tsdf plugin.";
   tsdf_plugin_.GenerateTSDF(req.grid_size, req.resolution);
   return true;
 }
@@ -715,7 +724,7 @@ template <typename PointT>
 void OmniMapperROS<PointT>::EvalTimerCallback(const ros::TimerEvent& e) {
   const double cb_start = pcl::getTime();
 
-  LOG(INFO) << "Evaluation timer call back at " << cb_start;
+  LOG_IF(INFO, debug_) << "Evaluation timer call back at " << cb_start;
 
   // Check if everything is done processing
   bool ready = true;

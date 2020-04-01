@@ -11,8 +11,8 @@ namespace omnimapper {
 template <typename PointT>
 BoundedPlanePlugin<PointT>::BoundedPlanePlugin(
     omnimapper::OmniMapperBase* mapper)
-    : mapper_(mapper), max_plane_id_(0) {
-  LOG(INFO) << "Constructing BoundedPlanePlugin";
+    : mapper_(mapper), debug_(false), max_plane_id_(0) {
+  LOG_IF(INFO, debug_) << "Constructing BoundedPlanePlugin";
 }
 
 template <typename PointT>
@@ -98,13 +98,13 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
 
     const std::size_t border_size_before_remove = border_cloud->points.size();
     RemoveDuplicatePoints(border_cloud.get());
-    LOG(INFO) << "Removed points from border, size before: "
-              << border_size_before_remove
-              << ", after: " << border_cloud->points.size();
+    LOG_IF(INFO, debug_) << "Removed points from border, size before: "
+                         << border_size_before_remove
+                         << ", after: " << border_cloud->points.size();
 
     const bool intersects = boost::geometry::intersects(border_cloud->points);
     if (intersects) {
-      LOG(ERROR) << "BoundedPlanePlugin got invalid measurement.";
+      LOG(ERROR) << "BoundedPlanePlugin got an invalid measurement.";
       // TODO(shengye): for now we will just ignore this plane.
       continue;
 
@@ -113,7 +113,7 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
       pcl::io::savePCDFileBinaryCompressed(meas_name, *border_cloud);
       LOG(FATAL) << "Saved measurement cloud to " << meas_name;
     } else {
-      LOG(INFO) << "BoundedPlanePlugin got valid measurement.";
+      LOG_IF(INFO, debug_) << "BoundedPlanePlugin got valid measurement.";
     }
 
     // Make a Plane.
@@ -132,10 +132,11 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
         model_base *= -1;
       }
 
-      LOG(INFO) << "Model: " << model[0] << " " << model[1] << " " << model[2]
-                << " " << model[3] << "; Base model: " << model_base[0] << " "
-                << model_base[1] << " " << model_base[2] << " "
-                << model_base[3];
+      LOG_IF(INFO, debug_) << "Model: " << model[0] << " " << model[1] << " "
+                           << model[2] << " " << model[3]
+                           << "; Base model: " << model_base[0] << " "
+                           << model_base[1] << " " << model_base[2] << " "
+                           << model_base[3];
       CloudPtr border_base(new Cloud());
       pcl::transformPointCloud(*border_cloud, *border_base, sensor_to_base);
       omnimapper::BoundedPlane3<PointT> plane(model_base[0], model_base[1],
@@ -176,13 +177,14 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
                       Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>>&
         regions,
     const omnimapper::Time& t) {
-  LOG(INFO) << "BoundedPlanePlugin got " << regions.size() << " regions.";
+  LOG_IF(INFO, debug_) << "BoundedPlanePlugin got " << regions.size()
+                       << " regions.";
 
   // Convert the regions to omnimapper::BoundedPlane3.
   std::vector<omnimapper::BoundedPlane3<PointT>> plane_measurements;
   RegionsToMeasurements(regions, t, &plane_measurements);
-  LOG(INFO) << "The regoins have " << plane_measurements.size()
-            << " measurements.";
+  LOG_IF(INFO, debug_) << "The regoins have " << plane_measurements.size()
+                       << " measurements.";
 
   // Get the planes from the mapper.
   const gtsam::Values solution_and_uncommitted =
@@ -200,7 +202,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
     LOG(ERROR) << "No pose available at this time.";
     return;
   }
-  LOG(INFO) << "Processing planes for pose " << std::string(pose_sym);
+  LOG_IF(INFO, debug_) << "Processing planes for pose "
+                       << std::string(pose_sym);
 
   gtsam::Pose3 new_pose_inv = new_pose->inverse();
   Eigen::Matrix4f new_pose_inv_tform = new_pose->matrix().cast<float>();
@@ -263,8 +266,8 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
 
       const double angular_error = acos(meas_norm.dot(pred_norm));
       const double range_error = fabs(meas_d - pred_d);
-      LOG(INFO) << "angular_error = " << angular_error << ", "
-                << "range_error = " << range_error;
+      LOG_IF(INFO, debug_) << "angular_error = " << angular_error << ", "
+                           << "range_error = " << range_error;
       if ((angular_error < angular_threshold_) &&
           (range_error < range_threshold_)) {
         double error = angular_error + range_error;
@@ -294,15 +297,16 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
           map_p3_coeffs[0], map_p3_coeffs[1], map_p3_coeffs[2],
           map_p3_coeffs[3], meas_boundary_map);
       mapper_->AddNewValue(best_symbol, map_plane);
-      LOG(INFO) << "BoundedPlanePlugin created a new plane: "
-                << std::string(best_symbol) << ", (" << map_p3_coeffs[0] << ","
-                << map_p3_coeffs[1] << "," << map_p3_coeffs[2] << ","
-                << map_p3_coeffs[3] << ")";
+      LOG_IF(INFO, debug_) << "BoundedPlanePlugin created a new plane: "
+                           << std::string(best_symbol) << ", ("
+                           << map_p3_coeffs[0] << "," << map_p3_coeffs[1] << ","
+                           << map_p3_coeffs[2] << "," << map_p3_coeffs[3]
+                           << ")";
       ++max_plane_id_;
     } else {
       mapper_->UpdateBoundedPlane(best_symbol, *new_pose, meas_plane);
-      LOG(INFO) << "BoundedPlanePlugin extended plane: "
-                << std::string(best_symbol);
+      LOG_IF(INFO, debug_) << "BoundedPlanePlugin extended plane: "
+                           << std::string(best_symbol);
     }
 
     gtsam::Vector measurement_noise_vector(3);
@@ -318,7 +322,9 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
           measurement_vector, meas_boundary, measurement_noise, pose_sym,
           best_symbol);
     }
-    plane_factor->print("BoundedPlaneFactor:\n");
+    if (debug_) {
+      plane_factor->print("BoundedPlaneFactor:\n");
+    }
     mapper_->AddFactor(plane_factor);
     LOG(INFO) << "BoundedPlanePlugin added a factor.";
   }  // plane measurements

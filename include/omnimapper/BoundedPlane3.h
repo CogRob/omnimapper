@@ -137,6 +137,9 @@ class BoundedPlane3 : public gtsam::DerivedValue<BoundedPlane3<PointT> > {
 
   static Eigen::Vector4d TransformCoefficients(
       const omnimapper::BoundedPlane3<PointT>& plane, const gtsam::Pose3& xr);
+
+ private:
+  static constexpr bool debug_ = false;
 };
 
 }  // namespace omnimapper

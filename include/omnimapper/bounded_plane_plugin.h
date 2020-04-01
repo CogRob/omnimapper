@@ -64,8 +64,11 @@ class BoundedPlanePlugin {
     get_sensor_to_base_ = get_transform;
   }
 
+  void SetDebug(bool debug) { debug_ = debug; }
+
  protected:
   OmniMapperBase* mapper_;
+  bool debug_;
   GetTransformFunctorPtr get_sensor_to_base_;
   int max_plane_id_;
   double angular_threshold_;

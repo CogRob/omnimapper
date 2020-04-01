@@ -53,6 +53,7 @@ class ICPPoseMeasurementPlugin {
     score_threshold_ = score_threshold;
   }
   void SetUseGICP(bool use_gicp) { use_gicp_ = use_gicp; }
+  void SetDebug(bool debug) { debug_ = debug; }
   void SetAddMultipleLinks(bool multi_link) {
     add_multiple_links_ = multi_link;
   }

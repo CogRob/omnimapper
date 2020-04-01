@@ -26,7 +26,6 @@ ICPPoseMeasurementPlugin<PointT>::ICPPoseMeasurementPlugin(
       trans_noise_(1.0),
       rot_noise_(1.0),
       debug_(false),
-      // TODO(shengye): overwrite_timestamps_ was false. Confirm we need true?
       overwrite_timestamps_(false),
       previous_sym_(gtsam::Symbol('x', 0)),
       previous2_sym_(gtsam::Symbol('x', 0)),
@@ -56,8 +55,8 @@ void ICPPoseMeasurementPlugin<PointT>::CloudCallback(
   // Store this as the previous cloud.
   current_cloud_ = cloud;
   if (have_new_cloud_) {
-    LOG(ERROR) << "Got new cloud before done processing the old one!";
-    // TODO(shengye): Die here?
+    LOG_IF(ERROR, debug_)
+        << "Got new cloud before finish processing the old one!";
   }
   have_new_cloud_ = true;
   LOG_IF(INFO, debug_) << "Stored new cloud in CloudCallback.";
@@ -95,8 +94,8 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
   }
   const CloudConstPtr current_cloud_original = current_cloud;
 
-  LOG(INFO) << "ICPPoseMeasurementPlugin got a new cloud.";
-  LOG_IF(INFO, debug_) << "Current cloud has " << current_cloud->points.size()
+  LOG_IF(INFO, debug_) << "ICPPoseMeasurementPlugin got a new cloud. "
+                       << "Current cloud has " << current_cloud->points.size()
                        << "points";
 
   // Downsample, if needed.
@@ -181,10 +180,12 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
                        << "prev: " << std::string(previous_sym) << ", "
                        << "curr: " << std::string(current_sym);
 
-  thread_pool_.enqueue([this, previous_sym, current_sym] {
-    LOG(INFO) << "AddConstraint between previous and current symbol.";
-    this->AddConstraint(previous_sym, current_sym, score_threshold_);
-  });
+  thread_pool_.enqueue(
+      [this, previous_sym, current_sym] {
+        LOG_IF(INFO, debug_)
+            << "AddConstraint between previous and current symbol.";
+        this->AddConstraint(previous_sym, current_sym, score_threshold_);
+      });
 
   std::size_t clouds_size;
   {
@@ -197,7 +198,8 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
   if (add_multiple_links_) {
     if (clouds_size >= 3) {
       thread_pool_.enqueue([this, previous2_sym, current_sym] {
-        LOG(INFO) << "AddConstraint between current and previous2 symbol.";
+        LOG_IF(INFO, debug_)
+            << "AddConstraint between current and previous2 symbol.";
         // TODO(shengye): Chaned from "true" to score_threshold_.
         // FIXME(shengye): This was between previous2_sym and previous_sym
         AddConstraint(previous2_sym, current_sym, score_threshold_);
@@ -206,7 +208,8 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
     }
     if (clouds_size >= 4) {
       thread_pool_.enqueue([this, previous3_sym, current_sym] {
-        LOG(INFO) << "AddConstraint between current and previous3 symbol.";
+        LOG_IF(INFO, debug_)
+            << "AddConstraint between current and previous3 symbol.";
         // FIXME(shengye): This was between previous3_sym and previous_sym
         AddConstraint(previous3_sym, current_sym, score_threshold_);
         LOG_IF(INFO, debug_) << "AddConstraint for prev3 complete.";
@@ -219,7 +222,7 @@ bool ICPPoseMeasurementPlugin<PointT>::SpinOnce() {
       thread_pool_.enqueue([this, previous3_sym] {
         // TODO(shengye): I assume because we have did more for previous3_sym,
         // now it is safe to try loop closure? Confirm this?
-        LOG(INFO) << "Try loop closure.";
+        LOG_IF(INFO, debug_) << "Try loop closure.";
         TryLoopClosure(previous3_sym);
       });
     }
@@ -256,8 +259,8 @@ bool ICPPoseMeasurementPlugin<PointT>::AddConstraint(
     cloud2 = clouds_.at(sym2);
   }
   if (!(cloud1 && cloud2)) {
-    LOG(INFO) << "Don't have clouds for these poses: " << std::string(sym1)
-              << " and " << std::string(sym2);
+    LOG_IF(INFO, debug_) << "Don't have clouds for these poses: "
+                         << std::string(sym1) << " and " << std::string(sym2);
   }
 
   // Look up initial guess, if applicable
@@ -270,14 +273,14 @@ bool ICPPoseMeasurementPlugin<PointT>::AddConstraint(
     gtsam::Pose3 initial_guess = cloud1_pose->between(*cloud2_pose);
     if (debug_) {
       cloud1_pose->print("Pose1:\n");
-      LOG(INFO) << "Cloud 1 pose det: "
-                << cloud1_pose->rotation().matrix().determinant();
+      LOG_IF(INFO, debug_) << "Cloud 1 pose det: "
+                           << cloud1_pose->rotation().matrix().determinant();
       cloud2_pose->print("Pose2:\n");
-      LOG(INFO) << "Cloud 2 pose det: "
-                << cloud2_pose->rotation().matrix().determinant();
+      LOG_IF(INFO, debug_) << "Cloud 2 pose det: "
+                           << cloud2_pose->rotation().matrix().determinant();
       initial_guess.print("Initial guess:");
-      LOG(INFO) << "Initial guess det: "
-                << initial_guess.rotation().matrix().determinant();
+      LOG_IF(INFO, debug_) << "Initial guess det: "
+                           << initial_guess.rotation().matrix().determinant();
     }
     cloud_tform = initial_guess.matrix().cast<float>();
   }
@@ -311,11 +314,12 @@ bool ICPPoseMeasurementPlugin<PointT>::AddConstraint(
         new gtsam::BetweenFactor<gtsam::Pose3>(sym1, sym2, relative_pose,
                                                noise));
     mapper_->AddFactor(between);
-    LOG(INFO) << "Added factor beteen " << std::string(sym1) << " and "
-              << std::string(sym2);
+    LOG_IF(INFO, debug_) << "Added factor beteen " << std::string(sym1)
+                         << " and " << std::string(sym2);
     relative_pose.print("ICP Relative Pose:\n");
-    LOG(INFO) << "ICP score: " << icp_score << ", relative pose det: "
-              << relative_pose.rotation().matrix().determinant();
+    LOG_IF(INFO, debug_) << "ICP score: " << icp_score
+                         << ", relative pose det: "
+                         << relative_pose.rotation().matrix().determinant();
     if (icp_converged && icp_score < icp_score_threshold) {
       // This is actual success, we will return false if the factor was added
       // because of add_identity_on_failure_.
@@ -384,7 +388,7 @@ bool ICPPoseMeasurementPlugin<PointT>::TryLoopClosure(gtsam::Symbol sym) {
   gtsam::Values solution = mapper_->GetSolution();
   // Look up the current pose.
   while (!solution.exists<gtsam::Pose3>(sym)) {
-    LOG(INFO) << "Looking for the pose of " << std::string(sym);
+    LOG_IF(INFO, debug_) << "Looking for the pose of " << std::string(sym);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     solution = mapper_->GetSolution();
   }
@@ -438,8 +442,8 @@ bool ICPPoseMeasurementPlugin<PointT>::TryLoopClosure(gtsam::Symbol sym) {
   // If we found something, try to add a link
   if (min_dist < loop_closure_distance_threshold_) {
     AddConstraint(sym, closest_sym, score_threshold_);
-    LOG_IF(INFO, debug_) << "ICP add loop closure between " << std::string(sym)
-                         << " and " << std::string(closest_sym);
+    LOG(INFO) << "ICP add loop closure between " << std::string(sym) << " and "
+              << std::string(closest_sym);
     return true;
   } else {
     return false;
@@ -483,7 +487,7 @@ ICPPoseMeasurementPlugin<PointT>::GetCloudPtr(gtsam::Symbol sym) {
 template <typename PointT>
 typename omnimapper::ICPPoseMeasurementPlugin<PointT>::CloudPtr
 ICPPoseMeasurementPlugin<PointT>::GetFullResCloudPtr(gtsam::Symbol sym) {
-  LOG(INFO) << "GetFullResCloudPtr";
+  LOG_IF(INFO, debug_) << "GetFullResCloudPtr";
   if (full_res_clouds_.count(sym) > 0) {
     CloudPtr cloud_ptr(new Cloud());
     pcl::io::loadPCDFile<PointT>(full_res_clouds_.at(sym).c_str(), *cloud_ptr);

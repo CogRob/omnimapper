@@ -12,7 +12,8 @@ TFPosePlugin::TFPosePlugin(omnimapper::OmniMapperBase* mapper)
       roll_noise_(1.0),
       pitch_noise_(1.0),
       yaw_noise_(1.0),
-      translation_noise_(1.0) {}
+      translation_noise_(1.0),
+      debug_(false) {}
 
 gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
     boost::posix_time::ptime t1, gtsam::Symbol sym1,
@@ -46,13 +47,14 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
     gtsam::Pose3 pose2 = TfToPose3(tf2);
     relative_pose = pose1.between(pose2);
   } else {
-    LOG(INFO) << "Will use identity because couldn't get tf.";
+    LOG_IF(INFO, debug_) << "Will use identity because couldn't get tf.";
   }
 
-  LOG(INFO) << "TFPosePlugin: Adding factor between " << std::string(sym1)
-            << " and " << std::string(sym2);
-  LOG(INFO) << "TFPosePlugin, relative transform is (" << relative_pose.x()
-            << ", " << relative_pose.y() << ", " << relative_pose.z() << ")";
+  LOG_IF(INFO, debug_) << "TFPosePlugin: Adding factor between "
+                       << std::string(sym1) << " and " << std::string(sym2);
+  LOG_IF(INFO, debug_) << "TFPosePlugin, relative transform is ("
+                       << relative_pose.x() << ", " << relative_pose.y() << ", "
+                       << relative_pose.z() << ")";
 
   const double trans_noise = translation_noise_;
   gtsam::Vector noise_vector(6);
@@ -62,7 +64,9 @@ gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr TFPosePlugin::AddRelativePose(
       gtsam::noiseModel::Diagonal::Sigmas(noise_vector);
   gtsam::BetweenFactor<gtsam::Pose3>::shared_ptr between(
       new gtsam::BetweenFactor<gtsam::Pose3>(sym1, sym2, relative_pose, noise));
-  between->print("TF BetweenFactor:\n");
+  if (debug_) {
+    between->print("TF BetweenFactor:\n");
+  }
   return between;
 }
 
