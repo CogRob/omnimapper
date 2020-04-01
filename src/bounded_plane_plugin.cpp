@@ -128,12 +128,15 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
       Eigen::Vector4f model_base(model_norm_rot[0], model_norm_rot[1],
                                  model_norm_rot[2], d);
 
-      Eigen::Vector4f vp = -centroid4f_base;
-      float cos_theta = vp.dot(model_base);
-      if (cos_theta < 0) {
+      // Eigen::Vector4f vp = -centroid4f_base;
+      // float cos_theta = vp.dot(model_base);
+      // if (cos_theta < 0) {
+      //   model_base *= -1;
+      //   model_base[3] = 0;
+      //   model_base[3] = -1 * model_base.dot(centroid4f_base);
+      // }
+      if (model_base[3] < 0) {
         model_base *= -1;
-        model_base[3] = 0;
-        model_base[3] = -1 * model_base.dot(centroid4f_base);
       }
 
       LOG(INFO) << "Model: " << model[0] << " " << model[1] << " " << model[2]
@@ -145,6 +148,27 @@ void BoundedPlanePlugin<PointT>::RegionsToMeasurements(
       omnimapper::BoundedPlane3<PointT> plane(model_base[0], model_base[1],
                                               model_base[2], model_base[3],
                                               border_base);
+
+      for (const auto& point : border_base->points) {
+        const double ptp_dist =
+            fabs(model_base[0] * point.x + model_base[1] * point.y +
+                 model_base[2] * point.z + model_base[3]);
+        if (ptp_dist > 0.01) {
+          LOG(FATAL) << "ERROR: Initializing boundary at bad place: "
+                     << "Point is " << ptp_dist << " from plane.";
+        }
+      }
+
+      for (const auto& point : border_cloud->points) {
+        const double ptp_dist =
+            fabs(model[0] * point.x + model[1] * point.y +
+                 model[2] * point.z + model[3]);
+        if (ptp_dist > 0.01) {
+          LOG(FATAL) << "ERROR: Initializing boundary at bad place: "
+                     << "Point is " << ptp_dist << " from plane.";
+        }
+      }
+
       plane_measurements->push_back(plane);
     } else {
       omnimapper::BoundedPlane3<PointT> plane(model[0], model[1], model[2],
@@ -223,7 +247,10 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
       LOG(ERROR) << "BoundedPlanePlugin got invalid measurement, map_meas";
     }
 
+    // TODO(shengye): Confirm this? Skip if too close to origin? Not making any
+    // sense.
     if (meas_d < 0.1) continue;
+
     Eigen::Vector3d ceiling_norm(0.0, 0.0, -1.0);
     if (acos(meas_norm.dot(ceiling_norm)) < angular_threshold_) continue;
 
