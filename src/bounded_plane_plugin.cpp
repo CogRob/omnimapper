@@ -208,8 +208,6 @@ void BoundedPlanePlugin<PointT>::PlanarRegionCallback(
         omnimapper::BoundedPlane3<PointT>::TransformCoefficients(meas_plane,
                                                                  new_pose_inv);
     for (const auto& point : meas_boundary_map->points) {
-      LOG(INFO) << "Meas Boundary Map: Boundary Point: (" << point.x << ", "
-                << point.y << ", " << point.z << ")";
       const double ptp_dist =
           fabs(meas_map_coeffs[0] * point.x + meas_map_coeffs[1] * point.y +
                meas_map_coeffs[2] * point.z + meas_map_coeffs[3]);

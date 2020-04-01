@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper_ros/get_transform_functor_tf.h>
 #include <omnimapper_ros/ros_time_utils.h>
 
@@ -18,12 +19,13 @@ Eigen::Affine3d omnimapper::GetTransformFunctorTF::operator()(
                                  tf_transform);
   } catch (tf::TransformException ex) {
     // printf ("GetTransformFunctorTF: Error looking up tf: %s\n", ex.what ());
-    ROS_ERROR("GetTransformFunctorTF: Error looking up tf: %s\n", ex.what());
+    LOG(FATAL) << "GetTransformFunctorTF: Error looking up tf: " << ex.what();
     return (Eigen::Affine3d::Identity());
   }
 
   // TODO: make a function for this
   gtsam::Pose3 transform_p3 = omnimapper::TfToPose3(tf_transform);
+  transform_p3.print("TF is:\n");
   Eigen::Affine3d transform(transform_p3.matrix().cast<double>());
   return (transform);
 }

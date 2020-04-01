@@ -97,7 +97,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   // Set up a sensor_to_base functor, for plugins to use.
   // Optionally disable this, if we don't have TF available.
   omnimapper::GetTransformFunctorPtr rgbd_to_base_ptr;
-  if (!use_rgbd_sensor_base_tf_functor_) {
+  if (use_rgbd_sensor_base_tf_functor_) {
     LOG(INFO) << "RGBD Sensor to Base transform will be provided by TF.";
     rgbd_to_base_ptr = omnimapper::GetTransformFunctorPtr(
         new omnimapper::GetTransformFunctorTF(rgbd_frame_name_,
