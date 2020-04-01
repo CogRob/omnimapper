@@ -25,43 +25,44 @@ run_with_lock(){
 }
 
 SRC_FILES=( \
-  BoundedPlane3.cpp \
-  BoundedPlaneFactor.cpp \
-  bounded_plane_plugin.cpp \
-  icp_pose_plugin.cpp \
-  isam_splice_test.cpp \
-  no_motion_pose_plugin.cpp \
-  object.cpp \
-  object_discovery.cpp \
-  object_plugin.cpp \
-  object_recognition.cpp \
-  object_segment_propagation.cpp \
-  omnimapper_base.cpp \
-  omnimapper_handheld_demo.cpp \
-  omnimapper_handheld_pcd_demo.cpp \
-  omnimapper_plane_test.cpp \
-  omnimapper_simple_icp_demo.cpp \
-  omnimapper_test.cpp \
-  omnimapper_visualizer_pcl.cpp \
-  organized_feature_extraction.cpp \
-  organized_feature_extraction_demo.cpp \
-  organized_feature_extraction_demo_tbb.cpp \
-  organized_feature_extraction_tbb.cpp \
-  OrientedPlane3.cpp \
-  OrientedPlane3Factor.cpp \
-  plane.cpp \
-  plane_factor.cpp \
-  plane_plugin.cpp \
-  tbb_test.cpp \
-  time.cpp \
-  transform_helpers.cpp \
-  tsdf_output_plugin.cpp \
+  omnimapper/pose_plugin.h \
+  omnimapper/tsdf_output_plugin.h \
+  omnimapper/impl/geometry.hpp \
+  omnimapper/plane.h \
+  omnimapper/object_plugin.h \
+  omnimapper/icp_pose_plugin.h \
+  omnimapper/pose_chain.h \
+  omnimapper/organized_feature_extraction_tbb.h \
+  omnimapper/omnimapper_visualizer_pcl.h \
+  omnimapper/bounded_plane_plugin.h \
+  omnimapper/BoundedPlane3.h \
+  omnimapper/OrientedPlane3.h \
+  omnimapper/get_transform_functor.h \
+  omnimapper/BoundedPlaneFactor.h \
+  omnimapper/output_plugin.h \
+  omnimapper/object_segment_propagation.h \
+  omnimapper/measurement_plugin.h \
+  omnimapper/time.h \
+  omnimapper/object_recognition.h \
+  omnimapper/organized_feature_extraction.h \
+  omnimapper/object.h \
+  omnimapper/plane_plugin.h \
+  omnimapper/no_motion_pose_plugin.h \
+  omnimapper/plane_factor.h \
+  omnimapper/landmark_factor.h \
+  omnimapper/transform_helpers.h \
+  omnimapper/object_discovery.h \
+  omnimapper/geometry.h \
+  omnimapper/omnimapper_base.h \
+  omnimapper/3rdparty/eigen_extensions.h \
+  omnimapper/3rdparty/distortion_model_standalone.h \
+  omnimapper/OrientedPlane3Factor.h \
 )
 
 N=$(nproc)
-INPUT_FILE=/home/shengye/CogRob/omnimapper/shengye_tools/omnimapper_clang_rename.yaml
-SRC_PATH=/home/shengye/CogRob/omnimapper/src
-OUTPUT_PATH=/home/shengye/CogRob/omnimapper/src_new
+INPUT_FILE=/home/shengye/CogRob/omnimapper/misc/shengye_tools/omnimapper_clang_rename.yaml
+SRC_PATH=/home/shengye/CogRob/omnimapper/include
+OUTPUT_PATH=/home/shengye/CogRob/omnimapper/include_new
 CLANG_ARGS="-Dqh_QHpointer -DvtkFiltersFlowPaths_AUTOINIT=\"1(vtkFiltersParallelFlowPaths)\" -DvtkIOExodus_AUTOINIT=\"1(vtkIOParallelExodus)\" -DvtkIOGeometry_AUTOINIT=\"1(vtkIOMPIParallel)\" -DvtkIOImage_AUTOINIT=\"1(vtkIOMPIImage)\" -DvtkIOParallel_AUTOINIT=\"1(vtkIOMPIParallel)\" -DvtkIOSQL_AUTOINIT=\"2(vtkIOMySQL,vtkIOPostgreSQL)\" -DvtkRenderingContext2D_AUTOINIT=\"1(vtkRenderingContextOpenGL)\" -DvtkRenderingCore_AUTOINIT=\"3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL)\" -DvtkRenderingFreeType_AUTOINIT=\"2(vtkRenderingFreeTypeFontConfig,vtkRenderingMatplotlib)\" -DvtkRenderingLIC_AUTOINIT=\"1(vtkRenderingParallelLIC)\" -DvtkRenderingVolume_AUTOINIT=\"1(vtkRenderingVolumeOpenGL)\" -I/usr/include/vtk-6.3 -I/usr/include/freetype2 -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/include/python2.7 -I/usr/include/x86_64-linux-gnu -I/usr/include/hdf5/openmpi -I/usr/include/libxml2 -I/usr/include/jsoncpp -I/usr/include/tcl -I/usr/local/include/pcl-1.9 -I/usr/local/include/gtsam/3rdparty/Eigen -I/usr/include/ni -I/usr/include/openni2 -I/opt/intel/mkl/include -I/usr/local/include -I/home/shengye/CogRob/omnimapper/include    -O3 -DNDEBUG -fpermissive -w -O3 -std=c++11"
 
 open_sem $N
