@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper/time.h>
 #include <omnimapper_ros/canonical_scan_matcher_plugin.h>
@@ -10,13 +11,16 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
                         gtsam::noiseModel::Gaussian::shared_ptr& noise_model,
                         scan_tools::CanonicalScan& canonicalScan,
                         // const tf::StampedTransform& base_to_laser_tf,
-                        tf::Transform& base_to_laser_tf, bool laser_mode) {
+                        tf::Transform& base_to_laser_tf, bool laser_mode,
+                        bool debug) {
   gtsam::Pose3 result_pose = odometry_relative_pose;
   LDP from_ldp, to_ldp;
 
-  printf("Converting scan1 of %zu to ldp\n", from_scan.ranges.size());
+  LOG_IF(INFO, debug) << "Converting scan1 of " << from_scan.ranges.size()
+                      << "to ldp";
   canonicalScan.laserScanToLDP(from_scan, from_ldp);
-  printf("converting scan2 of %zu to ldp\n", to_scan.ranges.size());
+  LOG_IF(INFO, debug) << "converting scan2 of " << to_scan.ranges.size()
+                      << "to ldp";
   canonicalScan.laserScanToLDP(to_scan, to_ldp);
 
   gtsam::Pose2 outp_rel_pose_laser;
@@ -28,26 +32,27 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
   gtsam::Pose3 pr_ch_l_pose3 = RosTransformToPose3(pr_ch_l);
 
   // DEBUG
-  pr_ch_l_pose3.print("pr_ch_l_pose3");
+  if (debug) pr_ch_l_pose3.print("pr_ch_l_pose3");
   // pr_ch_l_pose3 = gtsam::Pose3::identity ();
   // DEBUG
 
-  printf("Calling process scan!\n");
+  LOG_IF(INFO, debug) << "Calling process scan!";
   worked_ =
       canonicalScan.processScan(from_ldp, to_ldp, Pose3ToPose2(pr_ch_l_pose3),
                                 // pr_ch_l_pose3,
                                 outp_rel_pose_laser, noise_model);
-  printf("Process scan complete!\n");
-  outp_rel_pose_laser.print("CSM before:\n");
+  LOG_IF(INFO, debug) << "Process scan complete!";
+  if (debug) outp_rel_pose_laser.print("CSM before:\n");
 
   tf::Transform corr_ch_l =
       Pose3ToRosTransform(Pose2ToPose3(outp_rel_pose_laser));
   tf::Transform corr_ch = base_to_laser_ * corr_ch_l * laser_to_base_;
   outp_rel_pose_laser = Pose3ToPose2(RosTransformToPose3(corr_ch));
 
-  outp_rel_pose_laser.print("CSM Output rel pose:\n");
-  odometry_relative_pose.print("CSM Output odom pose:\n");
-  printf("CSM odom pose yaw: %lf\n", odometry_relative_pose.rotation().yaw());
+  if (debug) outp_rel_pose_laser.print("CSM Output rel pose:\n");
+  if (debug) odometry_relative_pose.print("CSM Output odom pose:\n");
+  LOG_IF(INFO, debug) << "CSM odom pose yaw: "
+                      << odometry_relative_pose.rotation().yaw();
 
   if (worked_) {
     // DEBUG
@@ -146,7 +151,8 @@ CanonicalScanMatcherPlugin<LScanT>::CanonicalScanMatcherPlugin(
       count_(0),
       triggered_mode_(false),
       triggered_(false),
-      triggered_time_(ros::Time::now()) {
+      triggered_time_(ros::Time::now()),
+      thread_pool_(1) {
   // ros::NodeHandle nh;
   seq_canonical_scan_.initParams(nh_);
   lc_canonical_scan_.initParams(nh_);
@@ -164,19 +170,16 @@ CanonicalScanMatcherPlugin<LScanT>::CanonicalScanMatcherPlugin(
           "/visualization_marker_array", 0);
 }
 
-////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 CanonicalScanMatcherPlugin<LScanT>::~CanonicalScanMatcherPlugin() {}
 
-////////////////////////////////////////////////////////////////////////////////
 template <typename LScanT>
 void CanonicalScanMatcherPlugin<LScanT>::LaserScanCallback(
     const LaserScanPtr& lscan) {
-  // printf ("Laser cloud callback: %lf\n", ros::Time::now ());
-  std::cout << "CSMPlugin: laser callback: " << ros::Time::now() << std::endl;
+  LOG_IF(INFO, debug_) << "CSMPlugin: laser callback: " << ros::Time::now();
   // Check timestamp
   if (triggered_mode_ & !triggered_) {
-    std::cout << "CSMPlugin: Not yet triggered!" << std::endl;
+    LOG_IF(INFO, debug_) << "CSMPlugin: Not yet triggered!";
     return;
   }
   // Store this as the previous cloud
@@ -186,9 +189,8 @@ void CanonicalScanMatcherPlugin<LScanT>::LaserScanCallback(
   // {
   current_lscan_ = lscan;
   have_new_lscan_ = true;
-  printf("stored new scan!\n");
-  std::cout << "Scan stamp in cb: " << lscan->header.stamp.toBoost()
-            << std::endl;
+  LOG_IF(INFO, debug_) << "Stored new scan!";
+  LOG_IF(INFO, debug_) << "Scan stamp in cb: " << lscan->header.stamp.toBoost();
   //}
   if (triggered_mode_) {
     triggered_ = false;
@@ -208,7 +210,7 @@ void CanonicalScanMatcherPlugin<LScanT>::Spin() {
 template <typename LScanT>
 bool CanonicalScanMatcherPlugin<LScanT>::SpinOnce() {
   ros::Time start_time = ros::Time::now();
-  std::cout << "CSMPlugin: spin start: " << start_time << std::endl;
+  LOG_IF(INFO, debug_) << "CSMPlugin: spin start: " << start_time;
   // Do nothing if there isn't a new cloud
   LaserScanPtr current_lscan;
   {
@@ -217,7 +219,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::SpinOnce() {
       current_lscan = current_lscan_;
       // have_new_lscan_ = false;
     } else {
-      std::cout << "CSMPlugin: no new scan!" << std::endl;
+      LOG_IF(INFO, debug_) << "CSMPlugin: no new scan!";
       return (false);
     }
   }
@@ -228,11 +230,11 @@ bool CanonicalScanMatcherPlugin<LScanT>::SpinOnce() {
           .toBoost();  // omnimapper::stamp2ptime(current_lscan->header.stamp);
 
   mapper_->GetPoseSymbolAtTime(current_time, &current_sym);
-  std::cout << "Pose symbol for current scan: " << current_sym.index()
-            << std::endl;
+  LOG_IF(INFO, debug_) << "Pose symbol for current scan: "
+                       << current_sym.index();
   lscans_.insert(
       std::pair<gtsam::Symbol, LaserScanPtr>(current_sym, current_lscan));
-  std::cout << "Inserting new scan!" << std::endl;
+  LOG_IF(INFO, debug_) << "Inserting new scan!";
 
   try {
     sensor_msgs::PointCloud2 scan_cloud;
@@ -265,23 +267,27 @@ bool CanonicalScanMatcherPlugin<LScanT>::SpinOnce() {
   }
 
   // current pose to previous pose
-  boost::thread latest_icp_thread(
-      &CanonicalScanMatcherPlugin<LScanT>::AddConstraint, this, previous_sym_,
-      current_sym, seq_canonical_scan_, true);
-  latest_icp_thread.join();
+  const gtsam::Symbol previous_sym = previous_sym_;
+  thread_pool_.enqueue([this, previous_sym, current_sym] {
+    LOG_IF(INFO, debug_)
+        << "AddConstraint between previous and current symbol.";
+    this->AddConstraint(previous_sym, current_sym, seq_canonical_scan_, true);
+  });
+  thread_pool_.wait_until_nothing_in_flight();
+
   if (add_loop_closures_) {
     if (lscans_.size() > 20) {
-      boost::thread loop_closure_thread(
-          &CanonicalScanMatcherPlugin<LScanT>::TryLoopClosure, this,
-          previous_sym_);
-      loop_closure_thread.join();
+      thread_pool_.enqueue([this, previous_sym] {
+        LOG_IF(INFO, debug_) << "Try loop clousre";
+        this->TryLoopClosure(previous_sym);
+      });
+      thread_pool_.wait_until_nothing_in_flight();
     }
   }
-  // latest_icp_thread.join ();
 
   ros::Time end_time = ros::Time::now();
   ros::Duration spin_time = end_time - start_time;
-  std::cout << "CSMPlugin: spin end: " << spin_time << std::endl;
+  LOG_IF(INFO, debug_) << "CSMPlugin: spin end: " << spin_time;
   {
     // boost::mutex::scoped_lock lock(current_lscan_mutex_);
     previous_sym_ = current_sym;
@@ -331,7 +337,8 @@ bool CanonicalScanMatcherPlugin<LScanT>::AddConstraint(
   LaserScanPtr scan1 = lscans_.at(sym1);
   LaserScanPtr scan2 = lscans_.at(sym2);
   if (!(scan1 && scan2)) {
-    printf("CSMPlugin: Don't have laser scans for these poses!\n");
+    LOG_IF(INFO, debug_)
+        << "CSMPlugin: Don't have laser scans for these poses!";
     return (false);
   }
 
@@ -342,17 +349,17 @@ bool CanonicalScanMatcherPlugin<LScanT>::AddConstraint(
   gtsam::Pose3 initial_guess;
   gtsam::Pose3 initial_guess_inv;
   if ((scan1_pose) && (scan2_pose)) {
-    scan1_pose->print("Pose1\n\n\n");
-    printf("cloud1 pose det: %lf\n",
-           scan1_pose->rotation().matrix().determinant());
-    scan2_pose->print("Pose2\n\n\n");
-    printf("cloud2 pose det: %lf\n",
-           scan2_pose->rotation().matrix().determinant());
+    if (debug_) scan1_pose->print("Pose1\n\n\n");
+    LOG_IF(INFO, debug_) << "cloud1 pose det: "
+                         << scan1_pose->rotation().matrix().determinant();
+    if (debug_) scan2_pose->print("Pose2\n\n\n");
+    LOG_IF(INFO, debug_) << "cloud2 pose det: "
+                         << scan2_pose->rotation().matrix().determinant();
     initial_guess = scan1_pose->between(
         *scan2_pose);  // scan1_pose->transform_to (*scan2_pose);
-    initial_guess.print("\n\nInitial guess\n\n");
-    printf("initial guess det: %lf\n",
-           initial_guess.rotation().matrix().determinant());
+    if (debug_) initial_guess.print("\n\nInitial guess\n\n");
+    LOG_IF(INFO, debug_) << "initial guess det: "
+                         << initial_guess.rotation().matrix().determinant();
     cloud_tform = initial_guess.matrix().cast<float>();
     initial_guess_inv = scan2_pose->between(*scan1_pose);
   } else {
@@ -375,8 +382,9 @@ bool CanonicalScanMatcherPlugin<LScanT>::AddConstraint(
   // base_to_laser_tf = tf::StampedTransform (scan1->header.stamp,
   // base_to_laser_); gtsam::Pose3 relative_pose = doCSM_impl(*scan1, *scan2,
   // initial_guess, worked, noise, canonical_scan_, base_to_laser_, true);
-  gtsam::Pose3 relative_pose = doCSM_impl(*scan1, *scan2, initial_guess, worked,
-                                          noise, cscan, base_to_laser_, true);
+  gtsam::Pose3 relative_pose =
+      doCSM_impl(*scan1, *scan2, initial_guess, worked, noise, cscan,
+                 base_to_laser_, true, debug_);
 
   // debug
   LaserScanPtr vis_scan1(new LScan(*scan1));
@@ -480,12 +488,12 @@ bool CanonicalScanMatcherPlugin<LScanT>::AddConstraint(
         (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1,
          0.1));  //(gtsam::Vector_ (6, rot_noise, rot_noise, rot_noise,
                  // trans_noise, trans_noise, trans_noise));
-  printf("CSM Relative Pose: %lf %lf %lf", relative_pose.x(), relative_pose.y(),
-         relative_pose.z());
+  LOG_IF(INFO, debug_) << "CSM Relative Pose: (" << relative_pose.x() << ", "
+                       << relative_pose.y() << ", " << relative_pose.z() << ")";
 
   omnimapper::OmniMapperBase::NonlinearFactorPtr between(
       new gtsam::BetweenFactor<gtsam::Pose3>(sym1, sym2, relative_pose, noise));
-  between->print("CSM BetweenFactor:\n");
+  if (debug_) between->print("CSM BetweenFactor:\n");
   if (worked || always_add) mapper_->AddFactor(between);
   return (true);
 }
@@ -503,16 +511,16 @@ bool CanonicalScanMatcherPlugin<LScanT>::TryLoopClosure(gtsam::Symbol sym) {
   // // Look up the current pose
   // while (!solution.exists<gtsam::Pose3> (sym))
   // {
-  //   std::cout << "CSMPlugin: Can't find current pose in LC thread!" <<
-  //   std::endl; boost::this_thread::sleep (boost::posix_time::milliseconds
-  //   (100)); solution = mapper_->getSolutionAndUncommitted ();
+  //   LOG_IF(INFO, debug_) << "CSMPlugin: Can't find current pose in LC
+  //   thread!" << std::endl; boost::this_thread::sleep
+  //   (boost::posix_time::milliseconds (100)); solution =
+  //   mapper_->getSolutionAndUncommitted ();
   // }
   // gtsam::Pose3 current_pose = solution.at<gtsam::Pose3>(sym);
   boost::optional<gtsam::Pose3> current_pose = mapper_->PredictPose(sym);
 
   if (!current_pose) {
-    printf("Could not predict pose in Laser Scan loop closure!\n");
-    exit(1);
+    LOG(FATAL) << "Could not predict pose in Laser Scan loop closure!";
   }
 
   gtsam::Point3 current_centroid = lscan_centroids_[sym];
@@ -529,9 +537,10 @@ bool CanonicalScanMatcherPlugin<LScanT>::TryLoopClosure(gtsam::Symbol sym) {
       pose_filtered) {
     gtsam::Symbol test_sym(key_value.key);
     int sym_dist = static_cast<int>(sym.index()) - test_sym.index();
-    printf("sym: %zu test: %zu\n", sym.index(), test_sym.index());
+    LOG_IF(INFO, debug_) << "sym: " << std::string(sym)
+                         << ", test_sym: " << std::string(test_sym);
     if (sym_dist > pose_index_thresh_) {
-      printf("(%d) > %d\n", sym_dist, pose_index_thresh_);
+      LOG_IF(INFO, debug_) << sym_dist << " > " << pose_index_thresh_;
       gtsam::Pose3 test_pose(key_value.value);
       double test_dist = current_pose->range(test_pose);
 
@@ -549,7 +558,7 @@ bool CanonicalScanMatcherPlugin<LScanT>::TryLoopClosure(gtsam::Symbol sym) {
 
       // if ((test_dist < min_dist) && (itr1 != lscans_.end ()))
       if ((centroid_dist < min_dist) && (itr1 != lscans_.end())) {
-        printf("setting min dist to %lf\n", test_dist);
+        LOG_IF(INFO, debug_) << "setting min dist to " << test_dist;
         min_dist = test_dist;
         closest_sym = key_value.key;
       }
@@ -561,14 +570,11 @@ bool CanonicalScanMatcherPlugin<LScanT>::TryLoopClosure(gtsam::Symbol sym) {
     // todo cn:check
     AddConstraint(closest_sym, sym, lc_canonical_scan_,
                   false);  //, score_threshold_);
-    printf(
-        "ADDED LOOP CLOSURE BETWEEN %zu and "
-        "%zu!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        "!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-        sym.index(), closest_sym.index());
-    return (true);
+    LOG(INFO) << "Added loop closure between " << std::string(sym) << " and "
+              << std::string(closest_sym);
+    return true;
   } else {
-    return (false);
+    return false;
   }
 }
 
@@ -583,11 +589,11 @@ bool CanonicalScanMatcherPlugin<LScanT>::Ready() {
 template <typename LScanT>
 typename omnimapper::CanonicalScanMatcherPlugin<LScanT>::LaserScanPConstPtr
 CanonicalScanMatcherPlugin<LScanT>::GetLaserScanPtr(gtsam::Symbol sym) {
-  printf("CSMPlugin: In getLaserScanPtr!\n");
+  LOG_IF(INFO, debug_) << "CSMPlugin: In getLaserScanPtr!";
   if (lscans_.count(sym) > 0)
     return (lscans_.at(sym));
   else {
-    printf("ERROR: REQUESTED SYMBOL WITH NO POINTS!\n");
+    LOG(ERROR) << "Requested symbol with no points!";
     LaserScanPConstPtr empty(new LScanT());
     return (empty);
   }

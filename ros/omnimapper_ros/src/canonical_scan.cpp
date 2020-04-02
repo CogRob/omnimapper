@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper_ros/canonical_scan.h>
 
 namespace scan_tools {
@@ -186,8 +187,7 @@ gtsam::Matrix upgrade_pose2_pose3_cov(const gtsam::Matrix& dp2) {
 gtsam::Matrix gsl_to_gtsam_matrix(const gsl_matrix* inp, bool& valid) {
   valid = true;
   if (!inp) {
-    printf("No matrix in inp!\n");
-    assert(false);
+    LOG(FATAL) << "No matrix in inp!";
   }
   gtsam::Matrix mat = gtsam::zeros(inp->size1, inp->size2);
   for (unsigned int i = 0; i < inp->size1; i++) {
@@ -242,9 +242,7 @@ bool CanonicalScan::processScan(
     // the correction of the laser's position, in the laser frame
 
     // printf("%f, %f, %f\n", output_.x[0], output_.x[1], output_.x[2]);
-
-    // output_rel_pose = gtsam::Pose2(output_.x[2],output_.x[0],
-    //					     output_.x[1]);
+    // output_rel_pose = gtsam::Pose2(output_.x[2],output_.x[0], output_.x[1]);
     output_rel_pose = gtsam::Pose2(output_.x[0], output_.x[1], output_.x[2]);
     bool valid = true;
     icp_cov = gtsam::noiseModel::Gaussian::Covariance(
@@ -299,8 +297,7 @@ void CanonicalScan::laserScanToLDP(const sensor_msgs::LaserScan& scan_msg,
 void CanonicalScan::PointCloudToLDP(const sensor_msgs::PointCloud& cloud,
                                     const sensor_msgs::LaserScan& scan,
                                     LDP& ldp) {
-  unsigned int n =
-      scan.ranges.size();  // cloud.points.size();//width * cloud.height ;
+  const unsigned int n = scan.ranges.size();
   ldp = ld_alloc_new(n);
   if (n > 0) {
     double min_cloud_angle_ = scan.angle_min;
@@ -328,7 +325,7 @@ void CanonicalScan::PointCloudToLDP(const sensor_msgs::PointCloud& cloud,
 
       ldp->cluster[i] = -1;
     }
-    assert(j == cloud.points.size());
+    CHECK_EQ(j, cloud.points.size());
 
     ldp->min_theta = ldp->theta[0];
     ldp->max_theta = ldp->theta[n - 1];
@@ -342,4 +339,5 @@ void CanonicalScan::PointCloudToLDP(const sensor_msgs::PointCloud& cloud,
   ldp->true_pose[1] = 0.0;
   ldp->true_pose[2] = 0.0;
 }
+
 }  // namespace scan_tools

@@ -271,6 +271,7 @@ OmniMapperROS<PointT>::OmniMapperROS(ros::NodeHandle nh)
   // Canonical Scan Matcher
   if (use_csm_) {
     LOG(INFO) << "Use Canonical Scan Matcher plugin.";
+    csm_plugin_.SetDebug(debug_csm_);
     // Subscribe to laser scan
     laserScan_sub_ =
         n_.subscribe("/scan", 1, &OmniMapperROS::LaserScanCallback, this);
@@ -629,6 +630,7 @@ void OmniMapperROS<PointT>::LoadROSParams() {
   n_.param("debug_bounded_planes", debug_bounded_planes_, false);
   n_.param("debug_tf", debug_tf_, false);
   n_.param("debug_omnimapper_base", debug_omnimapper_base_, false);
+  n_.param("debug_csm", debug_csm_, false);
   n_.param("ar_mode", ar_mode_, false);
 }
 

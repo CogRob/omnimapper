@@ -20,10 +20,6 @@ omnimapper::CSMVisualizerRViz<LScanT>::CSMVisualizerRViz(
 
   draw_csm_map_srv_ = nh_.advertiseService(
       "draw_csm_map", &omnimapper::CSMVisualizerRViz<LScanT>::DrawCSMMap, this);
-
-  // draw_icp_clouds_srv_ = nh_.advertiseService ("draw_icp_clouds",
-  // &omnimapper::OmniMapperVisualizerRViz<PointT>::drawICPCloudsCallback,
-  // this);
 }
 
 template <typename LScanT>
@@ -46,7 +42,6 @@ void omnimapper::CSMVisualizerRViz<LScanT>::Update(
   pcl::PointCloud<pcl::PointXYZ>::Ptr aggregate_cloud(
       new pcl::PointCloud<pcl::PointXYZ>());
   aggregate_cloud->header.frame_id = "/world";
-  // aggregate_cloud->header.stamp = ros::Time::now ();
 
   gtsam::Values::ConstFiltered<gtsam::Pose3> pose_filtered =
       current_solution.filter<gtsam::Pose3>();
@@ -61,10 +56,6 @@ void omnimapper::CSMVisualizerRViz<LScanT>::Update(
     // W X Y Z
     gtsam::Vector quat = rot.quaternion();
 
-    // Eigen::Affine3d eigen_mat (pose.matrix ());
-    // tf::Transform tf_pose;
-    // tf::transformEigenToTF (eigen_mat, tf_pose);
-    // X Y Z W
     tf::Quaternion orientation(quat[1], quat[2], quat[3], quat[0]);
     tf::quaternionTFToMsg(orientation, pose.orientation);
     pose.position.x = sam_pose.x();
@@ -96,7 +87,6 @@ void omnimapper::CSMVisualizerRViz<LScanT>::Update(
     cloud_msg.header.frame_id = "world";
     cloud_msg.header.stamp = ros::Time::now();
     map_cloud_pub_.publish(cloud_msg);
-    // draw_map_ = false;
   }
 
   // Draw the graph
@@ -172,14 +162,5 @@ bool omnimapper::CSMVisualizerRViz<LScanT>::DrawCSMMap(
   // }
   return true;
 }
-
-// template <typename LScanT> bool
-// omnimapper::CSMVisualizerRViz<LScanT>::drawICPCloudsCallback
-// (omnimapper_ros::VisualizeFullCloud::Request &req,
-// omnimapper_ros::VisualizeFullCloud::Response &res)
-// {
-//   draw_icp_clouds_ = true;
-//   return (true);
-// }
 
 template class omnimapper::CSMVisualizerRViz<sensor_msgs::LaserScan>;

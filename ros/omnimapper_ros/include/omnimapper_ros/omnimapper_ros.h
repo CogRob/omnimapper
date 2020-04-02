@@ -231,6 +231,7 @@ class OmniMapperROS {
   bool debug_edge_icp_;
   bool debug_bounded_planes_;
   bool debug_tf_;
+  bool debug_csm_;
   bool ar_mode_;
 
   // Evaluation Mode

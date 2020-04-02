@@ -87,6 +87,7 @@
     <param name="debug_edge_icp" value="false" />
     <param name="debug_bounded_planes" value="false" />
     <param name="debug_tf" value="false" />
+    <param name="debug_csm" value="false" />
     <param name="ar_mode" value="true" />
   </node>
 </launch>

@@ -7,6 +7,7 @@
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <laser_geometry/laser_geometry.h>
+#include <omnimapper/ThreadPool.h>
 #include <omnimapper/omnimapper_base.h>
 #include <omnimapper_ros/canonical_scan.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -43,6 +44,7 @@ class CanonicalScanMatcherPlugin {
     triggered_mode_ = triggered_mode;
   }
   void Trigger() { triggered_ = true; }
+  void SetDebug(bool debug) { debug_ = debug; }
   LaserScanPConstPtr GetLaserScanPtr(gtsam::Symbol sym);
   sensor_msgs::PointCloud2 GetPC2(gtsam::Symbol sym);
 
@@ -86,6 +88,7 @@ class CanonicalScanMatcherPlugin {
   ros::Publisher visualization_marker_array_pub_;
   ros::Publisher laser_scan_msg_pub1_;
   ros::Publisher laser_scan_msg_pub2_;
+  ThreadPool thread_pool_;
 };
 
 }  // namespace omnimapper
@@ -97,8 +100,8 @@ gtsam::Pose3 doCSM_impl(const sensor_msgs::LaserScan& from_scan,
                         gtsam::noiseModel::Gaussian::shared_ptr& noise_model,
                         scan_tools::CanonicalScan& canonicalScan,
                         // const tf::StampedTransform& base_to_laser_tf,
-                        tf::Transform& base_to_laser_tf,
-                        bool laser_mode = true);
+                        tf::Transform& base_to_laser_tf, bool laser_mode = true,
+                        bool debug = false);
 
 sensor_msgs::LaserScan SmoothScan(const sensor_msgs::LaserScanConstPtr& msg_in);
 

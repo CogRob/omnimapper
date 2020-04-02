@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <omnimapper_ros/csm_math_functions.h>
 
 #if ROS_VERSION > ROS_VERSION_COMBINED(1, 8, 0)
@@ -18,9 +19,6 @@ bool CheckMoveFarEnough(const tf::StampedTransform& last_pose,
 }
 
 gtsam::Pose3 GetPose(const tf::StampedTransform& transform) {
-  //  return gtsam::Pose2(transform.getOrigin().x(),
-  //		      transform.getOrigin().y(),
-  //		      tf::getYaw(transform.getRotation()));
   btVector3 axis = transform.getRotation().getAxis();
   gtsam::Vector gtsam_axis;
   double axis_norm =
@@ -29,7 +27,7 @@ gtsam::Pose3 GetPose(const tf::StampedTransform& transform) {
     gtsam_axis = (gtsam::Vector(3) << axis[0] / axis_norm, axis[1] / axis_norm,
                   axis[2] / axis_norm);
   } else {
-    printf("Axis failure !  Axis length %lf\n", axis_norm);
+    LOG(ERROR) << "Axis failure!  Axis length " << axis_norm;
     gtsam_axis = (gtsam::Vector(3) << 0, 0, 1);
   }
   double angle = transform.getRotation().getAngle();
