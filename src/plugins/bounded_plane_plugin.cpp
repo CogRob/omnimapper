@@ -139,12 +139,8 @@ void BoundedPlanePlugin<PointT>::regionsToMeasurements(
                                  model_norm_rot[2], d);
       // model_base[3] = model_base.dot (centroid4f_base);
 
-      Eigen::Vector4f vp = -centroid4f_base;
-      float cos_theta = vp.dot(model_base);
-      if (cos_theta < 0) {
+      if (model_base[3] < 0) {
         model_base *= -1;
-        model_base[3] = 0;
-        model_base[3] = -1 * model_base.dot(centroid4f_base);
       }
 
       printf("Model: %lf %lf %lf %lf, Base Model: %lf %lf %lf %lf\n", model[0],
