@@ -76,7 +76,7 @@ class TriggerPeriodic : public TriggerFunctor {
 
  private:
   GetTimeFunctorPtr get_time_;
-  float duration_;
+  long duration_;
   Time prev_time_;
 };
 

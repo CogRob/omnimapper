@@ -6,6 +6,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
 namespace omnimapper {
 /**
