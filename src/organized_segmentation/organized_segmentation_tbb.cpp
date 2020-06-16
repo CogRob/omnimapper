@@ -322,14 +322,15 @@ void OrganizedSegmentationTBB<PointT>::computeClusters() {
 
   clust_output_labels_ = LabelCloudPtr(new LabelCloud());
 
-  std::vector<bool> plane_labels;
-  plane_labels.resize(clust_input_label_indices_->size(), false);
+  typename pcl::EuclideanClusterComparator<PointT, pcl::Label>::ExcludeLabelSetPtr
+    plane_labels(
+      new typename pcl::EuclideanClusterComparator<PointT, pcl::Label>::ExcludeLabelSet);
 
   if (clust_input_regions_->size() > 0) {
     for (size_t i = 0; i < clust_input_label_indices_->size(); i++) {
       if ((*clust_input_label_indices_)[i].indices.size() >
           min_plane_inliers_) {
-        plane_labels[i] = true;
+        plane_labels->insert(i);
       }
     }
   }
