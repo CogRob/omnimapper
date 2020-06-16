@@ -49,6 +49,7 @@
 #include <pcl/segmentation/organized_connected_component_segmentation.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 
+#include <boost/function.hpp>
 #include <boost/thread/thread.hpp>
 #include <fstream>
 #include <iostream>
