@@ -102,7 +102,7 @@ class OmniMapperBase {
   // The symbol corresponding to the most recently added pose
   gtsam::Symbol current_pose_symbol;
   // The length of time in seconds to wait prior to committing new poses
-  double commit_window;
+  long commit_window;
   // Timestamp of the previous commit
   Time latest_commit_time;
   // flag for suppressing commit window
